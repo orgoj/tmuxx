@@ -136,17 +136,55 @@ impl ClaudeCodeParser {
     }
 
     /// Extract user question with numbered choices
+    /// Only detects choices at the END of content (active prompt waiting for input)
     fn extract_user_question(&self, content: &str) -> Option<(Vec<String>, String)> {
         let lines: Vec<&str> = content.lines().collect();
+        if lines.is_empty() {
+            return None;
+        }
+
+        // Find the last prompt marker (❯ or >) - anything after this is user input area
+        let last_prompt_idx = lines.iter().rposition(|line| {
+            let trimmed = line.trim();
+            trimmed.starts_with('❯') || (trimmed.starts_with('>') && trimmed.len() < 3)
+        });
+
+        // If there's a prompt marker, only look BEFORE it for choices
+        // (Choices after the prompt are past responses, not active questions)
+        let search_end = last_prompt_idx.unwrap_or(lines.len());
+
+        // Only check the last 25 lines before the prompt
+        let search_start = search_end.saturating_sub(25);
+        let check_lines = &lines[search_start..search_end];
+
+        if check_lines.is_empty() {
+            return None;
+        }
+
         let mut choices = Vec::new();
         let mut question = String::new();
         let mut first_choice_idx = None;
+        let mut last_choice_idx = None;
 
         // Pattern for numbered choices: "1. Option text" or "  1. Option text"
-        // Claude Code format: number followed by dot, then text
         let choice_pattern = Regex::new(r"^\s*(\d+)\.\s+(.+)$").ok()?;
 
-        for (i, line) in lines.iter().enumerate() {
+        for (i, line) in check_lines.iter().enumerate() {
+            let trimmed = line.trim();
+
+            // Skip lines that are clearly not choices (table borders, etc.)
+            if trimmed.starts_with('│') || trimmed.starts_with('├') ||
+               trimmed.starts_with('└') || trimmed.starts_with('┌') ||
+               trimmed.starts_with('─') || trimmed.starts_with('✻') {
+                if !choices.is_empty() {
+                    // Non-choice content after we started - reset
+                    choices.clear();
+                    first_choice_idx = None;
+                    last_choice_idx = None;
+                }
+                continue;
+            }
+
             if let Some(cap) = choice_pattern.captures(line) {
                 if let Ok(num) = cap[1].parse::<u32>() {
                     let choice_text = cap[2].trim();
@@ -165,15 +203,37 @@ impl ClaudeCodeParser {
                         if first_choice_idx.is_none() {
                             first_choice_idx = Some(i);
                         }
+                        last_choice_idx = Some(i);
+                    } else if !choices.is_empty() {
+                        // Non-sequential number after we started - reset
+                        choices.clear();
+                        first_choice_idx = None;
+                        last_choice_idx = None;
                     }
                 }
+            } else if !choices.is_empty() {
+                // Non-choice line after choices started
+                // Allow empty lines and very short lines
+                if !trimmed.is_empty() && trimmed.len() > 30 {
+                    // Longer content after choices - not an active question prompt
+                    choices.clear();
+                    first_choice_idx = None;
+                    last_choice_idx = None;
+                }
+            }
+        }
+
+        // Choices must be near the end of check_lines (within last 8 lines)
+        if let Some(last_idx) = last_choice_idx {
+            if check_lines.len() - last_idx > 8 {
+                return None; // Choices too far from end/prompt
             }
         }
 
         // Look for question text before the first choice
         if let Some(first_idx) = first_choice_idx {
             for j in (0..first_idx).rev() {
-                let prev = lines[j].trim();
+                let prev = check_lines[j].trim();
                 if prev.is_empty() {
                     continue;
                 }
@@ -185,6 +245,10 @@ impl ClaudeCodeParser {
                 // If we find a non-empty line that's not a question, use it anyway
                 if question.is_empty() {
                     question = prev.to_string();
+                }
+                // Only look back a few lines
+                if first_idx - j > 5 {
+                    break;
                 }
             }
         }
