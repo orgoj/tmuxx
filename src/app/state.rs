@@ -1,0 +1,295 @@
+use std::collections::HashSet;
+use crate::agents::MonitoredAgent;
+
+/// Input mode for the application
+#[derive(Debug, Clone, PartialEq, Eq, Default)]
+pub enum InputMode {
+    /// Normal navigation mode
+    #[default]
+    Normal,
+    /// Text input mode (for sending custom input to agents)
+    Input {
+        /// Current input buffer
+        buffer: String,
+        /// Target agent index
+        target_index: usize,
+    },
+}
+
+/// Tree structure containing all monitored agents
+#[derive(Debug, Clone, Default)]
+pub struct AgentTree {
+    /// Root agents (directly in tmux panes)
+    pub root_agents: Vec<MonitoredAgent>,
+}
+
+impl AgentTree {
+    /// Creates an empty agent tree
+    pub fn new() -> Self {
+        Self {
+            root_agents: Vec::new(),
+        }
+    }
+
+    /// Returns the total number of agents (including subagents)
+    pub fn total_count(&self) -> usize {
+        self.root_agents
+            .iter()
+            .map(|a| 1 + a.subagents.len())
+            .sum()
+    }
+
+    /// Returns the number of active agents (those needing attention)
+    pub fn active_count(&self) -> usize {
+        self.root_agents
+            .iter()
+            .filter(|a| a.status.needs_attention())
+            .count()
+    }
+
+    /// Returns the total number of running subagents
+    pub fn running_subagent_count(&self) -> usize {
+        use crate::agents::SubagentStatus;
+        self.root_agents
+            .iter()
+            .flat_map(|a| &a.subagents)
+            .filter(|s| matches!(s.status, SubagentStatus::Running))
+            .count()
+    }
+
+    /// Gets an agent by index (for selection)
+    pub fn get_agent(&self, index: usize) -> Option<&MonitoredAgent> {
+        self.root_agents.get(index)
+    }
+
+    /// Gets a mutable agent by index
+    pub fn get_agent_mut(&mut self, index: usize) -> Option<&mut MonitoredAgent> {
+        self.root_agents.get_mut(index)
+    }
+}
+
+/// Main application state
+#[derive(Debug)]
+pub struct AppState {
+    /// Tree of monitored agents
+    pub agents: AgentTree,
+    /// Currently selected agent index (cursor position)
+    pub selected_index: usize,
+    /// Multi-selected agent indices
+    pub selected_agents: HashSet<usize>,
+    /// Current input mode
+    pub input_mode: InputMode,
+    /// Whether help is being shown
+    pub show_help: bool,
+    /// Whether subagent log is shown
+    pub show_subagent_log: bool,
+    /// Whether the application should quit
+    pub should_quit: bool,
+    /// Last error message (if any)
+    pub last_error: Option<String>,
+    /// Sidebar width in percentage (15-70)
+    pub sidebar_width: u16,
+}
+
+impl AppState {
+    /// Creates a new AppState with default settings
+    pub fn new() -> Self {
+        Self {
+            agents: AgentTree::new(),
+            selected_index: 0,
+            selected_agents: HashSet::new(),
+            input_mode: InputMode::Normal,
+            show_help: false,
+            show_subagent_log: false,
+            should_quit: false,
+            last_error: None,
+            sidebar_width: 35,
+        }
+    }
+
+    /// Check if in input mode
+    pub fn is_input_mode(&self) -> bool {
+        matches!(self.input_mode, InputMode::Input { .. })
+    }
+
+    /// Enter input mode for the current agent
+    pub fn enter_input_mode(&mut self) {
+        self.input_mode = InputMode::Input {
+            buffer: String::new(),
+            target_index: self.selected_index,
+        };
+    }
+
+    /// Exit input mode without sending
+    pub fn exit_input_mode(&mut self) {
+        self.input_mode = InputMode::Normal;
+    }
+
+    /// Add a character to the input buffer
+    pub fn input_char(&mut self, c: char) {
+        if let InputMode::Input { buffer, .. } = &mut self.input_mode {
+            buffer.push(c);
+        }
+    }
+
+    /// Delete the last character from the input buffer
+    pub fn input_backspace(&mut self) {
+        if let InputMode::Input { buffer, .. } = &mut self.input_mode {
+            buffer.pop();
+        }
+    }
+
+    /// Get the current input buffer and target
+    pub fn get_input(&self) -> Option<(&str, usize)> {
+        if let InputMode::Input { buffer, target_index } = &self.input_mode {
+            Some((buffer.as_str(), *target_index))
+        } else {
+            None
+        }
+    }
+
+    /// Take the input buffer (consumes and returns it)
+    pub fn take_input(&mut self) -> Option<(String, usize)> {
+        if let InputMode::Input { buffer, target_index } = std::mem::take(&mut self.input_mode) {
+            self.input_mode = InputMode::Normal;
+            Some((buffer, target_index))
+        } else {
+            None
+        }
+    }
+
+    /// Returns the currently selected agent
+    pub fn selected_agent(&self) -> Option<&MonitoredAgent> {
+        self.agents.get_agent(self.selected_index)
+    }
+
+    /// Returns the currently selected agent mutably
+    pub fn selected_agent_mut(&mut self) -> Option<&mut MonitoredAgent> {
+        self.agents.get_agent_mut(self.selected_index)
+    }
+
+    /// Selects the next agent
+    pub fn select_next(&mut self) {
+        if !self.agents.root_agents.is_empty() {
+            self.selected_index = (self.selected_index + 1) % self.agents.root_agents.len();
+        }
+    }
+
+    /// Selects the previous agent
+    pub fn select_prev(&mut self) {
+        if !self.agents.root_agents.is_empty() {
+            if self.selected_index == 0 {
+                self.selected_index = self.agents.root_agents.len() - 1;
+            } else {
+                self.selected_index -= 1;
+            }
+        }
+    }
+
+    /// Toggles selection of the current agent
+    pub fn toggle_selection(&mut self) {
+        if self.selected_agents.contains(&self.selected_index) {
+            self.selected_agents.remove(&self.selected_index);
+        } else {
+            self.selected_agents.insert(self.selected_index);
+        }
+    }
+
+    /// Selects all agents
+    pub fn select_all(&mut self) {
+        for i in 0..self.agents.root_agents.len() {
+            self.selected_agents.insert(i);
+        }
+    }
+
+    /// Clears all selections
+    pub fn clear_selection(&mut self) {
+        self.selected_agents.clear();
+    }
+
+    /// Returns indices to operate on (selected agents, or current if none selected)
+    pub fn get_operation_indices(&self) -> Vec<usize> {
+        if self.selected_agents.is_empty() {
+            vec![self.selected_index]
+        } else {
+            let mut indices: Vec<usize> = self.selected_agents.iter().copied().collect();
+            indices.sort();
+            indices
+        }
+    }
+
+    /// Check if an agent is in multi-selection
+    pub fn is_multi_selected(&self, index: usize) -> bool {
+        self.selected_agents.contains(&index)
+    }
+
+    /// Toggles help display
+    pub fn toggle_help(&mut self) {
+        self.show_help = !self.show_help;
+    }
+
+    /// Toggles subagent log display
+    pub fn toggle_subagent_log(&mut self) {
+        self.show_subagent_log = !self.show_subagent_log;
+    }
+
+    /// Sets an error message
+    pub fn set_error(&mut self, message: String) {
+        self.last_error = Some(message);
+    }
+
+    /// Clears the error message
+    pub fn clear_error(&mut self) {
+        self.last_error = None;
+    }
+}
+
+impl Default for AppState {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::agents::AgentType;
+
+    #[test]
+    fn test_app_state_navigation() {
+        let mut state = AppState::new();
+
+        // Add some agents
+        state.agents.root_agents.push(MonitoredAgent::new(
+            "1".to_string(),
+            "main:0.0".to_string(),
+            "main".to_string(),
+            0,
+            "code".to_string(),
+            0,
+            "/home/user/project1".to_string(),
+            AgentType::ClaudeCode,
+            1000,
+        ));
+        state.agents.root_agents.push(MonitoredAgent::new(
+            "2".to_string(),
+            "main:0.1".to_string(),
+            "main".to_string(),
+            0,
+            "code".to_string(),
+            1,
+            "/home/user/project2".to_string(),
+            AgentType::OpenCode,
+            1001,
+        ));
+
+        assert_eq!(state.selected_index, 0);
+        state.select_next();
+        assert_eq!(state.selected_index, 1);
+        state.select_next();
+        assert_eq!(state.selected_index, 0); // Wraps around
+        state.select_prev();
+        assert_eq!(state.selected_index, 1); // Wraps around
+    }
+
+}
