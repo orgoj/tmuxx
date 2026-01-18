@@ -1,4 +1,5 @@
 use std::collections::HashSet;
+use std::time::Instant;
 use crate::agents::MonitoredAgent;
 
 /// Which panel is currently focused
@@ -102,6 +103,8 @@ pub struct AppState {
     pub sidebar_width: u16,
     /// Animation tick counter
     pub tick: usize,
+    /// Last tick time for animation throttling
+    last_tick: Instant,
 }
 
 impl AppState {
@@ -120,12 +123,17 @@ impl AppState {
             last_error: None,
             sidebar_width: 35,
             tick: 0,
+            last_tick: Instant::now(),
         }
     }
 
-    /// Advance the animation tick
+    /// Advance the animation tick (throttled to ~10fps for spinner)
     pub fn tick(&mut self) {
-        self.tick = self.tick.wrapping_add(1);
+        const TICK_INTERVAL_MS: u128 = 80; // ~12fps for smooth spinner
+        if self.last_tick.elapsed().as_millis() >= TICK_INTERVAL_MS {
+            self.tick = self.tick.wrapping_add(1);
+            self.last_tick = Instant::now();
+        }
     }
 
     /// Get the current spinner frame

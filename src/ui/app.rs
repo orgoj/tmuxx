@@ -131,8 +131,8 @@ async fn run_loop(
             }
         })?;
 
-        // Handle events with timeout to allow monitor updates
-        let timeout = Duration::from_millis(100);
+        // Handle events with short timeout for responsive UI (~60fps)
+        let timeout = Duration::from_millis(16);
 
         tokio::select! {
             // Handle monitor updates
@@ -149,7 +149,8 @@ async fn run_loop(
 
             // Handle keyboard and mouse events
             _ = tokio::time::sleep(timeout) => {
-                if event::poll(Duration::from_millis(0))? {
+                // Process all pending events to avoid input lag
+                while event::poll(Duration::from_millis(0))? {
                     let event = event::read()?;
 
                     // Handle mouse events
