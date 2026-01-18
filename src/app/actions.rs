@@ -43,6 +43,14 @@ pub enum Action {
     InputNewline,
     /// Delete last character
     InputBackspace,
+    /// Move cursor left
+    CursorLeft,
+    /// Move cursor right
+    CursorRight,
+    /// Move cursor to beginning
+    CursorHome,
+    /// Move cursor to end
+    CursorEnd,
     /// Send a specific number (for choice selection)
     SendNumber(u8),
     /// Increase sidebar width
@@ -78,6 +86,10 @@ impl Action {
             Action::InputChar(_) => "Type character",
             Action::InputNewline => "Insert newline",
             Action::InputBackspace => "Delete character",
+            Action::CursorLeft => "Move cursor left",
+            Action::CursorRight => "Move cursor right",
+            Action::CursorHome => "Move cursor to start",
+            Action::CursorEnd => "Move cursor to end",
             Action::SendNumber(_) => "Send choice number",
             Action::SidebarWider => "Widen sidebar",
             Action::SidebarNarrower => "Narrow sidebar",

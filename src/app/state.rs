@@ -76,6 +76,8 @@ pub struct AppState {
     pub focused_panel: FocusedPanel,
     /// Input buffer (always available)
     pub input_buffer: String,
+    /// Cursor position within input buffer (byte offset)
+    pub cursor_position: usize,
     /// Whether help is being shown
     pub show_help: bool,
     /// Whether subagent log is shown
@@ -97,6 +99,7 @@ impl AppState {
             selected_agents: HashSet::new(),
             focused_panel: FocusedPanel::Sidebar,
             input_buffer: String::new(),
+            cursor_position: 0,
             show_help: false,
             show_subagent_log: false,
             should_quit: false,
@@ -128,19 +131,30 @@ impl AppState {
         };
     }
 
-    /// Add a character to the input buffer
+    /// Add a character to the input buffer at cursor position
     pub fn input_char(&mut self, c: char) {
-        self.input_buffer.push(c);
+        self.input_buffer.insert(self.cursor_position, c);
+        self.cursor_position += c.len_utf8();
     }
 
-    /// Add a newline to the input buffer
+    /// Add a newline to the input buffer at cursor position
     pub fn input_newline(&mut self) {
-        self.input_buffer.push('\n');
+        self.input_buffer.insert(self.cursor_position, '\n');
+        self.cursor_position += 1;
     }
 
-    /// Delete the last character from the input buffer
+    /// Delete the character before the cursor
     pub fn input_backspace(&mut self) {
-        self.input_buffer.pop();
+        if self.cursor_position > 0 {
+            // Find the previous character boundary
+            let prev_boundary = self.input_buffer[..self.cursor_position]
+                .char_indices()
+                .last()
+                .map(|(i, _)| i)
+                .unwrap_or(0);
+            self.input_buffer.remove(prev_boundary);
+            self.cursor_position = prev_boundary;
+        }
     }
 
     /// Get the current input buffer
@@ -148,9 +162,47 @@ impl AppState {
         &self.input_buffer
     }
 
+    /// Get the current cursor position
+    pub fn get_cursor_position(&self) -> usize {
+        self.cursor_position
+    }
+
     /// Take and clear the input buffer
     pub fn take_input(&mut self) -> String {
+        self.cursor_position = 0;
         std::mem::take(&mut self.input_buffer)
+    }
+
+    /// Move cursor left by one character
+    pub fn cursor_left(&mut self) {
+        if self.cursor_position > 0 {
+            // Find the previous character boundary
+            self.cursor_position = self.input_buffer[..self.cursor_position]
+                .char_indices()
+                .last()
+                .map(|(i, _)| i)
+                .unwrap_or(0);
+        }
+    }
+
+    /// Move cursor right by one character
+    pub fn cursor_right(&mut self) {
+        if self.cursor_position < self.input_buffer.len() {
+            // Find the next character boundary
+            if let Some(c) = self.input_buffer[self.cursor_position..].chars().next() {
+                self.cursor_position += c.len_utf8();
+            }
+        }
+    }
+
+    /// Move cursor to the beginning of the input
+    pub fn cursor_home(&mut self) {
+        self.cursor_position = 0;
+    }
+
+    /// Move cursor to the end of the input
+    pub fn cursor_end(&mut self) {
+        self.cursor_position = self.input_buffer.len();
     }
 
     /// Returns the currently selected agent

@@ -15,6 +15,7 @@ pub struct InputWidget;
 impl InputWidget {
     pub fn render(frame: &mut Frame, area: Rect, state: &AppState) {
         let buffer = state.get_input();
+        let cursor_pos = state.get_cursor_position();
         let is_focused = state.is_input_focused();
 
         // Get target agent name
@@ -32,7 +33,7 @@ impl InputWidget {
             .border_style(Style::default().fg(border_color));
 
         // Build content with cursor (only show cursor when focused)
-        let lines: Vec<Line> = Self::build_lines_with_cursor(buffer, is_focused);
+        let lines: Vec<Line> = Self::build_lines_with_cursor(buffer, cursor_pos, is_focused);
 
         let paragraph = Paragraph::new(lines)
             .block(block)
@@ -42,12 +43,12 @@ impl InputWidget {
 
         // Set cursor position for IME support (only when focused)
         if is_focused {
-            Self::set_cursor_position(frame, area, buffer);
+            Self::set_cursor_position(frame, area, buffer, cursor_pos);
         }
     }
 
     /// Build lines with cursor indicator
-    fn build_lines_with_cursor(buffer: &str, is_focused: bool) -> Vec<Line<'static>> {
+    fn build_lines_with_cursor(buffer: &str, cursor_pos: usize, is_focused: bool) -> Vec<Line<'static>> {
         let cursor_style = Style::default()
             .fg(Color::Black)
             .bg(Color::Green);
@@ -58,7 +59,7 @@ impl InputWidget {
             if is_focused {
                 return vec![Line::from(vec![
                     Span::styled("█", cursor_style),
-                    Span::styled(" (Shift+Enter: newline, Enter: send, Esc: clear)",
+                    Span::styled(" (Shift+Enter: newline, Enter: send, Esc: back)",
                         hint_style),
                 ])];
             } else {
@@ -68,38 +69,86 @@ impl InputWidget {
             }
         }
 
+        // Split text before and after cursor
+        let before_cursor = &buffer[..cursor_pos];
+        let after_cursor = &buffer[cursor_pos..];
+
+        // Get the character at cursor (or empty if at end)
+        let cursor_char = after_cursor.chars().next();
+        let after_cursor_rest = if let Some(c) = cursor_char {
+            &after_cursor[c.len_utf8()..]
+        } else {
+            ""
+        };
+
+        // Build lines with cursor in the correct position
         let mut lines = Vec::new();
-        let buffer_lines: Vec<&str> = buffer.split('\n').collect();
+        let before_lines: Vec<&str> = before_cursor.split('\n').collect();
+        let after_lines: Vec<&str> = after_cursor_rest.split('\n').collect();
 
-        for (i, line_text) in buffer_lines.iter().enumerate() {
-            let is_last_line = i == buffer_lines.len() - 1;
+        // Process all lines before cursor line
+        for line_text in &before_lines[..before_lines.len().saturating_sub(1)] {
+            lines.push(Line::from(vec![
+                Span::styled(line_text.to_string(), text_style),
+            ]));
+        }
 
-            if is_last_line && is_focused {
-                // Last line has cursor at end when focused
-                lines.push(Line::from(vec![
-                    Span::styled(line_text.to_string(), text_style),
-                    Span::styled("█", cursor_style),
-                ]));
+        // Build the cursor line
+        let cursor_line_before = before_lines.last().unwrap_or(&"");
+        let cursor_line_after_first = after_lines.first().unwrap_or(&"");
+
+        if is_focused {
+            let cursor_display = if let Some(c) = cursor_char {
+                if c == '\n' {
+                    // Cursor is at newline, show block cursor
+                    "█".to_string()
+                } else {
+                    c.to_string()
+                }
             } else {
-                lines.push(Line::from(vec![
-                    Span::styled(line_text.to_string(), text_style),
-                ]));
-            }
+                // At end of buffer
+                "█".to_string()
+            };
+
+            lines.push(Line::from(vec![
+                Span::styled(cursor_line_before.to_string(), text_style),
+                Span::styled(cursor_display, cursor_style),
+                Span::styled(cursor_line_after_first.to_string(), text_style),
+            ]));
+        } else {
+            lines.push(Line::from(vec![
+                Span::styled(cursor_line_before.to_string(), text_style),
+                Span::styled(
+                    format!("{}{}", cursor_char.map(|c| c.to_string()).unwrap_or_default(), cursor_line_after_first),
+                    text_style
+                ),
+            ]));
+        }
+
+        // Process remaining lines after cursor line
+        for line_text in &after_lines[1..] {
+            lines.push(Line::from(vec![
+                Span::styled(line_text.to_string(), text_style),
+            ]));
         }
 
         lines
     }
 
     /// Set cursor position for IME (Input Method Editor) support
-    fn set_cursor_position(frame: &mut Frame, area: Rect, buffer: &str) {
-        // Calculate cursor position using display width (handles full-width chars)
-        let lines: Vec<&str> = buffer.split('\n').collect();
+    fn set_cursor_position(frame: &mut Frame, area: Rect, buffer: &str, cursor_pos: usize) {
+        // Get text before cursor
+        let before_cursor = &buffer[..cursor_pos];
+
+        // Calculate line number and column using display width
+        let lines: Vec<&str> = before_cursor.split('\n').collect();
+        let line_count = lines.len();
         let last_line = lines.last().unwrap_or(&"");
         // Use unicode width for proper full-width character handling
-        let last_line_width = last_line.width() as u16;
+        let column_width = last_line.width() as u16;
 
-        let cursor_y = area.y + 1 + (lines.len().saturating_sub(1)) as u16;
-        let cursor_x = area.x + 1 + last_line_width;
+        let cursor_y = area.y + 1 + (line_count.saturating_sub(1)) as u16;
+        let cursor_x = area.x + 1 + column_width;
 
         // Ensure cursor is within bounds
         let cursor_x = cursor_x.min(area.x + area.width.saturating_sub(2));

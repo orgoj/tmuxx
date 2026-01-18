@@ -255,6 +255,18 @@ async fn run_loop(
                             Action::InputBackspace => {
                                 state.input_backspace();
                             }
+                            Action::CursorLeft => {
+                                state.cursor_left();
+                            }
+                            Action::CursorRight => {
+                                state.cursor_right();
+                            }
+                            Action::CursorHome => {
+                                state.cursor_home();
+                            }
+                            Action::CursorEnd => {
+                                state.cursor_end();
+                            }
                             Action::SendInput => {
                                 let input = state.take_input();
                                 if !input.is_empty() {
@@ -318,6 +330,11 @@ fn map_key_to_action(code: KeyCode, modifiers: KeyModifiers, state: &AppState) -
             KeyCode::Enter if modifiers.contains(KeyModifiers::ALT) => Action::InputNewline,
             KeyCode::Enter => Action::SendInput,
             KeyCode::Backspace => Action::InputBackspace,
+            // Cursor movement
+            KeyCode::Left => Action::CursorLeft,
+            KeyCode::Right => Action::CursorRight,
+            KeyCode::Home => Action::CursorHome,
+            KeyCode::End => Action::CursorEnd,
             KeyCode::Char(c) => Action::InputChar(c),
             _ => Action::None,
         };
