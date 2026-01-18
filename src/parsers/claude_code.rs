@@ -527,16 +527,14 @@ mod tests {
 
     #[test]
     fn test_parse_thinking() {
+        // Note: parse_status returns Idle for non-approval content.
+        // Processing state is detected by spinner in pane title (monitor/task.rs).
         let parser = ClaudeCodeParser::new();
         let content = "Thinking about the problem...";
         let status = parser.parse_status(content);
 
-        match status {
-            AgentStatus::Processing { activity } => {
-                assert!(activity.contains("Thinking"));
-            }
-            _ => panic!("Expected Processing status"),
-        }
+        // Without approval prompt, content returns Idle
+        assert!(matches!(status, AgentStatus::Idle));
     }
 
     #[test]
