@@ -58,7 +58,7 @@ TmuxCC is a TUI (Terminal User Interface) application that provides centralized 
 
 ## Installation
 
-### From crates.io (coming soon)
+### From crates.io
 
 ```bash
 cargo install tmuxcc
@@ -67,7 +67,7 @@ cargo install tmuxcc
 ### From Source
 
 ```bash
-git clone https://github.com/yourusername/tmuxcc.git
+git clone https://github.com/nyanko3141592/tmuxcc.git
 cd tmuxcc
 cargo build --release
 cargo install --path .
