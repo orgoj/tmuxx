@@ -15,7 +15,7 @@ use ratatui::{backend::CrosstermBackend, Terminal};
 use tokio::sync::mpsc;
 
 use crate::app::{Action, AppState, Config};
-use crate::monitor::MonitorTask;
+use crate::monitor::{MonitorTask, SystemStatsCollector};
 use crate::parsers::ParserRegistry;
 use crate::tmux::TmuxClient;
 
@@ -60,8 +60,11 @@ pub async fn run_app(config: Config) -> Result<()> {
         monitor.run().await;
     });
 
+    // Create system stats collector
+    let mut system_stats = SystemStatsCollector::new();
+
     // Main loop
-    let result = run_loop(&mut terminal, &mut state, &mut rx, &tmux_client).await;
+    let result = run_loop(&mut terminal, &mut state, &mut rx, &tmux_client, &mut system_stats).await;
 
     // Cleanup
     monitor_handle.abort();
@@ -81,10 +84,15 @@ async fn run_loop(
     state: &mut AppState,
     rx: &mut mpsc::Receiver<crate::monitor::MonitorUpdate>,
     tmux_client: &TmuxClient,
+    system_stats: &mut SystemStatsCollector,
 ) -> Result<()> {
     loop {
         // Advance animation tick
         state.tick();
+
+        // Update system stats
+        system_stats.refresh();
+        state.system_stats = system_stats.stats().clone();
 
         // Draw UI
         terminal.draw(|frame| {
@@ -107,7 +115,7 @@ async fn run_loop(
                 let preview_chunks = ratatui::layout::Layout::default()
                     .direction(ratatui::layout::Direction::Vertical)
                     .constraints([
-                        ratatui::layout::Constraint::Length(10),
+                        ratatui::layout::Constraint::Length(15),
                         ratatui::layout::Constraint::Min(5),
                         ratatui::layout::Constraint::Length(input_height + 2),
                     ])

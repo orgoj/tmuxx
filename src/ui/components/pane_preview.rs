@@ -1,5 +1,5 @@
 use ratatui::{
-    layout::Rect,
+    layout::{Constraint, Direction, Layout, Rect},
     style::{Color, Modifier, Style},
     text::{Line, Span},
     widgets::{Block, BorderType, Borders, Paragraph, Wrap},
@@ -86,69 +86,99 @@ impl ClaudeCodeSummary {
 pub struct PanePreviewWidget;
 
 impl PanePreviewWidget {
-    /// Render a summary view with TODO and current activity
+    /// Render a summary view with TODO (left) and activity (right) in 2-column layout
     pub fn render_summary(frame: &mut Frame, area: Rect, state: &AppState) {
         let agent = state.selected_agent();
 
-        let (title, lines) = if let Some(agent) = agent {
-            let title = format!(" {} ", agent.agent_type.short_name());
+        if let Some(agent) = agent {
             let summary = ClaudeCodeSummary::parse(&agent.last_content);
 
-            let mut styled_lines: Vec<Line> = Vec::new();
+            // Outer block for the entire summary area
+            let outer_block = Block::default()
+                .title(format!(" {} ", agent.agent_type.short_name()))
+                .borders(Borders::ALL)
+                .border_type(BorderType::Rounded)
+                .border_style(Style::default().fg(Color::Gray));
 
-            // Current activity
-            if let Some(activity) = summary.current_activity {
-                styled_lines.push(Line::from(vec![
-                    Span::styled("▶ ", Style::default().fg(Color::Yellow)),
-                    Span::styled(
-                        activity,
-                        Style::default()
-                            .fg(Color::Yellow)
-                            .add_modifier(Modifier::BOLD),
-                    ),
-                ]));
-                styled_lines.push(Line::from(""));
-            }
+            let inner_area = outer_block.inner(area);
+            frame.render_widget(outer_block, area);
 
-            // Running tools
-            if !summary.recent_tools.is_empty() {
-                for tool in summary.recent_tools {
-                    styled_lines.push(Line::from(vec![
-                        Span::styled("  ⏺ ", Style::default().fg(Color::Cyan)),
-                        Span::styled(tool, Style::default().fg(Color::White)),
-                    ]));
-                }
-                styled_lines.push(Line::from(""));
-            }
+            // Split into 2 columns: TODO (left 50%) | Activity (right 50%)
+            let columns = Layout::default()
+                .direction(Direction::Horizontal)
+                .constraints([Constraint::Percentage(50), Constraint::Percentage(50)])
+                .split(inner_area);
 
-            // TODOs
+            // Left column: TODOs
+            let mut todo_lines: Vec<Line> = Vec::new();
             if !summary.todos.is_empty() {
-                styled_lines.push(Line::from(vec![Span::styled(
+                todo_lines.push(Line::from(vec![Span::styled(
                     "TODOs:",
                     Style::default()
                         .fg(Color::Gray)
                         .add_modifier(Modifier::BOLD),
                 )]));
-                for (completed, text) in summary.todos {
-                    let (icon, style) = if completed {
+                for (completed, text) in &summary.todos {
+                    let (icon, style) = if *completed {
                         ("☑ ", Style::default().fg(Color::DarkGray))
                     } else {
                         ("☐ ", Style::default().fg(Color::White))
                     };
-                    styled_lines.push(Line::from(vec![
-                        Span::styled(format!("  {}", icon), style),
-                        Span::styled(text, style),
+                    todo_lines.push(Line::from(vec![
+                        Span::styled(format!(" {}", icon), style),
+                        Span::styled(text.clone(), style),
+                    ]));
+                }
+            } else {
+                todo_lines.push(Line::from(vec![Span::styled(
+                    "No TODOs",
+                    Style::default().fg(Color::DarkGray),
+                )]));
+            }
+
+            let todo_paragraph = Paragraph::new(todo_lines).wrap(Wrap { trim: false });
+            frame.render_widget(todo_paragraph, columns[0]);
+
+            // Right column: Activity and tools
+            let mut activity_lines: Vec<Line> = Vec::new();
+
+            // Current activity
+            if let Some(activity) = &summary.current_activity {
+                activity_lines.push(Line::from(vec![
+                    Span::styled("▶ ", Style::default().fg(Color::Yellow)),
+                    Span::styled(
+                        activity.clone(),
+                        Style::default()
+                            .fg(Color::Yellow)
+                            .add_modifier(Modifier::BOLD),
+                    ),
+                ]));
+                activity_lines.push(Line::from(""));
+            }
+
+            // Running tools
+            if !summary.recent_tools.is_empty() {
+                activity_lines.push(Line::from(vec![Span::styled(
+                    "Tools:",
+                    Style::default()
+                        .fg(Color::Gray)
+                        .add_modifier(Modifier::BOLD),
+                )]));
+                for tool in &summary.recent_tools {
+                    activity_lines.push(Line::from(vec![
+                        Span::styled(" ⏺ ", Style::default().fg(Color::Cyan)),
+                        Span::styled(tool.clone(), Style::default().fg(Color::White)),
                     ]));
                 }
             }
 
-            // If no summary info, show status
-            if styled_lines.is_empty() {
+            // If no activity info, show status
+            if activity_lines.is_empty() {
                 let status_text = match &agent.status {
                     AgentStatus::Idle => "Ready for input",
                     AgentStatus::Processing { activity } => activity.as_str(),
                     AgentStatus::AwaitingApproval { approval_type, .. } => {
-                        styled_lines.push(Line::from(vec![
+                        activity_lines.push(Line::from(vec![
                             Span::styled("⚠ ", Style::default().fg(Color::Red)),
                             Span::styled(
                                 format!("Waiting: {}", approval_type),
@@ -160,34 +190,32 @@ impl PanePreviewWidget {
                     AgentStatus::Error { message } => message.as_str(),
                     AgentStatus::Unknown => "...",
                 };
-                if !status_text.is_empty() && styled_lines.is_empty() {
-                    styled_lines.push(Line::from(vec![Span::styled(
+                if !status_text.is_empty() && activity_lines.is_empty() {
+                    activity_lines.push(Line::from(vec![Span::styled(
                         status_text,
                         Style::default().fg(Color::Gray),
                     )]));
                 }
             }
 
-            (title, styled_lines)
+            let activity_paragraph = Paragraph::new(activity_lines).wrap(Wrap { trim: false });
+            frame.render_widget(activity_paragraph, columns[1]);
         } else {
-            (
-                " Summary ".to_string(),
-                vec![Line::from(vec![Span::styled(
-                    "No agent selected",
-                    Style::default().fg(Color::DarkGray),
-                )])],
-            )
-        };
+            // No agent selected
+            let block = Block::default()
+                .title(" Summary ")
+                .borders(Borders::ALL)
+                .border_type(BorderType::Rounded)
+                .border_style(Style::default().fg(Color::Gray));
 
-        let block = Block::default()
-            .title(title)
-            .borders(Borders::ALL)
-            .border_type(BorderType::Rounded)
-            .border_style(Style::default().fg(Color::Gray));
+            let paragraph = Paragraph::new(vec![Line::from(vec![Span::styled(
+                "No agent selected",
+                Style::default().fg(Color::DarkGray),
+            )])])
+            .block(block);
 
-        let paragraph = Paragraph::new(lines).block(block);
-
-        frame.render_widget(paragraph, area);
+            frame.render_widget(paragraph, area);
+        }
     }
 
     pub fn render(frame: &mut Frame, area: Rect, state: &AppState) {

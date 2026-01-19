@@ -47,7 +47,7 @@ impl Layout {
         let right_side = ratatui::layout::Layout::default()
             .direction(Direction::Vertical)
             .constraints([
-                Constraint::Length(10),               // Summary (TODO + activity)
+                Constraint::Length(15),               // Summary (TODO + activity) - 2 columns
                 Constraint::Min(5),                   // Preview (pane content)
                 Constraint::Length(input_height + 2), // Input area (+ border)
             ])

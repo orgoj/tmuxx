@@ -51,6 +51,35 @@ impl HeaderWidget {
             spans.push(Span::styled(" ✓ ready ", Style::default().fg(Color::Green)));
         }
 
+        // System stats: CPU
+        spans.push(Span::styled("│", Style::default().fg(Color::DarkGray)));
+        let cpu_color = if state.system_stats.cpu_usage > 80.0 {
+            Color::Red
+        } else if state.system_stats.cpu_usage > 50.0 {
+            Color::Yellow
+        } else {
+            Color::Green
+        };
+        spans.push(Span::styled(
+            format!(" CPU {:4.1}% ", state.system_stats.cpu_usage),
+            Style::default().fg(cpu_color),
+        ));
+
+        // System stats: Memory
+        spans.push(Span::styled("│", Style::default().fg(Color::DarkGray)));
+        let mem_percent = state.system_stats.memory_percent();
+        let mem_color = if mem_percent > 80.0 {
+            Color::Red
+        } else if mem_percent > 60.0 {
+            Color::Yellow
+        } else {
+            Color::Green
+        };
+        spans.push(Span::styled(
+            format!(" MEM {} ({:.0}%) ", state.system_stats.memory_display(), mem_percent),
+            Style::default().fg(mem_color),
+        ));
+
         // Time
         spans.push(Span::styled("│", Style::default().fg(Color::DarkGray)));
         spans.push(Span::styled(

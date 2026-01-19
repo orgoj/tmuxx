@@ -1,4 +1,5 @@
 use crate::agents::MonitoredAgent;
+use crate::monitor::SystemStats;
 use std::collections::HashSet;
 use std::time::Instant;
 
@@ -102,6 +103,8 @@ pub struct AppState {
     pub tick: usize,
     /// Last tick time for animation throttling
     last_tick: Instant,
+    /// System resource statistics
+    pub system_stats: SystemStats,
 }
 
 impl AppState {
@@ -121,6 +124,7 @@ impl AppState {
             sidebar_width: 35,
             tick: 0,
             last_tick: Instant::now(),
+            system_stats: SystemStats::new(),
         }
     }
 
