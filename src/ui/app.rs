@@ -137,9 +137,12 @@ async fn run_loop(
                     main_chunks[1],
                     state.sidebar_width,
                     input_height,
+                    state.show_summary_detail,
                 );
                 AgentTreeWidget::render(frame, left, state);
-                PanePreviewWidget::render_summary(frame, summary, state);
+                if state.show_summary_detail {
+                    PanePreviewWidget::render_summary(frame, summary, state);
+                }
                 PanePreviewWidget::render_detailed(frame, preview, state);
                 InputWidget::render(frame, input_area, state);
             }
@@ -182,7 +185,7 @@ async fn run_loop(
                         let main_chunks = Layout::main_layout(area);
                         let footer_area = main_chunks[2];
                         let (sidebar, _, _, input_area) = Layout::content_layout_with_input(
-                            main_chunks[1], state.sidebar_width, 3
+                            main_chunks[1], state.sidebar_width, 3, state.show_summary_detail
                         );
 
                         match mouse.kind {
@@ -367,6 +370,9 @@ async fn run_loop(
                             Action::ToggleSubagentLog => {
                                 state.toggle_subagent_log();
                             }
+                            Action::ToggleSummaryDetail => {
+                                state.toggle_summary_detail();
+                            }
                             Action::Refresh => {
                                 state.clear_error();
                             }
@@ -520,6 +526,7 @@ fn map_key_to_action(code: KeyCode, modifiers: KeyModifiers, state: &AppState) -
         KeyCode::Char('f') | KeyCode::Char('F') => Action::FocusPane,
 
         KeyCode::Char('s') | KeyCode::Char('S') => Action::ToggleSubagentLog,
+        KeyCode::Char('t') | KeyCode::Char('T') => Action::ToggleSummaryDetail,
         KeyCode::Char('r') => Action::Refresh,
 
         // Sidebar resize (only < and >)

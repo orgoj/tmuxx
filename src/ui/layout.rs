@@ -35,6 +35,7 @@ impl Layout {
         area: Rect,
         sidebar_width: u16,
         input_height: u16,
+        show_summary: bool,
     ) -> (Rect, Rect, Rect, Rect) {
         let columns = ratatui::layout::Layout::default()
             .direction(Direction::Horizontal)
@@ -44,11 +45,13 @@ impl Layout {
             ])
             .split(area);
 
+        let summary_height = if show_summary { 15 } else { 0 };
+
         let right_side = ratatui::layout::Layout::default()
             .direction(Direction::Vertical)
             .constraints([
-                Constraint::Length(15),               // Summary (TODO + activity) - 2 columns
-                Constraint::Min(5),                   // Preview (pane content)
+                Constraint::Length(summary_height), // Summary (TODO + activity) - 2 columns
+                Constraint::Min(5),                 // Preview (pane content)
                 Constraint::Length(input_height + 2), // Input area (+ border)
             ])
             .split(columns[1]);

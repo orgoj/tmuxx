@@ -23,6 +23,8 @@ pub enum Action {
     FocusPane,
     /// Toggle subagent log view
     ToggleSubagentLog,
+    /// Toggle summary detail (TODOs and Tools) view
+    ToggleSummaryDetail,
     /// Refresh agent list
     Refresh,
     /// Show help
@@ -82,6 +84,7 @@ impl Action {
             Action::ApproveAll => "Approve all pending requests",
             Action::FocusPane => "Focus on selected pane in tmux",
             Action::ToggleSubagentLog => "Toggle subagent log",
+            Action::ToggleSummaryDetail => "Toggle TODO/Tools display",
             Action::Refresh => "Refresh agent list",
             Action::ShowHelp => "Show help",
             Action::HideHelp => "Hide help",

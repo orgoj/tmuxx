@@ -91,6 +91,10 @@ impl HelpWidget {
                 Span::styled("Toggle subagent log", desc_style),
             ]),
             Line::from(vec![
+                Span::styled("  t / T    ", key_style),
+                Span::styled("Toggle TODO/Tools display", desc_style),
+            ]),
+            Line::from(vec![
                 Span::styled("  r        ", key_style),
                 Span::styled("Refresh / clear error", desc_style),
             ]),
