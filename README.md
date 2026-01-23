@@ -149,6 +149,32 @@ tmuxcc --debug
 tmuxcc --init-config
 ```
 
+### Wrapper Script for Reliable Focus (Recommended)
+
+The `f` key (focus pane) works best when tmuxcc runs **inside tmux**. Use the wrapper script to ensure tmuxcc always runs in a dedicated tmux session:
+
+```bash
+# Install wrapper to ~/bin for quick access
+ln -sf "$(pwd)/scripts/tmuxcc-wrapper.sh" ~/bin/tcc
+
+# Now use 'tcc' instead of 'tmuxcc'
+tcc
+```
+
+**What the wrapper does:**
+- Creates/reuses a tmux session named `tmuxcc`
+- Launches tmuxcc inside that session
+- Enables reliable cross-session focus with `f` key
+- Works whether you start it inside or outside tmux
+
+**Without wrapper:**
+- `f` key only works within the same tmux session
+- Shows error when running outside tmux
+
+**With wrapper:**
+- `f` key works for ALL sessions (cross-session navigation)
+- Always runs in controlled environment
+
 ---
 
 ## Key Bindings
@@ -184,7 +210,7 @@ tmuxcc --init-config
 | `n` / `N` | Reject pending request(s) |
 | `a` / `A` | Approve ALL pending requests |
 | `1`-`9` | Send numbered choice to agent |
-| `f` / `F` | Focus on selected pane in tmux (supports cross-session) |
+| `f` / `F` | Focus on selected pane in tmux (supports cross-session, use wrapper script for best results) |
 | `Left` / `Right` | Switch focus (Sidebar / Input) |
 
 ### View

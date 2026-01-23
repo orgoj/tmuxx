@@ -37,33 +37,35 @@
 ## Priority Tasks
 
 ### 1. Focus klávesa 'f' - Outside Tmux Support
-**Status:** ⚠️ ČÁSTEČNĚ HOTOVO
+**Status:** ✅ VYŘEŠENO JEDNODUŠŠÍM ZPŮSOBEM (2026-01-23)
+
 **Co funguje:**
 - ✅ Inside tmux, same session - funguje
 - ✅ Inside tmux, cross-session - funguje (switch-client)
-**Co chybí:**
-- ❌ Outside tmux - pouze error message, nespustí terminal
+- ✅ Outside tmux - vyřešeno **wrapper scriptem** (jednodušší než terminal launcher)
 
-**Problém:** Když tmuxcc běží MIMO tmux, klávesa `f` jen ukáže error
-**Požadované chování:**
-- Detekovat OS a terminal emulator
-- Spustit nový terminal s `tmux attach -t session:window.pane`
-- Platform-specific:
-  - macOS: iTerm2, Terminal.app (via osascript)
-  - Linux: gnome-terminal, konsole, alacritty, kitty
-  - Windows/WSL2: wezterm, windows terminal
+**Řešení:** Wrapper script `scripts/tmuxcc-wrapper.sh`
+- Automaticky zajišťuje že tmuxcc VŽDY běží uvnitř tmux session `tmuxcc`
+- Pokud session neexistuje, vytvoří ji
+- Pokud běžíš inside tmux: switch-client do tmuxcc session
+- Pokud běžíš outside tmux: attach do tmuxcc session
+- Eliminuje problém "outside tmux" zcela
 
-**Akce:**
-- [ ] Implementovat terminal detection (macOS: $TERM_PROGRAM, Linux: fallback list)
-- [ ] Platform-specific terminal launching:
-  - [ ] macOS: osascript pro iTerm2/Terminal.app
-  - [ ] Linux: gnome-terminal --command, konsole -e, alacritty -e, kitty -e
-  - [ ] WSL2: wezterm, windows terminal
-- [ ] Fork + exec terminal s `tmux attach -t target`
-- [ ] Error handling pro neznámé terminály
-- [ ] Test na všech platformách
+**Použití:**
+```bash
+# Symlink do ~/bin
+ln -sf $(pwd)/scripts/tmuxcc-wrapper.sh ~/bin/tcc
 
-**Reference:** Implementation plan má detail v "Step 6: Outside-Tmux Support"
+# Spustit wrapper místo přímého tmuxcc
+tcc
+```
+
+**Poznámka:** Původní plán (Step 6) s platform-specific terminal launcherem je ZBYTEČNÝ.
+Wrapper script je jednodušší, spolehlivější, a cross-platform.
+
+**Soubory:**
+- `scripts/tmuxcc-wrapper.sh` - wrapper script
+- `README.md` - dokumentace použití
 
 
 ### 2. Preview session špatně zobrazuje konec - chybí Claude prompty

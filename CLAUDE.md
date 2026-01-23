@@ -230,6 +230,11 @@ mcp__rtfmbro__get_documentation_tree package="ratatui/ratatui" version="==0.29" 
 - **ALWAYS use `git add -A`** unless explicitly told otherwise by user
 - When staging files, prefer adding specific files by name is WRONG - use `git add -A`
 
+**Remotes:**
+- `origin` - git@github.com:orgoj/tmuxcc.git (main fork)
+- `original` - git@github.com:nyanko3141592/tmuxcc.git (upstream)
+- `neon` - git@github.com:frantisek-heca/tmuxcc-neon.git (tracking)
+
 ## Project Context
 
 **tmuxcc** - AI Agent Dashboard for tmux (fork of nyanko3141592/tmuxcc)
