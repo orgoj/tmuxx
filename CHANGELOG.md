@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+- **Language Marker Rules** - Made language marker rules flexible instead of rigid `.cs` extension
+  - Language markers can now be: `_cs`, `.cs`, `-cs`, `cs.`, `cs_` anywhere in filename
+  - Examples: `README.cs.md`, `README_cs.md`, `notes_cs.txt`, `config.cs.toml`
+  - Previous rigid rule only allowed `.cs` extension which didn't work for all file types
+
 ### Changed
 - **CLAUDE.md Refactoring** - Reduced CLAUDE.md from 468 to 272 lines (42% reduction)
   - Extracted workflow procedures into dedicated skills in `.claude/skills/`

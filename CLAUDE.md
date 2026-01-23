@@ -236,17 +236,25 @@ All skills are in `.claude/skills/`:
 - ❌ **NO exceptions** for CLI help, error messages, or user-facing strings
 
 **Language rules for ALL project files:**
-- ✅ Files WITHOUT language extension (`.cs`, `.ja`, etc.) → MUST be English
-- ✅ Files WITH language extension → Can be in that language
-  - `.cs` = Czech allowed
-  - `.ja` = Japanese allowed
-  - etc.
+- ✅ Files WITHOUT language marker → MUST be English
+- ✅ Files WITH language marker → Can be in that language
+  - Language marker can be: suffix, prefix, or in filename
+  - Examples: `_cs`, `.cs`, `-cs`, `cs.`, `cs_`, etc.
+
+**Valid language markers (flexible):**
+- Markdown: `README.cs.md`, `README_cs.md`, `README-cs.md`
+- Text: `notes_cs.txt`, `notes.cs.txt`, `notes-cs.txt`
+- Config: `config_cs.toml`, `config.cs.toml`
+- Any file: `filename_cs.ext`, `filename.cs.ext`, `filename-cs.ext`
 
 **Examples:**
-- ❌ `.dippy` → MUST be English (no extension) OR rename to `.dippy.cs`
-- ✅ `.dippy.cs` → Czech OK (has `.cs` extension)
-- ❌ `notes` → MUST be English OR rename to `notes.cs`
-- ✅ `notes.cs` → Czech OK
+- ❌ `.dippy` → MUST be English (no marker) OR add marker: `.dippy_cs`, `.dippy.cs`, `.dippy-cs`
+- ✅ `.dippy_cs` → Czech OK (has `_cs` marker)
+- ✅ `.dippy.cs` → Czech OK (has `.cs` marker)
+- ❌ `notes` → MUST be English OR add marker: `notes_cs`, `notes.cs`
+- ✅ `notes_cs` → Czech OK
+- ✅ `README.cs.md` → Czech OK (markdown with `cs` marker)
+- ✅ `TODO_cs.md` → Czech OK (markdown with `_cs` suffix)
 
 **Special exceptions (don't need `.cs`):**
 - TODO.md (internal working notes - Czech OK)
@@ -255,7 +263,7 @@ All skills are in `.claude/skills/`:
 
 **Action required for `.dippy`:**
 - [ ] Option 1: Translate `.dippy` to English
-- [ ] Option 2: Rename to `.dippy.cs` to mark as Czech content
+- [ ] Option 2: Rename with Czech marker: `.dippy_cs`, `.dippy.cs`, or `.dippy-cs`
 
 **CRITICAL: Auto-correct Czech to English:**
 - User writes in Czech in conversation → OK
