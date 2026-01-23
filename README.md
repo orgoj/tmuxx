@@ -42,6 +42,7 @@ TmuxCC is a TUI (Terminal User Interface) application that provides centralized 
 - **Subagent Tracking**: Monitor spawned subagents (Task tool) with their status
 - **Context Awareness**: View remaining context percentage when available
 - **Pane Preview**: See live content from selected agent's tmux pane
+- **Popup Input Dialog**: Quick text input with configurable trigger key (default `/`)
 - **Focus Integration**: Jump directly to any agent's pane in tmux (cross-session support)
 - **Custom Agent Patterns**: Define regex patterns to detect any process as an agent
 - **Wildcard Detection**: Use `pattern = "*"` to monitor ALL tmux panes
@@ -215,6 +216,7 @@ tcc
 | `1`-`9` | Send numbered choice to agent |
 | `f` / `F` | Focus on selected pane in tmux (supports cross-session, use wrapper script for best results) |
 | `Left` / `Right` | Switch focus (Sidebar / Input) |
+| `/` | Show popup input dialog (configurable) |
 
 ### View
 
@@ -315,6 +317,9 @@ truncate_long_lines = true
 # Only used when truncate_long_lines = true
 # max_line_width = 120
 
+# Trigger key for popup input dialog (default: "/")
+popup_trigger_key = "/"
+
 # Custom agent patterns (optional)
 # Patterns are matched against: command, title, cmdline, and child processes
 # Built-in agents (Claude Code, OpenCode, etc.) are detected first
@@ -414,6 +419,7 @@ tmuxcc --set poll_interval=1000 --set showdetached=false
 - `debug_mode` (or `debug`) - Enable/disable debug logging in the TUI
 - `truncate_long_lines` (or `truncate`) - Enable/disable line truncation in preview
 - `max_line_width` (or `linewidth`) - Max line width for truncation (number or 'none')
+- `popup_trigger_key` (or `popupkey`) - Key to trigger popup input dialog (default: "/")
 - `keybindings.KEY` (or `kb.KEY`) - Map key to action (see below)
 
 **Key binding overrides:**

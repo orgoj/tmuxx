@@ -4,6 +4,7 @@ allow ./scripts/reload-test.sh
 allow cargo test *
 allow cargo build *
 allow cargo clippy *
+allow touch src/**
 
 allow tmux list-sessions *
 allow tmux list-panes *

@@ -21,7 +21,7 @@ use crate::tmux::TmuxClient;
 
 use super::components::{
     AgentTreeWidget, FooterWidget, HeaderWidget, HelpWidget, InputWidget, PanePreviewWidget,
-    SubagentLogWidget,
+    PopupInputWidget, SubagentLogWidget,
 };
 use super::Layout;
 
@@ -150,7 +150,12 @@ async fn run_loop(
             // Footer
             FooterWidget::render(frame, main_chunks[2], state, &state.config);
 
-            // Help overlay
+            // Popup input (before help)
+            if let Some(popup_state) = &state.popup_input {
+                PopupInputWidget::render(frame, size, popup_state);
+            }
+
+            // Help overlay (highest priority - render last)
             if state.show_help {
                 HelpWidget::render(frame, size, &state.config);
             }
@@ -479,6 +484,122 @@ async fn run_loop(
                                 }
                                 state.clear_selection();
                             }
+                            Action::ShowPopupInput {
+                                title,
+                                prompt,
+                                initial,
+                                popup_type,
+                            } => {
+                                use crate::app::PopupInputState;
+                                state.popup_input = Some(PopupInputState {
+                                    title,
+                                    prompt,
+                                    buffer: initial,
+                                    cursor: 0,
+                                    popup_type,
+                                });
+                            }
+                            Action::HidePopupInput => {
+                                state.popup_input = None;
+                            }
+                            Action::PopupInputSubmit => {
+                                use crate::app::PopupType;
+                                if let Some(popup) = state.popup_input.take() {
+                                    match popup.popup_type {
+                                        PopupType::Filter => {
+                                            // Apply filter
+                                            if popup.buffer.is_empty() {
+                                                state.filter_pattern = None; // Clear filter
+                                            } else {
+                                                state.filter_pattern = Some(popup.buffer);
+                                            }
+                                            // Reset selection to first visible agent
+                                            state.selected_index = 0;
+                                            state.clear_selection();
+                                        }
+                                        PopupType::GeneralInput => {
+                                            // Send to selected agent
+                                            let text = popup.buffer;
+                                            if let Some(agent) = state.selected_agent() {
+                                                if let Err(e) = tmux_client.send_keys(&agent.target, &text)
+                                                {
+                                                    state.set_error(format!("Failed to send input: {}", e));
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                            Action::PopupInputChar(c) => {
+                                if let Some(popup) = &mut state.popup_input {
+                                    popup.buffer.insert(popup.cursor, c);
+                                    popup.cursor += c.len_utf8();
+                                }
+                            }
+                            Action::PopupInputBackspace => {
+                                if let Some(popup) = &mut state.popup_input {
+                                    if popup.cursor > 0 {
+                                        let prev = popup.buffer[..popup.cursor]
+                                            .char_indices()
+                                            .last()
+                                            .map(|(i, _)| i)
+                                            .unwrap_or(0);
+                                        popup.buffer.remove(prev);
+                                        popup.cursor = prev;
+                                    }
+                                }
+                            }
+                            Action::PopupInputDelete => {
+                                if let Some(popup) = &mut state.popup_input {
+                                    if popup.cursor < popup.buffer.len() {
+                                        if let Some(ch) = popup.buffer[popup.cursor..].chars().next() {
+                                            popup.buffer.drain(popup.cursor..popup.cursor + ch.len_utf8());
+                                        }
+                                    }
+                                }
+                            }
+                            Action::PopupInputClear => {
+                                if let Some(popup) = &mut state.popup_input {
+                                    popup.buffer.clear();
+                                    popup.cursor = 0;
+                                }
+                            }
+                            Action::PopupInputSelectAll => {
+                                if let Some(popup) = &mut state.popup_input {
+                                    popup.buffer.clear();
+                                    popup.cursor = 0;
+                                }
+                            }
+                            Action::PopupInputCursorLeft => {
+                                if let Some(popup) = &mut state.popup_input {
+                                    if popup.cursor > 0 {
+                                        popup.cursor = popup.buffer[..popup.cursor]
+                                            .char_indices()
+                                            .last()
+                                            .map(|(i, _)| i)
+                                            .unwrap_or(0);
+                                    }
+                                }
+                            }
+                            Action::PopupInputCursorRight => {
+                                if let Some(popup) = &mut state.popup_input {
+                                    if popup.cursor < popup.buffer.len() {
+                                        if let Some(c) = popup.buffer[popup.cursor..].chars().next() {
+                                            popup.cursor += c.len_utf8();
+                                        }
+                                    }
+                                }
+                            }
+                            Action::PopupInputCursorHome => {
+                                if let Some(popup) = &mut state.popup_input {
+                                    popup.cursor = 0;
+                                }
+                            }
+                            Action::PopupInputCursorEnd => {
+                                if let Some(popup) = &mut state.popup_input {
+                                    popup.cursor = popup.buffer.len();
+                                }
+                            }
                             Action::None => {}
                         }
                     }
@@ -505,6 +626,28 @@ fn map_key_to_action(
         return Action::HideHelp;
     }
 
+    // If popup is shown, intercept all keys
+    if state.popup_input.is_some() {
+        return match code {
+            KeyCode::Enter => Action::PopupInputSubmit,
+            KeyCode::Esc => Action::HidePopupInput,
+            KeyCode::Char('u') if modifiers.contains(KeyModifiers::CONTROL) => {
+                Action::PopupInputClear
+            }
+            KeyCode::Char('a') if modifiers.contains(KeyModifiers::CONTROL) => {
+                Action::PopupInputSelectAll
+            }
+            KeyCode::Char(c) => Action::PopupInputChar(c),
+            KeyCode::Backspace => Action::PopupInputBackspace,
+            KeyCode::Delete => Action::PopupInputDelete,
+            KeyCode::Left => Action::PopupInputCursorLeft,
+            KeyCode::Right => Action::PopupInputCursorRight,
+            KeyCode::Home => Action::PopupInputCursorHome,
+            KeyCode::End => Action::PopupInputCursorEnd,
+            _ => Action::None,
+        };
+    }
+
     // If input panel is focused, handle input-specific keys
     if state.is_input_focused() {
         return match code {
@@ -525,9 +668,21 @@ fn map_key_to_action(
         };
     }
 
-    // Sidebar focused - check configured key bindings first
+    // Sidebar focused - check popup trigger key first
     if let KeyCode::Char(c) = code {
         let key_str = c.to_string();
+
+        // Check popup trigger key
+        if key_str == config.popup_trigger_key {
+            return Action::ShowPopupInput {
+                title: "Filter Agents".to_string(),
+                prompt: "Pattern (name/session/window/dir):".to_string(),
+                initial: state.filter_pattern.clone().unwrap_or_default(),
+                popup_type: crate::app::PopupType::Filter,
+            };
+        }
+
+        // Then check configured key bindings
         if let Some(action) = config.key_bindings.get_action(&key_str) {
             return match action {
                 KeyAction::Navigate(NavAction::NextAgent) => Action::NextAgent,

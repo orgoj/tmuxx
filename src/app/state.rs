@@ -15,6 +15,31 @@ pub enum FocusedPanel {
     Input,
 }
 
+/// Type of popup dialog
+#[derive(Debug, Clone, PartialEq, Eq, Default)]
+pub enum PopupType {
+    /// Filter agents/sessions
+    #[default]
+    Filter,
+    /// General text input to send to agent
+    GeneralInput,
+}
+
+/// State for popup input dialog
+#[derive(Debug, Clone)]
+pub struct PopupInputState {
+    /// Dialog title
+    pub title: String,
+    /// Prompt text to display
+    pub prompt: String,
+    /// Input buffer
+    pub buffer: String,
+    /// Cursor position (byte offset)
+    pub cursor: usize,
+    /// Type of popup dialog
+    pub popup_type: PopupType,
+}
+
 /// Tree structure containing all monitored agents
 #[derive(Debug, Clone, Default)]
 pub struct AgentTree {
@@ -95,6 +120,10 @@ pub struct AppState {
     pub cursor_position: usize,
     /// Whether help is being shown
     pub show_help: bool,
+    /// Popup input dialog state (None = not shown)
+    pub popup_input: Option<PopupInputState>,
+    /// Current filter pattern (None = no filter, Some("") = show all, Some("text") = filter)
+    pub filter_pattern: Option<String>,
     /// Whether subagent log is shown
     pub show_subagent_log: bool,
     /// Whether summary detail (TODOs and Tools) is shown
@@ -125,6 +154,8 @@ impl AppState {
             input_buffer: String::new(),
             cursor_position: 0,
             show_help: false,
+            popup_input: None,
+            filter_pattern: None,
             show_subagent_log: false,
             show_summary_detail: true,
             should_quit: false,
@@ -342,6 +373,35 @@ impl AppState {
     /// Clears the error message
     pub fn clear_error(&mut self) {
         self.last_error = None;
+    }
+
+    /// Check if an agent matches the current filter pattern
+    pub fn matches_filter(&self, agent: &MonitoredAgent) -> bool {
+        match &self.filter_pattern {
+            None => true, // No filter = show all
+            Some(pattern) if pattern.is_empty() => true, // Empty = show all
+            Some(pattern) => {
+                let pattern_lower = pattern.to_lowercase();
+
+                // Match against multiple fields
+                agent.agent_type.to_string().to_lowercase().contains(&pattern_lower)
+                    || agent.session.to_lowercase().contains(&pattern_lower)
+                    || agent.window_name.to_lowercase().contains(&pattern_lower)
+                    || agent.target.to_lowercase().contains(&pattern_lower)
+                    || agent.path.to_lowercase().contains(&pattern_lower)
+            }
+        }
+    }
+
+    /// Get filtered agent list
+    /// Returns Vec for flexibility. If performance becomes an issue,
+    /// consider caching or using iterator instead.
+    pub fn filtered_agents(&self) -> Vec<&MonitoredAgent> {
+        self.agents
+            .root_agents
+            .iter()
+            .filter(|agent| self.matches_filter(agent))
+            .collect()
     }
 }
 

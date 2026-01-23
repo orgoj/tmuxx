@@ -13,6 +13,7 @@ pub enum ConfigOverride {
     TruncateLongLines(bool),
     MaxLineWidth(Option<u16>),
     KeyBinding(String, KeyAction),
+    PopupTriggerKey(String),
 }
 
 impl ConfigOverride {
@@ -68,6 +69,9 @@ impl ConfigOverride {
                 };
                 Ok(ConfigOverride::MaxLineWidth(val))
             }
+            "popuptriggerkey" | "popupkey" => {
+                Ok(ConfigOverride::PopupTriggerKey(value.to_string()))
+            }
             s if s.starts_with("keybindings.") || s.starts_with("kb.") => {
                 let key = if let Some(k) = normalized_key.strip_prefix("keybindings.") {
                     k
@@ -79,7 +83,7 @@ impl ConfigOverride {
                 Ok(ConfigOverride::KeyBinding(key.to_string(), action))
             }
             _ => Err(anyhow!(
-                "Unknown config key: '{}'. Valid keys: poll_interval_ms, capture_lines, show_detached_sessions, debug_mode, truncate_long_lines, max_line_width, keybindings.KEY (or kb.KEY)",
+                "Unknown config key: '{}'. Valid keys: poll_interval_ms, capture_lines, show_detached_sessions, debug_mode, truncate_long_lines, max_line_width, popup_trigger_key, keybindings.KEY (or kb.KEY)",
                 key
             )),
         }
@@ -97,6 +101,7 @@ impl ConfigOverride {
             ConfigOverride::KeyBinding(key, action) => {
                 config.key_bindings.bindings.insert(key, action);
             }
+            ConfigOverride::PopupTriggerKey(val) => config.popup_trigger_key = val,
         }
     }
 }

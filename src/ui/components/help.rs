@@ -167,6 +167,10 @@ impl HelpWidget {
             Span::styled("  f / F    ", key_style),
             Span::styled("Focus on selected pane in tmux", desc_style),
         ]));
+        help_text.push(Line::from(vec![
+            Span::styled(format!("  {:9}", config.popup_trigger_key), key_style),
+            Span::styled("Show popup input dialog", desc_style),
+        ]));
         help_text.push(Line::from(vec![]));
 
         // View (hardcoded)

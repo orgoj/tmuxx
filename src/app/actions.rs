@@ -1,4 +1,5 @@
 use super::key_binding::KillMethod;
+use super::state::PopupType;
 
 /// Actions that can be performed in the application
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -71,6 +72,35 @@ pub enum Action {
     SendKeys(String),
     /// Kill application in agent pane
     KillApp { method: KillMethod },
+    /// Show popup input dialog
+    ShowPopupInput {
+        title: String,
+        prompt: String,
+        initial: String,
+        popup_type: PopupType,
+    },
+    /// Hide popup without submitting
+    HidePopupInput,
+    /// Submit popup input (returns text to caller)
+    PopupInputSubmit,
+    /// Add character to popup buffer
+    PopupInputChar(char),
+    /// Delete character before cursor (backspace)
+    PopupInputBackspace,
+    /// Delete character after cursor (delete)
+    PopupInputDelete,
+    /// Clear popup buffer (Ctrl+U)
+    PopupInputClear,
+    /// Select all and replace (Ctrl+A)
+    PopupInputSelectAll,
+    /// Move popup cursor left
+    PopupInputCursorLeft,
+    /// Move popup cursor right
+    PopupInputCursorRight,
+    /// Move popup cursor to home
+    PopupInputCursorHome,
+    /// Move popup cursor to end
+    PopupInputCursorEnd,
     /// No action (used for unbound keys)
     None,
 }
@@ -113,6 +143,18 @@ impl Action {
             Action::ScrollDown => "Scroll down",
             Action::SendKeys(_) => "Send keys to pane",
             Action::KillApp { .. } => "Kill application",
+            Action::ShowPopupInput { .. } => "Show popup input",
+            Action::HidePopupInput => "Hide popup",
+            Action::PopupInputSubmit => "Submit popup input",
+            Action::PopupInputChar(_) => "Type in popup",
+            Action::PopupInputBackspace => "Delete character (popup)",
+            Action::PopupInputDelete => "Delete forward (popup)",
+            Action::PopupInputClear => "Clear popup input",
+            Action::PopupInputSelectAll => "Select all (popup)",
+            Action::PopupInputCursorLeft => "Move cursor left (popup)",
+            Action::PopupInputCursorRight => "Move cursor right (popup)",
+            Action::PopupInputCursorHome => "Move cursor home (popup)",
+            Action::PopupInputCursorEnd => "Move cursor end (popup)",
             Action::None => "",
         }
     }

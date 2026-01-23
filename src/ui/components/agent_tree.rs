@@ -32,7 +32,7 @@ struct SessionWindowTree<'a> {
 }
 
 impl<'a> SessionWindowTree<'a> {
-    fn new(agents: &'a [MonitoredAgent]) -> Self {
+    fn new(agents: &[&'a MonitoredAgent]) -> Self {
         let mut sessions: SessionsMap<'a> = BTreeMap::new();
 
         for (idx, agent) in agents.iter().enumerate() {
@@ -41,7 +41,7 @@ impl<'a> SessionWindowTree<'a> {
                 .or_default()
                 .entry((agent.window, &agent.window_name))
                 .or_default()
-                .push((idx, agent));
+                .push((idx, *agent));
         }
 
         Self { sessions }
@@ -50,12 +50,14 @@ impl<'a> SessionWindowTree<'a> {
 
 impl AgentTreeWidget {
     pub fn render(frame: &mut Frame, area: Rect, state: &AppState) {
-        let agents = &state.agents.root_agents;
+        // Get filtered agents (returns Vec<&MonitoredAgent>)
+        let filtered_agents = state.filtered_agents();
+        let agents = &state.agents.root_agents; // Keep for counts
         let active_count = state.agents.active_count();
         let subagent_count = state.agents.running_subagent_count();
         let selected_count = state.selected_agents.len();
 
-        // Build title
+        // Build title (show filtered count)
         let title = if selected_count > 0 {
             format!(" {} sel │ {} pending ", selected_count, active_count)
         } else if subagent_count > 0 {
@@ -63,7 +65,7 @@ impl AgentTreeWidget {
         } else if active_count > 0 {
             format!(" ⚠ {} pending ", active_count)
         } else {
-            format!(" {} agents ", agents.len())
+            format!(" {} agents ", filtered_agents.len())
         };
 
         let border_color = if !state.is_input_focused() {
@@ -78,9 +80,17 @@ impl AgentTreeWidget {
             .border_type(BorderType::Rounded)
             .border_style(Style::default().fg(border_color));
 
-        if agents.is_empty() {
+        if filtered_agents.is_empty() {
+            let empty_msg = if state.filter_pattern.is_some() {
+                format!(
+                    "  No agents match filter '{}'",
+                    state.filter_pattern.as_ref().unwrap()
+                )
+            } else {
+                "  No agents detected".to_string()
+            };
             let empty_text = List::new(vec![ListItem::new(Line::from(vec![Span::styled(
-                "  No agents detected",
+                empty_msg,
                 Style::default().fg(Color::DarkGray),
             )]))])
             .block(block);
@@ -88,7 +98,7 @@ impl AgentTreeWidget {
             return;
         }
 
-        let tree = SessionWindowTree::new(agents);
+        let tree = SessionWindowTree::new(&filtered_agents);
         let mut items: Vec<ListItem> = Vec::new();
         let available_width = area.width.saturating_sub(4) as usize;
 

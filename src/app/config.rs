@@ -39,6 +39,10 @@ pub struct Config {
     /// Key bindings configuration
     #[serde(default)]
     pub key_bindings: KeyBindings,
+
+    /// Trigger key for popup input dialog (default: "/")
+    #[serde(default = "default_popup_trigger_key")]
+    pub popup_trigger_key: String,
 }
 
 fn default_poll_interval() -> u64 {
@@ -61,6 +65,10 @@ fn default_truncate_long_lines() -> bool {
     true
 }
 
+fn default_popup_trigger_key() -> String {
+    "/".to_string()
+}
+
 /// Pattern for detecting agent types
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct AgentPattern {
@@ -81,6 +89,7 @@ impl Default for Config {
             max_line_width: None,
             agent_patterns: Vec::new(),
             key_bindings: KeyBindings::default(),
+            popup_trigger_key: default_popup_trigger_key(),
         }
     }
 }

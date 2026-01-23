@@ -143,6 +143,13 @@ Parsers check ALL detection strings to handle various detection scenarios.
 - Mock `PaneInfo` structures for parser testing
 - No integration tests yet (would require tmux session)
 
+### Testing Discipline
+
+- **INVOKE tmuxcc-testing skill**: MANDATORY before ANY testing - contains session structure, send-keys rules, tmux safety
+- **One key at a time**: Send ONE key, capture output, verify, then next - prevents destructive commands
+- **ct-test is sacred**: ONLY send keys to ct-test session, NO window numbers
+- **NEVER create random tmux sessions**: Use ONLY existing sessions (ct-test, cc-tmuxcc, etc.)
+
 ## Common Pitfalls
 
 1. **Regex Performance**: Parsers run on every poll cycle. Keep regex patterns efficient.
@@ -153,8 +160,19 @@ Parsers check ALL detection strings to handle various detection scenarios.
 6. **Upstream Data Problems**: When a feature "doesn't work", check if upstream data exists FIRST (e.g., agent detection before testing focus functionality)
 7. **Config Integration Completeness**: When adding config options, verify they're actually used in implementation code, not just defined in Config struct
 8. **Ratatui Paragraph Wrapping**: To disable wrapping, omit `.wrap()` call entirely; don't use `Wrap { trim: true }` which controls trimming, not wrapping
+9. **HashMap Display Order**: HashMap iteration is non-deterministic - ALWAYS sort keys explicitly for UI consistency
+10. **Trailing Content in UI**: When displaying "last N lines", trim trailing empty content first to ensure actual data is visible
+11. **Skipping Skills**: Attempting tasks without invoking relevant skills leads to mistakes - check `.claude/skills/` first
+12. **Batch Operations Without Verification**: Sending multiple commands at once can cause destructive failures - verify each step
 
 ## Development Workflow
+
+### Skill-First Development
+
+- **Check skills BEFORE starting**: Search `.claude/skills/` for relevant skills before implementing
+- **INVOKE skills matching task type**: Testing? → tmuxcc-testing. Commit? → tmuxcc-commit. Config? → adding-config-option
+- **Create skills for repetitive workflows**: If explaining same process twice → create skill
+- **Documentation extraction**: Keep CLAUDE.md under 300 lines - extract repetitive workflows into skills
 
 ### Project-Specific Skills
 
@@ -210,6 +228,8 @@ All skills are in `.claude/skills/`:
 - **Debug workflow**: Add visible debug to UI (status bar), not just file writes
 - **Build release for testing**: `cargo build --release` before claiming done
 - **Clean up warnings**: Run `cargo clippy` and fix all warnings
+- **Ratatui dynamic UI**: Prefer dynamic generation from config over hardcoded text - enables runtime customization
+- **User feedback validation**: Runtime testing reveals UX issues code review misses - visual verification is CRITICAL
 
 ### Common Pitfalls
 

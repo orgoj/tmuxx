@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- **Popup Input Dialog** - Added popup input dialog feature with configurable trigger key (default `/`)
+  - Reusable component for quick text input without switching focus
+  - Single-line input with cursor navigation (Home/End/Left/Right)
+  - Keyboard shortcuts: Ctrl+U (clear), Ctrl+A (select all), Enter (submit), Esc (cancel)
+  - Horizontal scrolling for long text input
+  - UTF-8 safe with unicode-width support
+  - Configurable trigger key via `popup_trigger_key` in config file or `--set popup_trigger_key=X` CLI override
+  - Help display shows current trigger key
+
 ### Fixed
 - **Language Marker Rules** - Made language marker rules flexible instead of rigid `.cs` extension
   - Language markers can now be: `_cs`, `.cs`, `-cs`, `cs.`, `cs_` anywhere in filename

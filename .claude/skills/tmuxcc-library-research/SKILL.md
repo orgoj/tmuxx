@@ -62,6 +62,38 @@ mcp__rtfmbro__read_files package="ratatui/ratatui" version="==0.29" ecosystem="g
 
 - **Text editing:** tui-textarea (rhysd) - supports ratatui 0.29, has popup example
 
+## Ratatui Popup Pattern (CRITICAL!)
+
+**NEVER implement popups with manual Rect calculations! ALWAYS use Layout + Flex::Center!**
+
+Official Ratatui popup example:
+```rust
+use ratatui::layout::{Constraint, Flex, Layout, Rect};
+
+// Create centered popup - CORRECT WAY
+fn centered_popup(area: Rect, percent_x: u16, height: u16) -> Rect {
+    let vertical = Layout::vertical([Constraint::Length(height)]).flex(Flex::Center);
+    let horizontal = Layout::horizontal([Constraint::Percentage(percent_x)]).flex(Flex::Center);
+    let [area] = vertical.areas(area);
+    let [area] = horizontal.areas(area);
+    area
+}
+
+// Usage: 70% width, 12 lines fixed height
+let popup_area = centered_popup(area, 70, 12);
+```
+
+**Why this matters:**
+- Manual Rect calculations with percentage-based height are WRONG for popups
+- Popups have FIXED content height (borders, text, input fields = specific line count)
+- Flex::Center provides proper centering (Ratatui 0.29+ feature)
+- Official examples use this pattern - RTFM first!
+
+**Get official popup example:**
+```bash
+mcp__github__get_file_contents owner="ratatui" repo="ratatui" path="examples/popup.rs" ref="v0.29.0"
+```
+
 ## Why This Matters
 
 - Don't reinvent the wheel
