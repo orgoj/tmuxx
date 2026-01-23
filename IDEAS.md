@@ -37,6 +37,12 @@
 - 🎯 Agent-specific features (each AI has unique capabilities)
 - 🎯 Plugin system for community-contributed agent parsers
 
+**Enhanced Process Detection:**
+- 🎯 **Parent process detection** - detect agents launched via wrappers/shells
+- 🎯 **Process tree analysis** - scan entire process hierarchy for agent identification
+- 🎯 **Content-based AI type detection** - identify AI type (Claude/Gemini/Codex) from output patterns, not just process name
+- 🎯 Multi-strategy detection with fallback chain
+
 ### 2. Standalone Panel Architecture
 
 - ✅ Currently: Works as tmux TUI application
@@ -67,6 +73,23 @@ Session-name specific config (pattern matching)
 - Agent-specific approval workflows
 - Filters and search patterns
 - Preview layout and size
+
+**AI-Specific Control Configuration:**
+- 🎯 **Per-AI key bindings** - different keys for different AI types (Claude: Y/N, Gemini: A/R, etc.)
+- 🎯 **Custom approval workflows** - agent-specific approval process (single-key vs confirmation)
+- 🎯 **AI-type actions** - custom commands/operations per AI type
+- 🎯 **Agent behavior profiles** - define how each AI type should be controlled
+```toml
+[[ai_profile]]
+name = "claude-code"
+approval_keys = { yes = "y", no = "n" }
+requires_confirmation = false
+
+[[ai_profile]]
+name = "gemini"
+approval_keys = { approve = "a", reject = "r" }
+requires_confirmation = true
+```
 
 ### 4. Integrated AI Processing
 
@@ -182,7 +205,30 @@ pipes:
 - Bookmarks/favorites for frequent sessions
 - History of approvals (audit trail)
 - Statistics dashboard (agent usage, approvals over time)
-- Notification system (desktop notifications for approvals)
+
+**Notification System (Action Required Events Only):**
+- 🎯 **Terminal notifications** - visual bell/flash in terminal when action needed
+- 🎯 **Command execution** - run custom commands on events (e.g., `notify-send`, `osascript`)
+- 🎯 **Hook system** - callback scripts for events (approval_needed, agent_error)
+- 🎯 **Multi-channel** - send to multiple destinations (terminal + desktop + command)
+- 🎯 **Event filtering** - notify only for actionable events, not informational ones
+
+**Notification triggers (action required only):**
+- Agent awaiting approval (file edit, shell command, MCP tool)
+- Agent encountered error (needs user intervention)
+- Agent asking question (AskUserQuestion tool)
+- **NOT triggered:** Subagent completed, agent idle, processing updates
+
+```toml
+[notifications]
+enabled = true
+channels = ["terminal", "command"]
+command = "notify-send 'tmuxcc' '{message}'"
+
+[[notifications.hook]]
+event = "approval_needed"
+script = "/path/to/script.sh"
+```
 
 ---
 
@@ -272,44 +318,28 @@ fn resolve_config(session_cwd: &Path) -> Config {
 
 ### Konfigurovatelné Menu Akcí per Session
 **Priority:** High
-**Status:** Planned (relates to AI pipelines vision)
+**Status:** Specified in TODO-MENU.md
 
-**Vision:** Definovat custom akce pro konkrétní sessions v configu
+**Vision:** Powerful action system with variables, inputs, screen capture, editor, and bash pipelines
 
-**Config format (návrh):**
+**Full specification:** See [TODO-MENU.md](TODO-MENU.md) for complete details
+
+**Key features:**
+- Pattern matching on session names (regex)
+- Variable system (`${SESSION_DIR}`, `${TMP}`, etc.)
+- Input mechanisms (`@{INPUT_LINE}`, `@{SCREEN}`, `@{EDITOR}`)
+- Pipeline execution with bash support
+- Paste result to pane or send-keys
+- Multi-phase implementation plan
+
+**Example:**
 ```toml
-[[session_menu]]
-pattern = "^cc-.*"  # Regex pro session name
-name = "Claude Code Menu"
-
 [[session_menu.action]]
 key = "t"
-label = "Run tests"
-command = "npm test"
-
-[[session_menu.action]]
-key = "b"
-label = "Build project"
-command = "cargo build --release"
-interactive = true  # Čekat na input před executí?
-
-[[session_menu.action]]
-key = "e"
-label = "AI Error Analysis"
-pipeline = "ai-analyze-error"  # Reference to AI pipeline
+label = "Translate screen"
+command = "cat @{SCREEN:-30} > ${TMP} && editor ${TMP} && cat ${TMP} | claude -p 'Translate to English'"
+paste_result = true
 ```
-
-**Features:**
-- Pattern matching na session names
-- External command execution (send-keys to session)
-- Input prompts před executí
-- AI pipeline integration (budoucnost)
-- Dynamické menu based on config
-
-**Architecture:**
-- Menu provider trait
-- Config-driven menu builder
-- Action executor (tmux send-keys wrapper)
 
 ---
 

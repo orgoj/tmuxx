@@ -139,6 +139,107 @@ tui-textarea = "*"
 - [ ] Remove input buffer from main layout
 - [ ] Connect with modal input dialog from task #5
 
+### 6. Notification System for Action-Required Events
+**Status:** 💡 Feature Request
+**Problem:** No alerts when agent needs user action → user must constantly watch tmuxcc
+**Use case:** Agent awaits approval → terminal bell + desktop notification + custom command
+**Solution:**
+- Notification system with multiple channels (terminal, command, hooks)
+- Only notify for actionable events (approval, error, question)
+- Do NOT notify for informational events (subagent done, idle, processing)
+- Configurable via TOML (enable/disable, channels, custom commands)
+
+**Actions:**
+- [ ] Design notification architecture (event detection, channel dispatch)
+- [ ] Implement terminal notifications (visual bell/flash)
+- [ ] Implement command execution (`notify-send`, `osascript`, custom)
+- [ ] Implement hook system (callback scripts per event type)
+- [ ] Add config options to Config struct and TOML
+- [ ] Event filtering: only approval_needed, agent_error, user_question
+- [ ] Test: agent approval → notification fires
+- [ ] Test: subagent done → NO notification
+- [ ] Document in README.md and config reference
+
+**Config example:**
+```toml
+[notifications]
+enabled = true
+channels = ["terminal", "command"]
+command = "notify-send 'tmuxcc' '{message}'"
+
+[[notifications.hook]]
+event = "approval_needed"
+script = "/path/to/notify.sh"
+```
+
+### 7. Enhanced Process Detection (Parent + Tree + Content)
+**Status:** 💡 Feature Request
+**Problem:** Current detection only checks process command → misses agents in wrappers/shells
+**Use case:** Agent launched via wrapper script → current detection fails
+**Solution:**
+- Multi-strategy detection with fallback chain
+- Detect parent process (agent wrapper)
+- Scan process tree (entire hierarchy)
+- Content-based AI type detection (parse output for Claude/Gemini/Codex patterns)
+
+**Actions:**
+- [ ] Research: how to get parent PID and process tree on Linux/macOS
+- [ ] Implement parent process detection in PaneInfo
+- [ ] Implement process tree scanning (recursive parent/child)
+- [ ] Implement content-based AI type detection (regex patterns per AI)
+- [ ] Update ParserRegistry to use enhanced detection
+- [ ] Add detection strategy config (enable/disable strategies)
+- [ ] Test: agent in wrapper → detected correctly
+- [ ] Test: content-based detection → correct AI type identified
+- [ ] Document detection strategies in README.md
+
+### 8. AI-Specific Control Configuration
+**Status:** 💡 Feature Request
+**Problem:** All AI agents use same key bindings (Y/N) → not flexible for different AI types
+**Use case:** Claude uses Y/N, Gemini uses A/R, custom AI uses different workflow
+**Solution:**
+- Define AI profiles in config with custom key bindings
+- Per-AI approval workflows (single-key vs confirmation)
+- Custom actions/commands per AI type
+
+**Actions:**
+- [ ] Design AI profile config schema (TOML format)
+- [ ] Add `ai_profiles` to Config struct
+- [ ] Implement AI profile matching (agent type → profile)
+- [ ] Update key handling to use AI-specific bindings
+- [ ] Support custom approval workflows per AI
+- [ ] Add AI-specific action definitions
+- [ ] Test: Claude agent → Y/N keys work
+- [ ] Test: Gemini agent → A/R keys work (if configured)
+- [ ] Document AI profiles in config reference
+
+**Config example:**
+```toml
+[[ai_profile]]
+name = "claude-code"
+approval_keys = { yes = "y", no = "n" }
+requires_confirmation = false
+
+[[ai_profile]]
+name = "gemini"
+approval_keys = { approve = "a", reject = "r" }
+requires_confirmation = true
+```
+
+### 9. Configurable Action Menus per Session
+**Status:** 💡 Feature Request - COMPLEX SYSTEM (See TODO-MENU.md)
+
+**Problem:** No way to define custom actions/workflows for specific sessions
+
+**Vision:** Powerful action system with variables, inputs, screen capture, editor, and bash pipelines
+
+**Full specification:** See [TODO-MENU.md](TODO-MENU.md) for complete details including:
+- Variable system (`${SESSION_DIR}`, `${TMP}`, etc.)
+- Input mechanisms (`@{INPUT_LINE}`, `@{SCREEN}`, `@{EDITOR}`)
+- Pipeline execution with bash support
+- 5 implementation phases
+- Config examples and technical challenges
+
 ---
 
 ## Notes
