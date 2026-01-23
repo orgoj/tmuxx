@@ -224,6 +224,45 @@ tcc
 
 ---
 
+## Summary View
+
+TmuxCC can display a structured summary of Claude Code activity in a two-column layout (toggle with `s` key):
+
+### Left Column - TODOs
+
+Shows task checkboxes created by Claude Code's built-in task management system:
+
+- `☐` Task title - Pending task
+- `☑` Task title - Completed task
+
+**How tasks are created:** When Claude Code uses its `TaskCreate`, `TaskList`, or `TaskUpdate` tools during a session, it displays task markers in the terminal output. TmuxCC parses these markers from the pane content and displays them in the summary view.
+
+**Example:** If you ask Claude Code to "Create tasks to track implementation steps", it will use TaskCreate and display:
+```
+☐ Research library options
+☐ Write implementation
+☐ Add tests
+```
+
+TmuxCC automatically captures and displays these in the TODO column.
+
+### Right Column - Activity
+
+Shows current agent activity and recent tool usage:
+
+- **Current Activity** (`✽`): What the agent is currently doing
+- **Recent Tools** (`⏺`): Last few tool executions (Read, Edit, Bash, etc.)
+
+### Toggle Summary View
+
+Press `s` or `S` to toggle between:
+- Full summary view (TODOs + Activity)
+- Compact view (status only)
+
+**Note:** The summary view currently works best with Claude Code, as it uses specific output markers. Other agents show basic status information.
+
+---
+
 ## Configuration
 
 TmuxCC uses a TOML configuration file.
