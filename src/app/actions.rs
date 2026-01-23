@@ -1,3 +1,5 @@
+use super::key_binding::KillMethod;
+
 /// Actions that can be performed in the application
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Action {
@@ -65,6 +67,10 @@ pub enum Action {
     ScrollUp,
     /// Scroll down in sidebar
     ScrollDown,
+    /// Send custom keys to agent pane
+    SendKeys(String),
+    /// Kill application in agent pane
+    KillApp { method: KillMethod },
     /// No action (used for unbound keys)
     None,
 }
@@ -105,6 +111,8 @@ impl Action {
             Action::SelectAgent(_) => "Select agent",
             Action::ScrollUp => "Scroll up",
             Action::ScrollDown => "Scroll down",
+            Action::SendKeys(_) => "Send keys to pane",
+            Action::KillApp { .. } => "Kill application",
             Action::None => "",
         }
     }

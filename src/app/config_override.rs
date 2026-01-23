@@ -1,5 +1,6 @@
 use anyhow::{anyhow, Result};
 
+use super::key_binding::{KeyAction, KillMethod, NavAction};
 use super::Config;
 
 /// Represents a configuration override from CLI
@@ -11,6 +12,7 @@ pub enum ConfigOverride {
     DebugMode(bool),
     TruncateLongLines(bool),
     MaxLineWidth(Option<u16>),
+    KeyBinding(String, KeyAction),
 }
 
 impl ConfigOverride {
@@ -66,8 +68,18 @@ impl ConfigOverride {
                 };
                 Ok(ConfigOverride::MaxLineWidth(val))
             }
+            s if s.starts_with("keybindings.") || s.starts_with("kb.") => {
+                let key = if let Some(k) = normalized_key.strip_prefix("keybindings.") {
+                    k
+                } else {
+                    normalized_key.strip_prefix("kb.").unwrap()
+                };
+
+                let action = parse_key_action(value)?;
+                Ok(ConfigOverride::KeyBinding(key.to_string(), action))
+            }
             _ => Err(anyhow!(
-                "Unknown config key: '{}'. Valid keys: poll_interval_ms, capture_lines, show_detached_sessions, debug_mode, truncate_long_lines, max_line_width",
+                "Unknown config key: '{}'. Valid keys: poll_interval_ms, capture_lines, show_detached_sessions, debug_mode, truncate_long_lines, max_line_width, keybindings.KEY (or kb.KEY)",
                 key
             )),
         }
@@ -82,7 +94,54 @@ impl ConfigOverride {
             ConfigOverride::DebugMode(val) => config.debug_mode = val,
             ConfigOverride::TruncateLongLines(val) => config.truncate_long_lines = val,
             ConfigOverride::MaxLineWidth(val) => config.max_line_width = val,
+            ConfigOverride::KeyBinding(key, action) => {
+                config.key_bindings.bindings.insert(key, action);
+            }
         }
+    }
+}
+
+/// Parse a key action from a string value
+fn parse_key_action(value: &str) -> Result<KeyAction> {
+    match value {
+        "approve" => Ok(KeyAction::Approve),
+        "reject" => Ok(KeyAction::Reject),
+        "approve_all" => Ok(KeyAction::ApproveAll),
+        s if s.starts_with("send_number:") => {
+            let num = s
+                .strip_prefix("send_number:")
+                .unwrap()
+                .parse::<u8>()
+                .map_err(|_| anyhow!("Invalid number for send_number"))?;
+            if num > 9 {
+                return Err(anyhow!("send_number must be 0-9"));
+            }
+            Ok(KeyAction::SendNumber(num))
+        }
+        s if s.starts_with("send_keys:") => {
+            let keys = s.strip_prefix("send_keys:").unwrap().to_string();
+            Ok(KeyAction::SendKeys(keys))
+        }
+        s if s.starts_with("kill_app:") => {
+            let method = match s.strip_prefix("kill_app:").unwrap() {
+                "sigterm" => KillMethod::Sigterm,
+                "ctrlc_ctrld" => KillMethod::CtrlCCtrlD,
+                _ => return Err(anyhow!("Invalid kill method, use 'sigterm' or 'ctrlc_ctrld'")),
+            };
+            Ok(KeyAction::KillApp { method })
+        }
+        s if s.starts_with("navigate:") => {
+            let nav = match s.strip_prefix("navigate:").unwrap() {
+                "next_agent" => NavAction::NextAgent,
+                "prev_agent" => NavAction::PrevAgent,
+                _ => return Err(anyhow!("Invalid navigation action, use 'next_agent' or 'prev_agent'")),
+            };
+            Ok(KeyAction::Navigate(nav))
+        }
+        _ => Err(anyhow!(
+            "Invalid key action: '{}'. Valid formats: approve, reject, approve_all, send_number:N, send_keys:KEYS, kill_app:METHOD, navigate:ACTION",
+            value
+        )),
     }
 }
 

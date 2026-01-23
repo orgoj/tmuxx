@@ -2,7 +2,7 @@ use anyhow::{Context, Result};
 use std::process::Command;
 
 use super::pane::PaneInfo;
-use crate::app::Config;
+use crate::app::{Config, KillMethod};
 
 /// Client for interacting with tmux
 pub struct TmuxClient {
@@ -158,6 +158,47 @@ impl TmuxClient {
         }
 
         Ok(())
+    }
+
+    /// Kill application in target pane
+    pub fn kill_application(&self, target: &str, method: &KillMethod) -> Result<()> {
+        match method {
+            KillMethod::Sigterm => {
+                // Get PID of process in pane
+                let output = Command::new("tmux")
+                    .args(["display-message", "-t", target, "-p", "#{pane_pid}"])
+                    .output()
+                    .context("Failed to get pane PID")?;
+
+                if !output.status.success() {
+                    anyhow::bail!("Could not get pane PID for {}", target);
+                }
+
+                let pid_str = String::from_utf8(output.stdout)?;
+                let pid = pid_str
+                    .trim()
+                    .parse::<i32>()
+                    .context("Failed to parse PID")?;
+
+                // Send SIGTERM and check result
+                let result = unsafe { libc::kill(pid, libc::SIGTERM) };
+                if result == -1 {
+                    return Err(anyhow::anyhow!(
+                        "Failed to send SIGTERM to PID {}: {}",
+                        pid,
+                        std::io::Error::last_os_error()
+                    ));
+                }
+                Ok(())
+            }
+            KillMethod::CtrlCCtrlD => {
+                // Send Ctrl-C then Ctrl-D sequence
+                self.send_keys(target, "C-c")?;
+                std::thread::sleep(std::time::Duration::from_millis(100));
+                self.send_keys(target, "C-d")?;
+                Ok(())
+            }
+        }
     }
 
     /// Check if running inside tmux

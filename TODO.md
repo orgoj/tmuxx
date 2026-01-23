@@ -71,61 +71,38 @@
 
 
 ### 3. Focus key 'f' - Outside Tmux Support
-**Status:** ✅ SOLVED WITH SIMPLER APPROACH (2026-01-23)
+**Status:** ⚠️ WORKAROUND IMPLEMENTED - Needs proper solution
 
-**What works:**
+**Current status:**
 - ✅ Inside tmux, same session - works
 - ✅ Inside tmux, cross-session - works (switch-client)
-- ✅ Outside tmux - solved with **wrapper script** (simpler than terminal launcher)
+- ⚠️ Outside tmux - **temporary workaround** with wrapper script
 
-**Solution:** Wrapper script `scripts/tmuxcc-wrapper.sh`
+**Temporary solution:** Wrapper script `scripts/tmuxcc-wrapper.sh`
 - Automatically ensures tmuxcc ALWAYS runs inside tmux session `tmuxcc`
 - If session doesn't exist, creates it
 - If running inside tmux: switch-client to tmuxcc session
 - If running outside tmux: attach to tmuxcc session
-- Eliminates "outside tmux" problem completely
+- Eliminates "outside tmux" problem but is not elegant
 
-**Usage:**
-```bash
-# Symlink to ~/bin
-ln -sf $(pwd)/scripts/tmuxcc-wrapper.sh ~/bin/tcc
+**Proper solution needed:**
+- Detect terminal emulator (kitty, alacritty, etc.)
+- Launch platform-specific command to open new terminal
+- Attach to target tmux session in that new terminal
+- Eliminate need for wrapper script
 
-# Run wrapper instead of direct tmuxcc
-tcc
-```
-
-**Note:** Original plan (Step 6) with platform-specific terminal launcher is UNNECESSARY.
-Wrapper script is simpler, more reliable, and cross-platform.
+**Why wrapper is provisional:**
+- User must remember to use `tcc` instead of `tmuxcc`
+- Not intuitive for new users
+- Better: `tmuxcc` detects outside-tmux and launches terminal automatically
 
 **Files:**
-- `scripts/tmuxcc-wrapper.sh` - wrapper script
-- `README.md` - usage documentation
+- `scripts/tmuxcc-wrapper.sh` - temporary wrapper script
+- `README.md` - documents workaround usage
 
 
-### 4. Preview pane shows end incorrectly - missing Claude prompts
-**Status:** ✅ IMPLEMENTED - Waiting for runtime test (2026-01-23)
-
-**Problem:** Session preview doesn't show end of pane content → approval prompts/menus not visible
-**Root cause:** Text wrapping causes long lines to consume multiple display rows → bottom content is off-screen
-
-**Solution implemented:**
-- ✅ Smart line truncation instead of wrapping
-- ✅ Truncate to terminal width with Unicode-safe logic
-- ✅ Preserve important markers ([y/n], approve, reject) - never truncated
-- ✅ Configurable: `truncate_long_lines` (default: true), `max_line_width` (default: terminal width)
-- ✅ Config override: `--set truncate:false` for backward compatibility
-- ✅ Increased capture_lines: 100 → 200 for better coverage
-- ✅ Build passes, clippy clean, formatted
-
-**Waiting for test:**
-- [ ] Runtime verification: navigate to agent with long lines
-- [ ] Verify: approval prompts visible at bottom of preview
-- [ ] Verify: truncation indicator "…" on long lines
-- [ ] Test: `--set truncate:false` restores wrapping behavior
-
-
-### 5. Modal input dialog with text editor
-**Status:** ✅ Library selected - Ready to implement
+### 4. Modal input dialog with text editor
+**Status:** 💡 Ready to implement - Library selected
 **Actions:**
 - [ ] Add tui-textarea to Cargo.toml
 - [ ] Study popup_placeholder.rs example from library
@@ -149,7 +126,7 @@ Wrapper script is simpler, more reliable, and cross-platform.
 tui-textarea = "*"
 ```
 
-### 6. Statusline for session + move input to modal dialog
+### 5. Statusline for session + move input to modal dialog
 **Status:** 🎨 UI Enhancement
 **Problem:** Input buffer takes space where statusline for session could be
 **Solution:**

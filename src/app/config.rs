@@ -3,6 +3,7 @@ use serde::{Deserialize, Serialize};
 use std::path::PathBuf;
 
 use super::config_override::ConfigOverride;
+use super::key_binding::KeyBindings;
 
 /// Application configuration
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -34,6 +35,10 @@ pub struct Config {
     /// Custom agent patterns (command -> agent type mapping)
     #[serde(default)]
     pub agent_patterns: Vec<AgentPattern>,
+
+    /// Key bindings configuration
+    #[serde(default)]
+    pub key_bindings: KeyBindings,
 }
 
 fn default_poll_interval() -> u64 {
@@ -75,6 +80,7 @@ impl Default for Config {
             truncate_long_lines: default_truncate_long_lines(),
             max_line_width: None,
             agent_patterns: Vec::new(),
+            key_bindings: KeyBindings::default(),
         }
     }
 }
@@ -188,5 +194,13 @@ mod tests {
         assert!(config
             .apply_override("show_detached_sessions", "invalid")
             .is_err());
+    }
+
+    #[test]
+    fn test_key_bindings_included() {
+        let config = Config::default();
+        // Verify key_bindings field exists and has defaults
+        assert!(config.key_bindings.get_action("y").is_some());
+        assert!(config.key_bindings.get_action("n").is_some());
     }
 }

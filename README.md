@@ -273,8 +273,11 @@ TmuxCC uses a TOML configuration file.
 ### Initialize Config
 
 ```bash
-# Create default config file
+# Option 1: Create default config file
 tmuxcc --init-config
+
+# Option 2: Copy example config and customize
+cp config.example.toml ~/.config/tmuxcc/config.toml
 
 # Show config file location
 tmuxcc --show-config-path
@@ -340,7 +343,38 @@ agent_type = "Python"
 [[agent_patterns]]
 pattern = "vim|nvim"
 agent_type = "Editor"
+
+# Key bindings configuration (optional)
+# Configure which keys trigger which actions
+[key_bindings]
+y = "approve"                          # Approve request
+n = "reject"                           # Reject request
+a = "approve_all"                      # Approve all pending
+"0" = { send_number = 0 }             # Send number choice
+"1" = { send_number = 1 }
+"2" = { send_number = 2 }
+"3" = { send_number = 3 }
+"4" = { send_number = 4 }
+"5" = { send_number = 5 }
+"6" = { send_number = 6 }
+"7" = { send_number = 7 }
+"8" = { send_number = 8 }
+"9" = { send_number = 9 }
+E = { send_keys = "Escape" }          # Send ESC key
+C = { send_keys = "C-c" }             # Send Ctrl-C
+D = { send_keys = "C-d" }             # Send Ctrl-D
+K = { kill_app = { method = "sigterm" } }  # Kill with SIGTERM
+# or: K = { kill_app = { method = "ctrlc_ctrld" } }  # Ctrl-C then Ctrl-D
 ```
+
+**Valid tmux key names for send_keys:**
+- Special keys: `Escape`, `Enter`, `Tab`, `BSpace` (backspace), `Space`
+- Control sequences: `C-c` (Ctrl-C), `C-d` (Ctrl-D), `C-z` (Ctrl-Z), etc.
+- Function keys: `F1`, `F2`, ..., `F12`
+- Arrow keys: `Up`, `Down`, `Left`, `Right`
+- Other: `Home`, `End`, `PageUp`, `PageDown`, `Insert`, `Delete`
+
+See `man tmux` section on `send-keys` for complete list.
 
 **Pattern Matching:**
 - Use `*` for wildcard (matches everything)
@@ -380,8 +414,38 @@ tmuxcc --set poll_interval=1000 --set showdetached=false
 - `debug_mode` (or `debug`) - Enable/disable debug logging in the TUI
 - `truncate_long_lines` (or `truncate`) - Enable/disable line truncation in preview
 - `max_line_width` (or `linewidth`) - Max line width for truncation (number or 'none')
+- `keybindings.KEY` (or `kb.KEY`) - Map key to action (see below)
 
-**Key normalization:** Underscores and hyphens are ignored, case-insensitive
+**Key binding overrides:**
+```bash
+# Change E key to send Escape
+tmuxcc --set kb.E=send_keys:Escape
+
+# Change K key to kill with SIGTERM
+tmuxcc --set kb.K=kill_app:sigterm
+
+# Change K key to kill with Ctrl-C+Ctrl-D
+tmuxcc --set kb.K=kill_app:ctrlc_ctrld
+
+# Remap y key to reject
+tmuxcc --set kb.y=reject
+
+# Send custom key sequence
+tmuxcc --set kb.X=send_keys:C-z
+```
+
+**Valid action formats:**
+- `approve` - Approve current/selected agent(s)
+- `reject` - Reject current/selected agent(s)
+- `approve_all` - Approve all pending requests
+- `send_number:N` - Send number choice (0-9)
+- `send_keys:KEYS` - Send tmux key sequence (e.g., `Escape`, `C-c`, `Enter`)
+- `kill_app:sigterm` - Kill app with SIGTERM (graceful)
+- `kill_app:ctrlc_ctrld` - Kill app with Ctrl-C+Ctrl-D (forced)
+- `navigate:next_agent` - Navigate to next agent
+- `navigate:prev_agent` - Navigate to previous agent
+
+**Key normalization:** Underscores and hyphens are ignored, case-insensitive (except for key names themselves which are case-sensitive)
 
 ---
 

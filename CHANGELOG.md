@@ -8,6 +8,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **Fully Configurable Key Bindings** - All approval keys (y/n/a) and custom action keys now configurable via `[key_bindings]` in config.toml
+  - Default bindings: y=approve, n=reject, a=approve_all, 0-9=send_number, E=ESC, C=Ctrl-C, D=Ctrl-D, K=kill
+  - Support for custom `send_keys` actions to send arbitrary key sequences to tmux panes (e.g., Escape, C-c, C-d, Enter, etc.)
+  - Support for `kill_app` action with two methods:
+    - `sigterm` - Send SIGTERM to process (graceful shutdown, default for K key)
+    - `ctrlc_ctrld` - Send Ctrl-C then Ctrl-D sequence (forced interrupt)
+  - CLI override support: `--set kb.KEY=ACTION` (e.g., `--set kb.E=send_keys:Escape`, `--set kb.K=kill_app:ctrlc_ctrld`)
+  - New config module: `src/app/key_binding.rs` with `KeyAction`, `KeyBindings`, `KillMethod` types
+  - HashMap-based flexible key binding storage for easy customization
+  - Number keys (0-9) explicitly configurable per user request
+- **Dynamic Help System** - Help text (?) now displays actual configured keys, not hardcoded defaults
+  - Help dynamically generated from `config.key_bindings`
+  - Shows all custom send_keys and kill_app bindings
+  - Updates automatically when config changes
+- **Dynamic Footer Buttons** - Footer shows configured key labels, updates when config changes
+  - Button labels read from config at runtime
+  - Applies to y/n/a buttons (approve/reject/approve_all)
 - **Preview Truncation** - Smart line truncation to show approval prompts at bottom
   - Long lines now truncated instead of wrapped, ensuring bottom content visible
   - New config option: `truncate_long_lines` (default: true) to enable/disable truncation
@@ -45,6 +62,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Updated keyboard shortcuts documentation
 
 ### Changed
+- **Action enum** - Added `SendKeys(String)` and `KillApp { method: KillMethod }` variants
+- **Key handling** - `map_key_to_action()` now accepts `&Config` parameter and checks configured bindings before hardcoded fallbacks
+- **TmuxClient** - Added `kill_application()` method supporting SIGTERM and Ctrl-C+Ctrl-D kill methods
+- **HelpWidget** - `render()` signature changed to accept `&Config`, builds help text dynamically
+- **FooterWidget** - `get_button_layout()` returns `Vec<(String, ...)>` instead of `Vec<(&'static str, ...)>`, accepts `&Config` parameter
+- **FooterWidget** - `render()` and `hit_test()` signatures changed to accept `&Config` parameter
+- Arrow keys (↓/↑) remain as fallback navigation even if j/k remapped (safety feature)
 - `TmuxClient` constructor changed to accept full `Config` reference via `from_config()`
 - Session filtering now applied in `TmuxClient::list_panes()` based on `show_detached_sessions`
 - CLI argument processing now supports multiple `--set` overrides applied after config load
@@ -58,6 +82,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Custom agent types display correctly in UI with proper colors
 
 ### Technical Details
+- New file: `src/app/key_binding.rs` - Key binding data model (`KeyAction`, `KeyBindings`, `KillMethod`, `NavAction`)
+- Modified: `src/app/config.rs` - Added `key_bindings: KeyBindings` field to Config struct
+- Modified: `src/app/config_override.rs` - Added `KeyBinding(String, KeyAction)` variant, `parse_key_action()` helper
+- Modified: `src/app/actions.rs` - Added `SendKeys(String)` and `KillApp { method: KillMethod }` action variants
+- Modified: `src/app/mod.rs` - Re-export key_binding types
+- Modified: `src/ui/app.rs` - Updated `map_key_to_action()` to use config, added handlers for SendKeys/KillApp actions
+- Modified: `src/tmux/client.rs` - Added `kill_application()` method with SIGTERM and Ctrl-C+Ctrl-D support
+- Modified: `src/ui/components/help.rs` - Refactored to accept Config, build help dynamically
+- Modified: `src/ui/components/footer.rs` - Changed return type to String, accept Config, dynamic button labels
+- Added dependency: `libc = "0.2"` for SIGTERM support
 - New file: `src/app/config_override.rs` - Config override parsing with alias support
 - Modified: `src/app/config.rs` - Added `show_detached_sessions` field and `apply_override()` method
 - Modified: `src/tmux/client.rs` - Added `show_detached_sessions` field, `from_config()` constructor, session filtering

@@ -1,0 +1,67 @@
+# Example tmuxcc Configuration
+# Copy this file to ~/.config/tmuxcc/config.toml and customize
+#
+# This example shows custom key bindings:
+# - j/k send arrow keys to agent (instead of navigating in tmuxcc)
+# - Use arrow keys ↓/↑ or Tab for navigation in tmuxcc
+# - E/C/D send special keys (Escape, Ctrl-C, Ctrl-D)
+# - K kills application in selected pane
+
+# Polling interval in milliseconds
+poll_interval_ms = 500
+
+# Number of lines to capture from each pane
+capture_lines = 200
+
+# Whether to show detached tmux sessions
+show_detached_sessions = true
+
+# Enable debug logging in TUI
+debug_mode = false
+
+# Line truncation in preview (recommended: true)
+truncate_long_lines = true
+
+# Agent patterns - monitor all panes
+[[agent_patterns]]
+pattern = "*"
+agent_type = "All Panes"
+
+# Key bindings configuration
+[key_bindings]
+# Approval keys - uppercase only (lowercase commented out)
+# Uncomment lowercase if you want both y/Y to work
+# y = "approve"
+Y = "approve"
+# n = "reject"
+N = "reject"
+# a = "approve_all"
+A = "approve_all"
+
+# Navigation: j/k send arrow keys to tmux pane instead of navigating
+# Use arrow keys ↓/↑ or Tab for navigation in tmuxcc UI
+j = { send_keys = "Down" }
+k = { send_keys = "Up" }
+
+# Number choices - send to agent for menu selection
+"0" = { send_number = 0 }
+"1" = { send_number = 1 }
+"2" = { send_number = 2 }
+"3" = { send_number = 3 }
+"4" = { send_number = 4 }
+"5" = { send_number = 5 }
+"6" = { send_number = 6 }
+"7" = { send_number = 7 }
+"8" = { send_number = 8 }
+"9" = { send_number = 9 }
+
+# Special keys - send to tmux pane (all uppercase for consistency)
+E = { send_keys = "Escape" }
+M = { send_keys = "Enter" }
+C = { send_keys = "C-c" }
+D = { send_keys = "C-d" }
+
+# Kill application in pane (SIGTERM - graceful shutdown)
+K = { kill_app = { method = "sigterm" } }
+# Alternative: forced kill with Ctrl-C + Ctrl-D
+# K = { kill_app = { method = "ctrlc_ctrld" } }

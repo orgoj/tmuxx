@@ -151,6 +151,8 @@ Parsers check ALL detection strings to handle various detection scenarios.
 4. **Child Process Detection**: Agents run in shells need child process scanning
 5. **Multi-byte Characters**: Use `safe_tail()` helper for safe string slicing
 6. **Upstream Data Problems**: When a feature "doesn't work", check if upstream data exists FIRST (e.g., agent detection before testing focus functionality)
+7. **Config Integration Completeness**: When adding config options, verify they're actually used in implementation code, not just defined in Config struct
+8. **Ratatui Paragraph Wrapping**: To disable wrapping, omit `.wrap()` call entirely; don't use `Wrap { trim: true }` which controls trimming, not wrapping
 
 ## Development Workflow
 
@@ -212,9 +214,18 @@ Parsers check ALL detection strings to handle various detection scenarios.
 - **Check upstream problems**: Feature failures often indicate missing input data, not broken feature logic
 - **Integrate related problems**: Multiple related issues → ONE cohesive plan, not separate fixes or replacements
 
+### Plan Review and Correction Cycles
+
+- When creating implementation plans, include explicit code patterns, not just high-level descriptions
+- Expect user technical review to catch edge cases (off-by-one, API misuse, config integration)
+- User provides precise corrections with exact code examples - apply them before implementation
+- For complex bugs/features: use Task tool Explore → Plan workflow, expect user review phase before implementation begins
+- Before committing features: verify README documents user-facing behavior, CHANGELOG.md has entry, config options are documented
+
 ### Key Principles from tmuxclai-arch
 
 - **Unicode Safety**: Use `unicode-width` crate for text truncation, NEVER use byte slicing `&str[..n]`
+- **Unicode text truncation**: Always check `current_width + char_width <= target` BEFORE adding character to avoid wide character off-by-one errors
 - **Temporary files**: Use `./tmp/` in project, never system `/tmp/`
 - **Code duplication**: ZERO TOLERANCE - consolidate duplicate methods/structures
 - **tmux commands**: ALWAYS verify behavior manually before coding assumptions

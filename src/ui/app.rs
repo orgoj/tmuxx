@@ -14,7 +14,7 @@ use crossterm::{
 use ratatui::{backend::CrosstermBackend, Terminal};
 use tokio::sync::mpsc;
 
-use crate::app::{Action, AppState, Config};
+use crate::app::{Action, AppState, Config, KeyAction, NavAction};
 use crate::monitor::{MonitorTask, SystemStatsCollector};
 use crate::parsers::ParserRegistry;
 use crate::tmux::TmuxClient;
@@ -148,11 +148,11 @@ async fn run_loop(
             }
 
             // Footer
-            FooterWidget::render(frame, main_chunks[2], state);
+            FooterWidget::render(frame, main_chunks[2], state, &state.config);
 
             // Help overlay
             if state.show_help {
-                HelpWidget::render(frame, size);
+                HelpWidget::render(frame, size, &state.config);
             }
         })?;
 
@@ -194,7 +194,7 @@ async fn run_loop(
                                 let y = mouse.row;
 
                                 // Check footer button clicks first
-                                if let Some(button) = FooterWidget::hit_test(x, y, footer_area, state) {
+                                if let Some(button) = FooterWidget::hit_test(x, y, footer_area, state, &state.config) {
                                     use super::components::FooterButton;
                                     match button {
                                         FooterButton::Approve => {
@@ -286,7 +286,7 @@ async fn run_loop(
 
                     // Handle keyboard events
                     if let Event::Key(key) = event {
-                        let action = map_key_to_action(key.code, key.modifiers, state);
+                        let action = map_key_to_action(key.code, key.modifiers, state, &state.config);
 
                         match action {
                             Action::Quit => {
@@ -453,6 +453,32 @@ async fn run_loop(
                             Action::ScrollDown => {
                                 state.select_next();
                             }
+                            Action::SendKeys(keys) => {
+                                let indices = state.get_operation_indices();
+                                for idx in indices {
+                                    if let Some(agent) = state.agents.get_agent(idx) {
+                                        let target = agent.target.clone();
+                                        if let Err(e) = tmux_client.send_keys(&target, &keys) {
+                                            state.set_error(format!("Failed to send keys: {}", e));
+                                            break;
+                                        }
+                                    }
+                                }
+                                state.clear_selection();
+                            }
+                            Action::KillApp { method } => {
+                                let indices = state.get_operation_indices();
+                                for idx in indices {
+                                    if let Some(agent) = state.agents.get_agent(idx) {
+                                        let target = agent.target.clone();
+                                        if let Err(e) = tmux_client.kill_application(&target, &method) {
+                                            state.set_error(format!("Failed to kill app: {}", e));
+                                            break;
+                                        }
+                                    }
+                                }
+                                state.clear_selection();
+                            }
                             Action::None => {}
                         }
                     }
@@ -468,7 +494,12 @@ async fn run_loop(
     Ok(())
 }
 
-fn map_key_to_action(code: KeyCode, modifiers: KeyModifiers, state: &AppState) -> Action {
+fn map_key_to_action(
+    code: KeyCode,
+    modifiers: KeyModifiers,
+    state: &AppState,
+    config: &Config,
+) -> Action {
     // If help is shown, any key closes it
     if state.show_help {
         return Action::HideHelp;
@@ -494,13 +525,37 @@ fn map_key_to_action(code: KeyCode, modifiers: KeyModifiers, state: &AppState) -
         };
     }
 
-    // Sidebar focused
+    // Sidebar focused - check configured key bindings first
+    if let KeyCode::Char(c) = code {
+        let key_str = c.to_string();
+        if let Some(action) = config.key_bindings.get_action(&key_str) {
+            return match action {
+                KeyAction::Navigate(NavAction::NextAgent) => Action::NextAgent,
+                KeyAction::Navigate(NavAction::PrevAgent) => Action::PrevAgent,
+                KeyAction::Approve => Action::Approve,
+                KeyAction::Reject => Action::Reject,
+                KeyAction::ApproveAll => Action::ApproveAll,
+                KeyAction::SendNumber(n) => Action::SendNumber(*n),
+                KeyAction::SendKeys(keys) => Action::SendKeys(keys.clone()),
+                KeyAction::KillApp { method } => Action::KillApp {
+                    method: method.clone(),
+                },
+            };
+        }
+    }
+
+    // Arrow keys as fallback (always work even if j/k remapped)
+    match code {
+        KeyCode::Down => return Action::NextAgent,
+        KeyCode::Up => return Action::PrevAgent,
+        _ => {}
+    }
+
+    // Other keys remain hardcoded
     match code {
         KeyCode::Char('q') => Action::Quit,
         KeyCode::Char('c') if modifiers.contains(KeyModifiers::CONTROL) => Action::Quit,
 
-        KeyCode::Char('j') | KeyCode::Down => Action::NextAgent,
-        KeyCode::Char('k') | KeyCode::Up => Action::PrevAgent,
         KeyCode::Tab => Action::NextAgent,
 
         // Left/Right arrows for focus navigation
@@ -510,17 +565,6 @@ fn map_key_to_action(code: KeyCode, modifiers: KeyModifiers, state: &AppState) -
         // Multi-selection
         KeyCode::Char(' ') => Action::ToggleSelection,
         KeyCode::Char('a') if modifiers.contains(KeyModifiers::CONTROL) => Action::SelectAll,
-
-        // Approval
-        KeyCode::Char('y') | KeyCode::Char('Y') => Action::Approve,
-        KeyCode::Char('n') | KeyCode::Char('N') => Action::Reject,
-        KeyCode::Char('a') | KeyCode::Char('A') => Action::ApproveAll,
-
-        // Number keys for quick choice selection (1-9)
-        KeyCode::Char(c @ '1'..='9') => {
-            let num = c.to_digit(10).unwrap() as u8;
-            Action::SendNumber(num)
-        }
 
         // Focus pane with 'f'
         KeyCode::Char('f') | KeyCode::Char('F') => Action::FocusPane,
