@@ -174,11 +174,12 @@ impl AgentTreeWidget {
                         }
                     };
 
-                    let type_style = match agent.agent_type {
+                    let type_style = match &agent.agent_type {
                         AgentType::ClaudeCode => Style::default().fg(Color::Magenta),
                         AgentType::OpenCode => Style::default().fg(Color::Blue),
                         AgentType::CodexCli => Style::default().fg(Color::Green),
                         AgentType::GeminiCli => Style::default().fg(Color::Yellow),
+                        AgentType::Custom(_) => Style::default().fg(Color::Cyan),
                         AgentType::Unknown => Style::default().fg(Color::DarkGray),
                     };
 

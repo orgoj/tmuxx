@@ -140,10 +140,72 @@ impl TmuxClient {
         Ok(())
     }
 
+    /// Check if running inside tmux
+    fn is_inside_tmux() -> bool {
+        std::env::var("TMUX").is_ok()
+    }
+
+    /// Get current tmux session name (if inside tmux)
+    fn get_current_session(&self) -> Result<Option<String>> {
+        if !Self::is_inside_tmux() {
+            return Ok(None);
+        }
+
+        let output = Command::new("tmux")
+            .args(["display-message", "-p", "#S"])
+            .output()
+            .context("Failed to get current tmux session")?;
+
+        if !output.status.success() {
+            return Ok(None);
+        }
+
+        let session = String::from_utf8_lossy(&output.stdout).trim().to_string();
+        Ok(Some(session))
+    }
+
     /// Focuses on a pane by selecting its window and pane
+    ///
+    /// Supports cross-session focus when running inside tmux.
+    /// If target is in a different session, uses switch-client to change sessions.
+    /// If running outside tmux, returns an error.
     pub fn focus_pane(&self, target: &str) -> Result<()> {
-        self.select_window(target)?;
-        self.select_pane(target)?;
+        // Extract session from target (e.g., "main:0.1" -> "main")
+        let target_session = target
+            .split(':')
+            .next()
+            .ok_or_else(|| anyhow::anyhow!("Invalid target format: {}", target))?;
+
+        // Check if inside tmux
+        if !Self::is_inside_tmux() {
+            anyhow::bail!(
+                "Cannot focus pane: tmuxcc is not running inside tmux.\n\
+                 Run tmuxcc in a tmux pane to use focus (f key)"
+            );
+        }
+
+        // Get current session
+        let current_session = self
+            .get_current_session()?
+            .ok_or_else(|| anyhow::anyhow!("Could not determine current tmux session"))?;
+
+        if current_session == target_session {
+            // Same session: use existing logic
+            self.select_window(target)?;
+            self.select_pane(target)?;
+        } else {
+            // Different session: use switch-client
+            let output = Command::new("tmux")
+                .args(["switch-client", "-t", target])
+                .output()
+                .context("Failed to execute tmux switch-client")?;
+
+            if !output.status.success() {
+                let stderr = String::from_utf8_lossy(&output.stderr);
+                anyhow::bail!("tmux switch-client failed for {}: {}", target, stderr);
+            }
+        }
+
         Ok(())
     }
 }

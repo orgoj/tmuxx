@@ -42,8 +42,10 @@ TmuxCC is a TUI (Terminal User Interface) application that provides centralized 
 - **Subagent Tracking**: Monitor spawned subagents (Task tool) with their status
 - **Context Awareness**: View remaining context percentage when available
 - **Pane Preview**: See live content from selected agent's tmux pane
-- **Focus Integration**: Jump directly to any agent's pane in tmux
-- **Customizable**: Configure polling interval, capture lines, and custom agent patterns
+- **Focus Integration**: Jump directly to any agent's pane in tmux (cross-session support)
+- **Custom Agent Patterns**: Define regex patterns to detect any process as an agent
+- **Wildcard Detection**: Use `pattern = "*"` to monitor ALL tmux panes
+- **Customizable**: Configure polling interval, capture lines, and detection patterns
 
 ### Supported AI Agents
 
@@ -53,6 +55,9 @@ TmuxCC is a TUI (Terminal User Interface) application that provides centralized 
 | **OpenCode** | `opencode` command | `y` / `n` |
 | **Codex CLI** | `codex` command | `y` / `n` |
 | **Gemini CLI** | `gemini` command | `y` / `n` |
+| **Custom Agents** | User-defined regex patterns in config | Configurable |
+
+**Note:** Use custom agent patterns to monitor any process (shells, editors, build tools, etc.) - see Configuration section below.
 
 ---
 
@@ -88,6 +93,21 @@ cargo install --path .
 2. Launch TmuxCC from any terminal:
 
 ```bash
+tmuxcc
+```
+
+**Monitor ALL tmux panes:**
+
+```bash
+# Create config with wildcard pattern
+tmuxcc --init-config
+echo '
+[[agent_patterns]]
+pattern = "*"
+agent_type = "All Panes"
+' >> ~/.config/tmuxcc/config.toml
+
+# Run tmuxcc - now shows every tmux pane
 tmuxcc
 ```
 
@@ -149,6 +169,13 @@ tmuxcc --init-config
 | `Ctrl+a` | Select all agents |
 | `Esc` | Clear selection / Close popup |
 
+**Multi-Selection Workflow:**
+1. Navigate to an agent with `j`/`k` or arrow keys
+2. Press `Space` to toggle selection (checkbox appears: ☑)
+3. Repeat for other agents you want to select
+4. Press `y` to approve all selected, or `n` to reject all
+5. Press `Esc` to clear all selections
+
 ### Actions
 
 | Key | Action |
@@ -157,7 +184,7 @@ tmuxcc --init-config
 | `n` / `N` | Reject pending request(s) |
 | `a` / `A` | Approve ALL pending requests |
 | `1`-`9` | Send numbered choice to agent |
-| `f` / `F` | Focus on selected pane in tmux |
+| `f` / `F` | Focus on selected pane in tmux (supports cross-session) |
 | `Left` / `Right` | Switch focus (Sidebar / Input) |
 
 ### View
@@ -203,11 +230,44 @@ poll_interval_ms = 500
 capture_lines = 100
 
 # Custom agent patterns (optional)
-# Add patterns to detect additional AI agents
+# Patterns are matched against: command, title, cmdline, and child processes
+# Built-in agents (Claude Code, OpenCode, etc.) are detected first
+
+# Example 1: Match ALL panes (wildcard)
+# Useful for seeing every tmux pane in the dashboard
 [[agent_patterns]]
-pattern = "my-custom-agent"
-agent_type = "CustomAgent"
+pattern = "*"
+agent_type = "All Panes"
+
+# Example 2: Match specific commands
+[[agent_patterns]]
+pattern = "node"
+agent_type = "Node.js"
+
+[[agent_patterns]]
+pattern = "bash|zsh"
+agent_type = "Shell"
+
+# Example 3: Regex patterns
+[[agent_patterns]]
+pattern = "python.*"
+agent_type = "Python"
+
+# Example 4: Match by process name
+[[agent_patterns]]
+pattern = "vim|nvim"
+agent_type = "Editor"
 ```
+
+**Pattern Matching:**
+- Use `*` for wildcard (matches everything)
+- Use regex syntax for complex patterns
+- Patterns check command, window title, full cmdline, and child processes
+- Invalid regex patterns are silently ignored
+
+**Priority:**
+- Built-in parsers (Claude Code, OpenCode, etc.) match first
+- Custom patterns are checked in order of definition
 
 ---
 
@@ -251,11 +311,12 @@ tmuxcc/
 │   ├── monitor/          # Monitoring
 │   │   └── task.rs       # Async monitoring task
 │   ├── parsers/          # Agent output parsers
-│   │   ├── mod.rs        # AgentParser trait
+│   │   ├── mod.rs        # AgentParser trait, ParserRegistry
 │   │   ├── claude_code.rs
 │   │   ├── opencode.rs
 │   │   ├── codex_cli.rs
-│   │   └── gemini_cli.rs
+│   │   ├── gemini_cli.rs
+│   │   └── custom.rs     # CustomAgentParser (user-defined patterns)
 │   ├── tmux/             # tmux integration
 │   │   ├── client.rs     # TmuxClient
 │   │   └── pane.rs       # PaneInfo, process detection

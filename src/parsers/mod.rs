@@ -1,14 +1,17 @@
 mod claude_code;
 mod codex_cli;
+mod custom;
 mod gemini_cli;
 mod opencode;
 
 pub use claude_code::ClaudeCodeParser;
 pub use codex_cli::CodexCliParser;
+pub use custom::CustomAgentParser;
 pub use gemini_cli::GeminiCliParser;
 pub use opencode::OpenCodeParser;
 
 use crate::agents::{AgentStatus, AgentType, Subagent};
+use crate::app::Config;
 use crate::tmux::PaneInfo;
 
 /// Safely get the last N characters of a string (handles multi-byte chars)
@@ -67,14 +70,31 @@ pub struct ParserRegistry {
 impl ParserRegistry {
     /// Creates a new registry with all default parsers
     pub fn new() -> Self {
-        Self {
-            parsers: vec![
-                Box::new(ClaudeCodeParser::new()),
-                Box::new(OpenCodeParser::new()),
-                Box::new(CodexCliParser::new()),
-                Box::new(GeminiCliParser::new()),
-            ],
+        Self::with_config(&Config::default())
+    }
+
+    /// Creates a registry with custom patterns from config
+    ///
+    /// Built-in parsers (ClaudeCode, OpenCode, etc.) are registered first,
+    /// so they take priority over custom patterns when multiple patterns match.
+    pub fn with_config(config: &Config) -> Self {
+        let mut parsers: Vec<Box<dyn AgentParser>> = vec![
+            Box::new(ClaudeCodeParser::new()),
+            Box::new(OpenCodeParser::new()),
+            Box::new(CodexCliParser::new()),
+            Box::new(GeminiCliParser::new()),
+        ];
+
+        // Add custom parsers from config
+        for pattern_config in &config.agent_patterns {
+            if let Some(custom_parser) =
+                CustomAgentParser::new(&pattern_config.pattern, &pattern_config.agent_type)
+            {
+                parsers.push(Box::new(custom_parser));
+            }
         }
+
+        Self { parsers }
     }
 
     /// Finds a parser that matches the given pane info

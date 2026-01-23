@@ -10,29 +10,40 @@ pub enum AgentType {
     OpenCode,
     CodexCli,
     GeminiCli,
+    /// Custom agent type from user config (name stored in string)
+    Custom(String),
     Unknown,
 }
 
 impl AgentType {
     /// Returns the display name of the agent
-    pub fn display_name(&self) -> &str {
+    pub fn display_name(&self) -> String {
         match self {
-            AgentType::ClaudeCode => "Claude Code",
-            AgentType::OpenCode => "OpenCode",
-            AgentType::CodexCli => "Codex CLI",
-            AgentType::GeminiCli => "Gemini CLI",
-            AgentType::Unknown => "Unknown",
+            AgentType::ClaudeCode => "Claude Code".to_string(),
+            AgentType::OpenCode => "OpenCode".to_string(),
+            AgentType::CodexCli => "Codex CLI".to_string(),
+            AgentType::GeminiCli => "Gemini CLI".to_string(),
+            AgentType::Custom(name) => name.clone(),
+            AgentType::Unknown => "Unknown".to_string(),
         }
     }
 
     /// Returns a short name for the agent (for compact display)
-    pub fn short_name(&self) -> &str {
+    pub fn short_name(&self) -> String {
         match self {
-            AgentType::ClaudeCode => "Claude",
-            AgentType::OpenCode => "Open",
-            AgentType::CodexCli => "Codex",
-            AgentType::GeminiCli => "Gemini",
-            AgentType::Unknown => "???",
+            AgentType::ClaudeCode => "Claude".to_string(),
+            AgentType::OpenCode => "Open".to_string(),
+            AgentType::CodexCli => "Codex".to_string(),
+            AgentType::GeminiCli => "Gemini".to_string(),
+            AgentType::Custom(name) => {
+                // Abbreviate custom names to first 6 chars
+                if name.len() > 6 {
+                    format!("{}...", &name[..6])
+                } else {
+                    name.clone()
+                }
+            }
+            AgentType::Unknown => "???".to_string(),
         }
     }
 }

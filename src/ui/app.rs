@@ -39,7 +39,7 @@ pub async fn run_app(config: Config) -> Result<()> {
 
     // Create tmux client and parser registry
     let tmux_client = Arc::new(TmuxClient::with_capture_lines(config.capture_lines));
-    let parser_registry = Arc::new(ParserRegistry::new());
+    let parser_registry = Arc::new(ParserRegistry::with_config(&config));
 
     // Check if tmux is available
     if !tmux_client.is_available() {

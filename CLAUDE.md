@@ -157,12 +157,16 @@ Parsers check ALL detection strings to handle various detection scenarios.
 
 - **Test sessions**: `cc-test` (main TUI test), `cc-tmuxcc` (this app testing), or create custom with scripts
 - **Test scripts**:
-  - `scripts/cp-bin.sh` - Install tmuxcc to ~/bin after build
+  - `scripts/cp-bin.sh` - Install tmuxcc to ~/bin after build (DON'T USE - user has working version there!)
   - `scripts/reload-test.sh` - Reload tmuxcc in ct-test session
   - `scripts/start-test-session.sh` - Start ct-test session
   - `scripts/setup-multi-test.sh` - Setup ct-multi session with multiple windows
-- **NEVER claim completion without runtime verification** - visual verification mandatory for UI features
-- **Testing is implementer's responsibility** - NEVER ask user to test your work
+- **CRITICAL: YOU test yourself using tmux-automation skill!**
+  - Use `./target/release/tmuxcc` for testing (never cp-bin.sh)
+  - Use `scripts/reload-test.sh` to reload tmuxcc in ct-test session
+  - Use tmux-automation skill to interact with TUI and verify behavior
+  - **NEVER ask user to test** - testing is YOUR responsibility
+  - **NEVER claim completion without runtime verification** - visual verification mandatory for UI features
 - **NEVER kill test sessions!** Use scripts to reload, not kill and recreate
 
 ### Key Principles from tmuxclai-arch
@@ -219,6 +223,12 @@ mcp__rtfmbro__get_documentation_tree package="ratatui/ratatui" version="==0.29" 
 2. **Implementation from memory**: Research current docs, don't guess
 3. **Testing in wrong environment**: Use ct-multi (5 windows) for multi-window features
 4. **Over-engineering**: Remove complexity instead of fixing it when possible
+5. **NEVER edit config files without explicit user permission** - Only create/modify ~/.config/tmuxcc/* when user explicitly asks for it
+
+### Git Workflow
+
+- **ALWAYS use `git add -A`** unless explicitly told otherwise by user
+- When staging files, prefer adding specific files by name is WRONG - use `git add -A`
 
 ## Project Context
 

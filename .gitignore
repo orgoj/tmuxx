@@ -33,3 +33,6 @@ logs/
 
 # Debug files
 *.dSYM/
+
+# Temporary files
+tmp/

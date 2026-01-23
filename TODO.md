@@ -1,27 +1,86 @@
 # TODO - tmuxcc
 
+## Completed Tasks ✅
+
+### Custom Agent Patterns & Detection
+**Status:** ✅ HOTOVO (2026-01-23)
+**Implementace:**
+- ✅ CustomAgentParser s regex matching
+- ✅ Wildcard pattern `*` pro všechny panes
+- ✅ Config integration (agent_patterns v TOML)
+- ✅ AgentType::Custom(String) variant
+- ✅ Priority: built-in parsers first, pak custom patterns
+- ✅ Documentation v README.md
+- ✅ Testováno: wildcard detekuje všechny panes
+
+**Soubory změněny:**
+- `src/parsers/custom.rs` - nový CustomAgentParser
+- `src/parsers/mod.rs` - ParserRegistry.with_config()
+- `src/agents/types.rs` - AgentType::Custom variant
+- `src/ui/app.rs` - předání config do registry
+- `src/ui/components/agent_tree.rs` - Custom color handling
+
+### Cross-Session Focus (klávesa 'f' uvnitř tmux)
+**Status:** ✅ HOTOVO (2026-01-23)
+**Implementace:**
+- ✅ Detekce current vs target session
+- ✅ Same-session: select-window + select-pane
+- ✅ Cross-session: tmux switch-client
+- ✅ Error když běží mimo tmux
+- ✅ Testováno: z ct-test do cc-tmuxcc funguje
+
+**Soubory změněny:**
+- `src/tmux/client.rs` - focus_pane() s cross-session support
+
+---
+
 ## Priority Tasks
 
+### 1. Focus klávesa 'f' - Outside Tmux Support
+**Status:** ⚠️ ČÁSTEČNĚ HOTOVO
+**Co funguje:**
+- ✅ Inside tmux, same session - funguje
+- ✅ Inside tmux, cross-session - funguje (switch-client)
+**Co chybí:**
+- ❌ Outside tmux - pouze error message, nespustí terminal
 
-### 1. Fix klávesy 'f' - neotvírá tmux session
-**Status:** 🐛 Bug
-**Problém:** Klávesa `f` má fokusovat/přepnout do vybrané tmux session, ale nefunguje
+**Problém:** Když tmuxcc běží MIMO tmux, klávesa `f` jen ukáže error
+**Požadované chování:**
+- Detekovat OS a terminal emulator
+- Spustit nový terminal s `tmux attach -t session:window.pane`
+- Platform-specific:
+  - macOS: iTerm2, Terminal.app (via osascript)
+  - Linux: gnome-terminal, konsole, alacritty, kitty
+  - Windows/WSL2: wezterm, windows terminal
+
 **Akce:**
-- [ ] Debug: zjistit proč `f` key handler nefunguje
-- [ ] Otestovat tmux send-keys/attach mechanismus
-- [ ] Opravit a ověřit že funguje focus na vybranou session
+- [ ] Implementovat terminal detection (macOS: $TERM_PROGRAM, Linux: fallback list)
+- [ ] Platform-specific terminal launching:
+  - [ ] macOS: osascript pro iTerm2/Terminal.app
+  - [ ] Linux: gnome-terminal --command, konsole -e, alacritty -e, kitty -e
+  - [ ] WSL2: wezterm, windows terminal
+- [ ] Fork + exec terminal s `tmux attach -t target`
+- [ ] Error handling pro neznámé terminály
+- [ ] Test na všech platformách
+
+**Reference:** Implementation plan má detail v "Step 6: Outside-Tmux Support"
 
 
 ### 2. Preview session špatně zobrazuje konec - chybí Claude prompty
-- nove zjisteni - asi je to tim ze neresi sirku textu zalomuji se radky na screen v okne a pak se tam nevejde konec - over toto jako prvni vec
 **Status:** 🐛 Bug
 **Problém:** Session preview nezobrazuje konec pane obsahu → nejsou vidět approval prompty/menu
+**Poznámka:** Možná je to tím že neřeší šířku textu - zalomují se řádky na screen v okně a pak se tam nevejde konec
+
 **Akce:**
 - [ ] Debug: zjistit proč preview nezachytává konec pane
 - [ ] Možná: capture_lines není dost? Nebo špatný offset?
+- [ ] Ověřit teorii o šířce textu a zalamování
 - [ ] Fix: zobrazit správně poslední řádky s prompty
 - [ ] Test: ověřit že vidíme "Do you want to allow this edit? [y/n]"
 
+
+### 3. Modální input dialog s text editorem
+**Status:** ✅ Library selected - Ready to implement
 **Akce:**
 - [ ] Přidat tui-textarea do Cargo.toml
 - [ ] Prostudovat popup_placeholder.rs example z knihovny
@@ -30,10 +89,6 @@
 - [ ] Nahradit současný input buffer tímto řešením
 - [ ] Test: otevřít popup, zadat text, odeslat
 
-
-
-### 3. Modální input dialog s text editorem
-**Status:** ✅ Library selected - Ready to implement
 **Problém:** Současný input buffer má chyby, potřebujeme modální dialog s kvalitním editorem
 **Řešení:** Použít **tui-textarea** knihovnu (by rhysd)
 

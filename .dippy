@@ -1,3 +1,6 @@
+deny scripts/cp-bin.sh * "Toto si dela uzivatel, pokud aplikace funguje!"
+allow ./scripts/reload-test.sh
+
 allow cargo test *
 allow cargo build *
 
@@ -13,3 +16,7 @@ allow tmux has-session *
 allow tmux capture-pane -t ct-test *
 allow tmux send-keys -t ct-test *
 allow tmux display-message -t ct-test *
+
+allow-redirect ./tmp/*
+
+allow git add *
