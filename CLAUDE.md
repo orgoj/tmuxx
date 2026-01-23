@@ -156,99 +156,35 @@ Parsers check ALL detection strings to handle various detection scenarios.
 
 ## Development Workflow
 
-### Testing
+### Project-Specific Skills
 
-**CRITICAL TESTING RULES (NON-NEGOTIABLE):**
+**CRITICAL: Use these skills - they contain essential workflows!**
 
-0. **META RULE: WRITE FIRST, DO LATER!**
-   - When user teaches you something new → WRITE IT TO CLAUDE.md IMMEDIATELY
-   - When user corrects you → WRITE THE CORRECTION TO CLAUDE.md FIRST
-   - When you learn a rule → WRITE IT DOWN BEFORE using it
-   - **NEVER do things first and write later!**
-   - **If electricity fails, you lose everything not written down!**
-   - **Next session you won't remember anything not in CLAUDE.md!**
+All skills are in `.claude/skills/`:
 
-1. **Test sessions structure:**
-   - `ct-test` - Session where tmuxcc runs and DISPLAYS other sessions
-   - `ct-multi` - Test session with 5 windows for multi-window testing
-   - Other sessions: `cc-test`, `cc-tmuxcc`, `cc-MOP`, `cc-tmp`
+1. **`adding-config-option`** - Pattern for adding new config options with CLI override support
+   - Use when adding bool, string, or number config options
+   - Files: config.rs, config_override.rs, README.md, CHANGELOG.md
 
-2. **ONLY session for send-keys: `ct-test`**
-   - This is THE ONLY session where you send keys for testing
-   - ct-test is where you create test content that tmuxcc monitors
-   - ❌ WRONG: `tmux send-keys -t ct-test:0 "command"`
-   - ✅ CORRECT: `tmux send-keys -t ct-test "command"`
-   - **NEVER add :0 or :1 or any window number!**
+2. **`tmuxcc-testing`** - Testing workflow and tmux safety rules
+   - **INVOKE before testing!**
+   - Test session structure, send-keys rules, tmux safety
+   - Scripts: reload-test.sh, start-test-session.sh, setup-multi-test.sh
 
-**CRITICAL: Send keys ONE AT A TIME and CHECK after EACH key!**
+3. **`tmuxcc-commit`** - Pre-commit checklist and git workflow
+   - **INVOKE before every commit!**
+   - CHANGELOG.md updates, README.md updates, cargo build/clippy/fmt
+   - Commit message format, git remotes
 
-```bash
-# ❌ WRONG - multiple keys in loop, if tmuxcc crashes keys go to bash and delete things!
-for i in {1..30}; do
-  tmux send-keys -t ct-test "" Enter
-done
+4. **`tmuxcc-library-research`** - Library research workflow
+   - **INVOKE before implementing features!**
+   - WebSearch for libraries, rtfmbro MCP for docs
+   - Ratatui 0.29 documentation via MCP
 
-# ✅ CORRECT - ONE key, then CHECK what happened
-tmux send-keys -t ct-test "echo 'test'" Enter
-sleep 0.5
-tmux capture-pane -t ct-test -p  # CHECK result!
-
-# Then next key...
-tmux send-keys -t ct-test "" Enter
-sleep 0.5
-tmux capture-pane -t ct-test -p  # CHECK again!
-```
-
-**Why:** If tmuxcc crashes/exits, subsequent keys go to bash and can execute destructive commands!
-**Rule:** NEVER send multiple keys without checking between each one!
-
-3. **Test scripts (READ THESE, USE THEM):**
-  - `scripts/cp-bin.sh` - Install tmuxcc to ~/bin after build (DON'T USE - user has working version there!)
-  - `scripts/reload-test.sh` - Reload tmuxcc in ct-test session
-  - `scripts/start-test-session.sh` - Start ct-test session
-  - `scripts/setup-multi-test.sh` - Setup ct-multi session with multiple windows
-- **CRITICAL: YOU test yourself using tmux-automation skill - INVOKE IT, don't just mention it!**
-  - Use `./target/release/tmuxcc` for testing (never cp-bin.sh)
-  - Use `scripts/reload-test.sh` to reload tmuxcc in ct-test session
-  - **INVOKE tmux-automation skill with Skill tool** - don't skip this step!
-  - Use tmux-automation skill to interact with TUI and verify behavior
-  - **NEVER ask user to test** - testing is YOUR responsibility
-  - **NEVER claim completion without runtime verification** - visual verification mandatory for UI features
-- **NEVER kill test sessions!** Use scripts to reload, not kill and recreate
-
-**CRITICAL TMUX SAFETY RULES (NON-NEGOTIABLE):**
-
-1. **NEVER use tail/head with capture-pane!**
-   - ❌ WRONG: `tmux capture-pane -t session -p | tail -30`
-   - ✅ CORRECT: `tmux capture-pane -t session -p`
-   - **Why**: Line 31 could be `reboot` or other destructive command!
-
-2. **Empty capture = ERROR state → STOP IMMEDIATELY!**
-   - If `capture-pane -p` returns empty → DON'T send any commands
-   - Check session exists, check for errors
-   - **NEVER proceed without visible output**
-
-3. **No bash prompt = ERROR state → STOP IMMEDIATELY!**
-   - If you don't see `$`, `>`, or clear input prompt → DON'T send commands
-   - Something is wrong with the session
-   - **NEVER blindly send Enter or other keys**
-
-4. **ALWAYS capture FULL screen first to understand state:**
-   ```bash
-   tmux capture-pane -t ct-test -p  # Full screen, no tail!
-   ```
-
-5. **Check what you're doing BEFORE sending keys:**
-   - Capture full screen
-   - Verify prompt is visible
-   - Verify expected state
-   - ONLY THEN send commands
-
-6. **NEVER send keys to session where tmuxcc is RUNNING!**
-   - ❌ FATAL: `tmux send-keys -t ct-test "y"` when tmuxcc runs there
-   - **Why**: tmuxcc forwards keys to monitored sessions → unintended approvals!
-   - ✅ CORRECT: Use dedicated test session WITHOUT tmuxcc for interactive testing
-   - **Testing tmuxcc**: Only capture output, NEVER send keys to ct-test!
+5. **`tmuxcc-changelog`** - TODO.md and CHANGELOG.md management
+   - **INVOKE when completing tasks!**
+   - Move completed work from TODO.md to CHANGELOG.md
+   - Keep TODO.md clean and focused
 
 ### Problem Diagnosis
 
@@ -275,123 +211,13 @@ tmux capture-pane -t ct-test -p  # CHECK again!
 - **Build release for testing**: `cargo build --release` before claiming done
 - **Clean up warnings**: Run `cargo clippy` and fix all warnings
 
-### Library Research Workflow
-
-**CRITICAL: NEVER write functionality from scratch when libraries exist!**
-
-**Before implementing ANY feature:**
-1. **WebSearch** for current libraries (use year 2026 in query)
-2. **rtfmbro MCP** to get README/docs of selected library
-3. Study examples from library repo
-4. Only then implement using the library
-
-**Example workflow (modální text editor):**
-```bash
-# 1. Search for libraries
-WebSearch: "rust ratatui text editor widget library 2026"
-
-# 2. Get documentation
-mcp__rtfmbro__get_readme package="rhysd/tui-textarea" version="*" ecosystem="gh"
-
-# 3. Check examples in repo
-# 4. Implement using library
-```
-
-**Selected libraries for tmuxcc:**
-- **Text editing:** tui-textarea (rhysd) - supports ratatui 0.29, has popup example
-
-### Ratatui Documentation
-
-**ALWAYS consult ratatui documentation via rtfmbro MCP BEFORE implementing UI features!**
-
-Project uses **ratatui 0.29** - complete documentation available via MCP:
-```bash
-# Get README with quickstart:
-mcp__rtfmbro__get_readme package="ratatui/ratatui" version="==0.29" ecosystem="gh"
-
-# Get documentation tree:
-mcp__rtfmbro__get_documentation_tree package="ratatui/ratatui" version="==0.29" ecosystem="gh"
-```
-
 ### Common Pitfalls
 
 1. **tmux command assumptions**: Test manually first, verify actual output
-2. **Implementation from memory**: Research current docs, don't guess
+2. **Implementation from memory**: Research current docs, don't guess (use `tmuxcc-library-research` skill!)
 3. **Testing in wrong environment**: Use ct-multi (5 windows) for multi-window features
 4. **Over-engineering**: Remove complexity instead of fixing it when possible
 5. **NEVER edit config files without explicit user permission** - Only create/modify ~/.config/tmuxcc/* when user explicitly asks for it
-
-### Git Workflow
-
-**CRITICAL: Pre-commit checklist (NON-NEGOTIABLE):**
-
-Before EVERY commit with new features/config options:
-1. ✅ **Update CHANGELOG.md** - Add feature to Unreleased section
-   - Describe what was added/changed/fixed
-   - Include config options with defaults
-   - Include CLI override examples
-2. ✅ **Update README.md** - Add config options to Configuration section
-   - Add to config.toml example with comments
-   - Add to "Available config keys" list with description
-   - Update default values if changed
-3. ✅ **Build and test** - cargo build --release, cargo clippy, cargo fmt
-4. ✅ **Stage all changes** - git add <files>
-5. ✅ **Write commit message** - Clear description with Co-Authored-By
-
-**If you skip documentation updates, commit will be REJECTED!**
-
-**Commit message format:**
-```
-feat: Brief description (imperative mood)
-
-Problem: What issue this solves
-Solution: How it was solved (bullet points)
-
-Changes:
-- File changes
-- Config updates
-- Documentation updates
-
-Co-Authored-By: Claude Sonnet 4.5 <noreply@anthropic.com>
-```
-
-- **ALWAYS use `git add -A`** unless explicitly told otherwise by user
-- When staging files, prefer adding specific files by name is WRONG - use `git add -A`
-
-**Remotes:**
-- `origin` - git@github.com:orgoj/tmuxcc.git (main fork)
-- `original` - git@github.com:nyanko3141592/tmuxcc.git (upstream)
-- `neon` - git@github.com:frantisek-heca/tmuxcc-neon.git (tracking)
-
-### TODO.md and CHANGELOG.md Management
-
-**CRITICAL: Keep TODO.md clean - completed tasks don't belong there!**
-
-When a task is completed:
-1. **Move to CHANGELOG.md** - Document what was done with proper detail
-2. **Delete from TODO.md** - Don't leave completed tasks in TODO
-3. **Mark as ✅ COMPLETED** only temporarily if needs verification, then move to CHANGELOG
-
-**Why:**
-- TODO.md is for ACTIVE work - what needs doing
-- Completed tasks haunting TODO confuse future sessions
-- CHANGELOG.md is the proper place for completed work history
-- Keep TODO focused on next steps, not past achievements
-
-**Example workflow:**
-```
-Task done → Update CHANGELOG.md → Delete from TODO.md → Git commit
-```
-
-**Don't:**
-- ❌ Leave tasks marked "✅ COMPLETED" in TODO.md long-term
-- ❌ Accumulate completed tasks at the top of TODO.md
-- ❌ Use TODO.md as a changelog
-
-**Do:**
-- ✅ Move completed work to CHANGELOG.md immediately
-- ✅ Keep TODO.md focused on current/upcoming work
-- ✅ Use "Completed Tasks ✅" section only as temporary staging before CHANGELOG move
 
 ### Code and Documentation Language
 

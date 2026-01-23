@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+- **CLAUDE.md Refactoring** - Reduced CLAUDE.md from 468 to 272 lines (42% reduction)
+  - Extracted workflow procedures into dedicated skills in `.claude/skills/`
+  - Created 4 project-specific skills:
+    - `tmuxcc-testing` - Testing workflow and tmux safety rules
+    - `tmuxcc-commit` - Pre-commit checklist and git workflow
+    - `tmuxcc-library-research` - Library research workflow
+    - `tmuxcc-changelog` - TODO/CHANGELOG management workflow
+  - CLAUDE.md now contains only skill references and core architecture docs
+  - Improves maintainability and reduces cognitive load for AI sessions
+
 ### Fixed
 - **Preview Empty Display** - Fixed issue where pane preview showed nothing when content had trailing empty lines
   - Preview now trims trailing empty lines before displaying content
