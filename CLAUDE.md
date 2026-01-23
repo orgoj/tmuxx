@@ -151,8 +151,86 @@ Parsers check ALL detection strings to handle various detection scenarios.
 4. **Child Process Detection**: Agents run in shells need child process scanning
 5. **Multi-byte Characters**: Use `safe_tail()` helper for safe string slicing
 
+## Development Workflow
+
+### Testing
+
+- **Test sessions**: `cc-test` (main TUI test), `cc-tmuxcc` (this app testing), or create custom with scripts
+- **Test scripts**:
+  - `scripts/cp-bin.sh` - Install tmuxcc to ~/bin after build
+  - `scripts/reload-test.sh` - Reload tmuxcc in ct-test session
+  - `scripts/start-test-session.sh` - Start ct-test session
+  - `scripts/setup-multi-test.sh` - Setup ct-multi session with multiple windows
+- **NEVER claim completion without runtime verification** - visual verification mandatory for UI features
+- **Testing is implementer's responsibility** - NEVER ask user to test your work
+- **NEVER kill test sessions!** Use scripts to reload, not kill and recreate
+
+### Key Principles from tmuxclai-arch
+
+- **Unicode Safety**: Use `unicode-width` crate for text truncation, NEVER use byte slicing `&str[..n]`
+- **Temporary files**: Use `./tmp/` in project, never system `/tmp/`
+- **Code duplication**: ZERO TOLERANCE - consolidate duplicate methods/structures
+- **tmux commands**: ALWAYS verify behavior manually before coding assumptions
+- **Debug workflow**: Add visible debug to UI (status bar), not just file writes
+- **Build release for testing**: `cargo build --release` before claiming done
+- **Clean up warnings**: Run `cargo clippy` and fix all warnings
+
+### Library Research Workflow
+
+**CRITICAL: NEVER write functionality from scratch when libraries exist!**
+
+**Before implementing ANY feature:**
+1. **WebSearch** for current libraries (use year 2026 in query)
+2. **rtfmbro MCP** to get README/docs of selected library
+3. Study examples from library repo
+4. Only then implement using the library
+
+**Example workflow (modální text editor):**
+```bash
+# 1. Search for libraries
+WebSearch: "rust ratatui text editor widget library 2026"
+
+# 2. Get documentation
+mcp__rtfmbro__get_readme package="rhysd/tui-textarea" version="*" ecosystem="gh"
+
+# 3. Check examples in repo
+# 4. Implement using library
+```
+
+**Selected libraries for tmuxcc:**
+- **Text editing:** tui-textarea (rhysd) - supports ratatui 0.29, has popup example
+
+### Ratatui Documentation
+
+**ALWAYS consult ratatui documentation via rtfmbro MCP BEFORE implementing UI features!**
+
+Project uses **ratatui 0.29** - complete documentation available via MCP:
+```bash
+# Get README with quickstart:
+mcp__rtfmbro__get_readme package="ratatui/ratatui" version="==0.29" ecosystem="gh"
+
+# Get documentation tree:
+mcp__rtfmbro__get_documentation_tree package="ratatui/ratatui" version="==0.29" ecosystem="gh"
+```
+
+### Common Pitfalls
+
+1. **tmux command assumptions**: Test manually first, verify actual output
+2. **Implementation from memory**: Research current docs, don't guess
+3. **Testing in wrong environment**: Use ct-multi (5 windows) for multi-window features
+4. **Over-engineering**: Remove complexity instead of fixing it when possible
+
+## Project Context
+
+**tmuxcc** - AI Agent Dashboard for tmux (fork of nyanko3141592/tmuxcc)
+
+- **Origins**: Fork of tmuxcc, inspired by tmuxclai vision
+- **Repository**: This is a fork - only push to `orgoj` branch, NO publishing to crates.io
+- **Vision**: See IDEAS.md for roadmap and future features
+
 ## Version and Publishing
 
 - Version in `Cargo.toml`: Semantic versioning (currently 0.1.7)
-- Published to crates.io (repository: nyanko3141592/tmuxcc)
+- This is a FORK - changes pushed to `orgoj` branch only
+- NO publishing to crates.io (that's upstream's job)
 - Git workflow: Work on `orgoj` branch, allow dirty publish for Cargo.lock changes
