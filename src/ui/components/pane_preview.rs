@@ -275,7 +275,11 @@ impl PanePreviewWidget {
                 )
             } else {
                 // Show last portion of pane content
-                let lines: Vec<&str> = agent.last_content.lines().collect();
+                // First trim trailing empty lines
+                let mut lines: Vec<&str> = agent.last_content.lines().collect();
+                while lines.last().is_some_and(|l| l.trim().is_empty()) {
+                    lines.pop();
+                }
                 let start = lines.len().saturating_sub(20);
                 lines[start..].join("\n")
             };
@@ -319,7 +323,11 @@ impl PanePreviewWidget {
             let mut styled_lines: Vec<Line> = Vec::new();
 
             // Take enough lines to fill the area
-            let content_lines: Vec<&str> = agent.last_content.lines().collect();
+            // First trim trailing empty lines
+            let mut content_lines: Vec<&str> = agent.last_content.lines().collect();
+            while content_lines.last().is_some_and(|l| l.trim().is_empty()) {
+                content_lines.pop();
+            }
             let start = content_lines.len().saturating_sub(available_lines);
 
             for line in &content_lines[start..] {

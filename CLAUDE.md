@@ -158,9 +158,51 @@ Parsers check ALL detection strings to handle various detection scenarios.
 
 ### Testing
 
-- **Test sessions**: `ct-test` (for tmuxcc testing), `cc-test` (main TUI test), `cc-tmuxcc` (other testing)
-- **ONLY USE EXISTING SESSIONS** - NEVER create random tmux sessions!
-- **Test scripts**:
+**CRITICAL TESTING RULES (NON-NEGOTIABLE):**
+
+0. **META RULE: WRITE FIRST, DO LATER!**
+   - When user teaches you something new → WRITE IT TO CLAUDE.md IMMEDIATELY
+   - When user corrects you → WRITE THE CORRECTION TO CLAUDE.md FIRST
+   - When you learn a rule → WRITE IT DOWN BEFORE using it
+   - **NEVER do things first and write later!**
+   - **If electricity fails, you lose everything not written down!**
+   - **Next session you won't remember anything not in CLAUDE.md!**
+
+1. **Test sessions structure:**
+   - `ct-test` - Session where tmuxcc runs and DISPLAYS other sessions
+   - `ct-multi` - Test session with 5 windows for multi-window testing
+   - Other sessions: `cc-test`, `cc-tmuxcc`, `cc-MOP`, `cc-tmp`
+
+2. **ONLY session for send-keys: `ct-test`**
+   - This is THE ONLY session where you send keys for testing
+   - ct-test is where you create test content that tmuxcc monitors
+   - ❌ WRONG: `tmux send-keys -t ct-test:0 "command"`
+   - ✅ CORRECT: `tmux send-keys -t ct-test "command"`
+   - **NEVER add :0 or :1 or any window number!**
+
+**CRITICAL: Send keys ONE AT A TIME and CHECK after EACH key!**
+
+```bash
+# ❌ WRONG - multiple keys in loop, if tmuxcc crashes keys go to bash and delete things!
+for i in {1..30}; do
+  tmux send-keys -t ct-test "" Enter
+done
+
+# ✅ CORRECT - ONE key, then CHECK what happened
+tmux send-keys -t ct-test "echo 'test'" Enter
+sleep 0.5
+tmux capture-pane -t ct-test -p  # CHECK result!
+
+# Then next key...
+tmux send-keys -t ct-test "" Enter
+sleep 0.5
+tmux capture-pane -t ct-test -p  # CHECK again!
+```
+
+**Why:** If tmuxcc crashes/exits, subsequent keys go to bash and can execute destructive commands!
+**Rule:** NEVER send multiple keys without checking between each one!
+
+3. **Test scripts (READ THESE, USE THEM):**
   - `scripts/cp-bin.sh` - Install tmuxcc to ~/bin after build (DON'T USE - user has working version there!)
   - `scripts/reload-test.sh` - Reload tmuxcc in ct-test session
   - `scripts/start-test-session.sh` - Start ct-test session

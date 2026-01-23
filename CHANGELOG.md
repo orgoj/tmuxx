@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+- **Preview Empty Display** - Fixed issue where pane preview showed nothing when content had trailing empty lines
+  - Preview now trims trailing empty lines before displaying content
+  - Affected both summary and detailed preview views
+  - Ensures actual content is visible even when tmux pane has many blank lines at bottom
+
 ### Added
 - **Fully Configurable Key Bindings** - All approval keys (y/n/a) and custom action keys now configurable via `[key_bindings]` in config.toml
   - Default bindings: y=approve, n=reject, a=approve_all, 0-9=send_number, E=ESC, C=Ctrl-C, D=Ctrl-D, K=kill
