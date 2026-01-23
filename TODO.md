@@ -3,35 +3,7 @@
 
 ## Priority Tasks
 
-### 1. Config option pro zobrazení detached sessions
-**Status:** 🔧 TODO
-**Problém:**
-- Aktuálně: tmuxcc filtruje `session_attached == 1` → zobrazuje jen attached sessions
-- Když děláš switch-client, ostatní sessions zmizí z monitoru
-- Temp fix: Odstraněn filtr (ukazuje všechny sessions), ale mělo by to být konfigurovatelné
-
-**Řešení:**
-- Přidat config option: `show_detached_sessions = true/false`
-- Default: `true` (ukazovat všechny sessions - nové chování)
-- Když `false`: filtrovat `session_attached == 1` (původní chování)
-
-**Akce:**
-- [ ] Přidat `show_detached_sessions: bool` do `Config` struct
-- [ ] Upravit `TmuxClient::list_panes()` - použít config místo hardcoded filtru
-- [ ] Default hodnota v config: `true`
-- [ ] Dokumentovat v README.md
-- [ ] Test: ověřit že při `false` se detached sessions skryjí
-
-**Soubory:**
-- `src/app/config.rs` - přidat field
-- `src/tmux/client.rs` - použít config pro filtrování
-- `README.md` - dokumentace
-
-**Souvisí s:** Wrapper script workflow (switch-client mezi sessions)
-
----
-
-### 2. Focus klávesa 'f' - Outside Tmux Support
+### 1. Focus klávesa 'f' - Outside Tmux Support
 **Status:** ✅ VYŘEŠENO JEDNODUŠŠÍM ZPŮSOBEM (2026-01-23)
 
 **Co funguje:**
