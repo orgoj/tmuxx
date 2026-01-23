@@ -235,6 +235,57 @@ mcp__rtfmbro__get_documentation_tree package="ratatui/ratatui" version="==0.29" 
 - `original` - git@github.com:nyanko3141592/tmuxcc.git (upstream)
 - `neon` - git@github.com:frantisek-heca/tmuxcc-neon.git (tracking)
 
+### TODO.md and CHANGELOG.md Management
+
+**CRITICAL: Keep TODO.md clean - completed tasks don't belong there!**
+
+When a task is completed:
+1. **Move to CHANGELOG.md** - Document what was done with proper detail
+2. **Delete from TODO.md** - Don't leave completed tasks in TODO
+3. **Mark as ✅ COMPLETED** only temporarily if needs verification, then move to CHANGELOG
+
+**Why:**
+- TODO.md is for ACTIVE work - what needs doing
+- Completed tasks haunting TODO confuse future sessions
+- CHANGELOG.md is the proper place for completed work history
+- Keep TODO focused on next steps, not past achievements
+
+**Example workflow:**
+```
+Task done → Update CHANGELOG.md → Delete from TODO.md → Git commit
+```
+
+**Don't:**
+- ❌ Leave tasks marked "✅ COMPLETED" in TODO.md long-term
+- ❌ Accumulate completed tasks at the top of TODO.md
+- ❌ Use TODO.md as a changelog
+
+**Do:**
+- ✅ Move completed work to CHANGELOG.md immediately
+- ✅ Keep TODO.md focused on current/upcoming work
+- ✅ Use "Completed Tasks ✅" section only as temporary staging before CHANGELOG move
+
+### Code and Documentation Language
+
+**CRITICAL: Write ALL code files, documentation, and git commits in ENGLISH!**
+
+- ✅ Code files: English (comments, variable names, function names)
+- ✅ Documentation: English (README.md, CHANGELOG.md, CLAUDE.md)
+- ✅ Git commits: English (commit messages)
+- ✅ Comments in code: English
+- ❌ NEVER use Czech in code files or documentation
+
+**Exceptions (Czech allowed):**
+- TODO.md (internal notes, user's native language)
+- Diary entries in `.claude/diary/` (session notes)
+- Implementation plans in `.claude/plans/` (working documents)
+
+**Why:**
+- Project is public fork of English codebase
+- English is standard for open source projects
+- Makes code accessible to wider audience
+- Maintains consistency with upstream
+
 ## Project Context
 
 **tmuxcc** - AI Agent Dashboard for tmux (fork of nyanko3141592/tmuxcc)
