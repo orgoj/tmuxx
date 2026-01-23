@@ -35,7 +35,7 @@ pub async fn run_app(config: Config) -> Result<()> {
     let mut terminal = Terminal::new(backend)?;
 
     // Initialize state
-    let mut state = AppState::new();
+    let mut state = AppState::new(config.clone());
 
     // Create tmux client and parser registry
     let tmux_client = Arc::new(TmuxClient::from_config(&config));

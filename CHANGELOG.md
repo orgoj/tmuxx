@@ -8,6 +8,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **Preview Truncation** - Smart line truncation to show approval prompts at bottom
+  - Long lines now truncated instead of wrapped, ensuring bottom content visible
+  - New config option: `truncate_long_lines` (default: true) to enable/disable truncation
+  - New config option: `max_line_width` (default: terminal width) for custom truncation width
+  - Important markers ([y/n], approve, reject, Allow, Deny) preserved from truncation
+  - Unicode-safe truncation with proper character width calculation
+  - Truncation indicator "…" appended to truncated lines
+  - CLI override support: `--set truncate:false` or `--set linewidth:100`
+  - Increased default `capture_lines` from 100 to 200 for better coverage
 - **Config Override System** - General `--set KEY=VALUE` CLI mechanism for config overrides
   - New config option: `show_detached_sessions` (default: true) to control session visibility
   - CLI override support: `--set show_detached_sessions=false` or `--set showdetached=0`

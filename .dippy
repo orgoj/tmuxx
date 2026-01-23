@@ -3,6 +3,7 @@ allow ./scripts/reload-test.sh
 
 allow cargo test *
 allow cargo build *
+allow cargo clippy *
 
 allow tmux list-sessions *
 allow tmux list-panes *

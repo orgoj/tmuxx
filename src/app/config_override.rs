@@ -8,6 +8,9 @@ pub enum ConfigOverride {
     PollInterval(u64),
     CaptureLines(u32),
     ShowDetachedSessions(bool),
+    DebugMode(bool),
+    TruncateLongLines(bool),
+    MaxLineWidth(Option<u16>),
 }
 
 impl ConfigOverride {
@@ -34,8 +37,37 @@ impl ConfigOverride {
                     ))?;
                 Ok(ConfigOverride::ShowDetachedSessions(val))
             }
+            "debugmode" | "debug" => {
+                let val = parse_bool(value)
+                    .ok_or_else(|| anyhow!(
+                        "Invalid value for debug_mode: '{}'. Expected: true/false, 1/0, yes/no, on/off",
+                        value
+                    ))?;
+                Ok(ConfigOverride::DebugMode(val))
+            }
+            "truncatelonglines" | "truncate" => {
+                let val = parse_bool(value)
+                    .ok_or_else(|| anyhow!(
+                        "Invalid value for truncate_long_lines: '{}'. Expected: true/false, 1/0, yes/no, on/off",
+                        value
+                    ))?;
+                Ok(ConfigOverride::TruncateLongLines(val))
+            }
+            "maxlinewidth" | "linewidth" => {
+                let val = if value == "none" {
+                    None
+                } else {
+                    Some(value.parse::<u16>().map_err(|_| {
+                        anyhow!(
+                            "Invalid value for max_line_width: '{}'. Expected a number or 'none'.",
+                            value
+                        )
+                    })?)
+                };
+                Ok(ConfigOverride::MaxLineWidth(val))
+            }
             _ => Err(anyhow!(
-                "Unknown config key: '{}'. Valid keys: poll_interval_ms, capture_lines, show_detached_sessions",
+                "Unknown config key: '{}'. Valid keys: poll_interval_ms, capture_lines, show_detached_sessions, debug_mode, truncate_long_lines, max_line_width",
                 key
             )),
         }
@@ -47,14 +79,16 @@ impl ConfigOverride {
             ConfigOverride::PollInterval(val) => config.poll_interval_ms = val,
             ConfigOverride::CaptureLines(val) => config.capture_lines = val,
             ConfigOverride::ShowDetachedSessions(val) => config.show_detached_sessions = val,
+            ConfigOverride::DebugMode(val) => config.debug_mode = val,
+            ConfigOverride::TruncateLongLines(val) => config.truncate_long_lines = val,
+            ConfigOverride::MaxLineWidth(val) => config.max_line_width = val,
         }
     }
 }
 
 /// Normalize a config key: remove underscores, hyphens, convert to lowercase
 fn normalize_key(key: &str) -> String {
-    key.replace(['_', '-'], "")
-        .to_lowercase()
+    key.replace(['_', '-'], "").to_lowercase()
 }
 
 /// Parse a boolean value from various string formats
@@ -75,7 +109,10 @@ mod tests {
         assert_eq!(normalize_key("poll_interval_ms"), "pollintervalms");
         assert_eq!(normalize_key("PollIntervalMs"), "pollintervalms");
         assert_eq!(normalize_key("poll-interval-ms"), "pollintervalms");
-        assert_eq!(normalize_key("show_detached_sessions"), "showdetachedsessions");
+        assert_eq!(
+            normalize_key("show_detached_sessions"),
+            "showdetachedsessions"
+        );
     }
 
     #[test]
@@ -167,7 +204,39 @@ mod tests {
     fn test_parse_invalid_key() {
         let result = ConfigOverride::parse("invalid_key", "value");
         assert!(result.is_err());
-        assert!(result.unwrap_err().to_string().contains("Unknown config key"));
+        assert!(result
+            .unwrap_err()
+            .to_string()
+            .contains("Unknown config key"));
+    }
+
+    #[test]
+    fn test_parse_debug_mode() {
+        // Full name
+        let override_val = ConfigOverride::parse("debug_mode", "true").unwrap();
+        match override_val {
+            ConfigOverride::DebugMode(val) => assert!(val),
+            _ => panic!("Wrong variant"),
+        }
+
+        // Short alias
+        let override_val = ConfigOverride::parse("debug", "false").unwrap();
+        match override_val {
+            ConfigOverride::DebugMode(val) => assert!(!val),
+            _ => panic!("Wrong variant"),
+        }
+
+        // Various true formats
+        for true_val in &["true", "1", "yes", "on"] {
+            let override_val = ConfigOverride::parse("debug", true_val).unwrap();
+            match override_val {
+                ConfigOverride::DebugMode(val) => assert!(val),
+                _ => panic!("Wrong variant"),
+            }
+        }
+
+        // Invalid value
+        assert!(ConfigOverride::parse("debug_mode", "invalid").is_err());
     }
 
     #[test]
@@ -188,5 +257,10 @@ mod tests {
         let override_val = ConfigOverride::parse("showdetached", "false").unwrap();
         override_val.apply(&mut config);
         assert!(!config.show_detached_sessions);
+
+        // Apply debug mode
+        let override_val = ConfigOverride::parse("debug_mode", "true").unwrap();
+        override_val.apply(&mut config);
+        assert!(config.debug_mode);
     }
 }

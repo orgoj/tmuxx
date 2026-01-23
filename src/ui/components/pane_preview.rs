@@ -5,9 +5,48 @@ use ratatui::{
     widgets::{Block, BorderType, Borders, Paragraph, Wrap},
     Frame,
 };
+use unicode_width::{UnicodeWidthChar, UnicodeWidthStr};
 
 use crate::agents::AgentStatus;
 use crate::app::AppState;
+
+/// Truncate a line to fit within max_width, preserving important markers
+/// Returns (truncated_string, was_truncated)
+fn truncate_line(line: &str, max_width: usize) -> (String, bool) {
+    // Important markers that should never be truncated
+    let important_markers = ["[y/n]", "[Y/n]", "⚠", "approve", "reject", "Allow", "Deny"];
+
+    let has_important = important_markers.iter().any(|m| line.contains(m));
+
+    // If line has important markers, don't truncate
+    if has_important {
+        return (line.to_string(), false);
+    }
+
+    let width = line.width();
+    if width <= max_width {
+        return (line.to_string(), false);
+    }
+
+    // Truncate to max_width - 1 for ellipsis
+    let target = max_width.saturating_sub(1);
+    let mut current_width = 0;
+    let truncated: String = line
+        .chars()
+        .take_while(|c| {
+            let char_width = c.width().unwrap_or(1);
+            // Check BEFORE adding to avoid off-by-one with wide chars
+            if current_width + char_width <= target {
+                current_width += char_width;
+                true
+            } else {
+                false
+            }
+        })
+        .collect();
+
+    (format!("{}…", truncated), true)
+}
 
 /// Parsed summary info from Claude Code content
 struct ClaudeCodeSummary {
@@ -267,6 +306,13 @@ impl PanePreviewWidget {
         // Calculate available lines (area height minus border)
         let available_lines = area.height.saturating_sub(2) as usize;
 
+        // Calculate max line width for truncation
+        let max_line_width = state
+            .config
+            .max_line_width
+            .map(|w| w as usize)
+            .unwrap_or_else(|| area.width.saturating_sub(2) as usize);
+
         let (title, lines) = if let Some(agent) = agent {
             let title = format!(" {} ({}) ", agent.target, agent.agent_type);
 
@@ -277,20 +323,37 @@ impl PanePreviewWidget {
             let start = content_lines.len().saturating_sub(available_lines);
 
             for line in &content_lines[start..] {
-                let spans = if line.starts_with('+') && !line.starts_with("+++") {
-                    vec![Span::styled(*line, Style::default().fg(Color::Green))]
-                } else if line.starts_with('-') && !line.starts_with("---") {
-                    vec![Span::styled(*line, Style::default().fg(Color::Red))]
-                } else if line.starts_with("@@") {
-                    vec![Span::styled(*line, Style::default().fg(Color::Cyan))]
-                } else if line.contains("[y/n]") || line.contains("[Y/n]") {
-                    vec![Span::styled(*line, Style::default().fg(Color::Yellow))]
-                } else if line.contains("⚠") || line.contains("Error") || line.contains("error") {
-                    vec![Span::styled(*line, Style::default().fg(Color::Red))]
-                } else if line.starts_with("❯") || line.starts_with(">") {
-                    vec![Span::styled(*line, Style::default().fg(Color::Cyan))]
+                // Apply truncation if enabled
+                let (display_line, _was_truncated) = if state.config.truncate_long_lines {
+                    truncate_line(line, max_line_width)
                 } else {
-                    vec![Span::raw(*line)]
+                    (line.to_string(), false)
+                };
+
+                // Apply syntax highlighting to the display line
+                let spans = if display_line.starts_with('+') && !display_line.starts_with("+++") {
+                    vec![Span::styled(
+                        display_line,
+                        Style::default().fg(Color::Green),
+                    )]
+                } else if display_line.starts_with('-') && !display_line.starts_with("---") {
+                    vec![Span::styled(display_line, Style::default().fg(Color::Red))]
+                } else if display_line.starts_with("@@") {
+                    vec![Span::styled(display_line, Style::default().fg(Color::Cyan))]
+                } else if display_line.contains("[y/n]") || display_line.contains("[Y/n]") {
+                    vec![Span::styled(
+                        display_line,
+                        Style::default().fg(Color::Yellow),
+                    )]
+                } else if display_line.contains("⚠")
+                    || display_line.contains("Error")
+                    || display_line.contains("error")
+                {
+                    vec![Span::styled(display_line, Style::default().fg(Color::Red))]
+                } else if display_line.starts_with("❯") || display_line.starts_with(">") {
+                    vec![Span::styled(display_line, Style::default().fg(Color::Cyan))]
+                } else {
+                    vec![Span::raw(display_line)]
                 };
 
                 styled_lines.push(Line::from(spans));
@@ -313,9 +376,16 @@ impl PanePreviewWidget {
             .border_type(BorderType::Rounded)
             .border_style(Style::default().fg(Color::Gray));
 
-        let paragraph = Paragraph::new(lines)
-            .block(block)
-            .wrap(Wrap { trim: false });
+        // Disable wrapping when truncation is enabled, lines are already truncated
+        let paragraph = if state.config.truncate_long_lines {
+            // Lines already truncated - no wrapping needed
+            Paragraph::new(lines).block(block)
+        } else {
+            // Legacy behavior - wrap long lines
+            Paragraph::new(lines)
+                .block(block)
+                .wrap(Wrap { trim: false })
+        };
 
         frame.render_widget(paragraph, area);
     }

@@ -142,8 +142,11 @@ tmuxcc -l 200
 # Use custom config file
 tmuxcc -f ~/.config/tmuxcc/custom.toml
 
-# Enable debug logging
+# Enable debug logging to tmuxcc.log
 tmuxcc --debug
+
+# Enable debug mode in TUI (via config)
+tmuxcc --set debug_mode=true
 
 # Initialize default config file
 tmuxcc --init-config
@@ -292,10 +295,22 @@ tmuxcc --show-config-path
 poll_interval_ms = 500
 
 # Number of lines to capture from each pane
-capture_lines = 100
+capture_lines = 200
 
 # Whether to show detached tmux sessions (default: true)
 show_detached_sessions = true
+
+# Enable extra logging in the TUI for debugging (default: false)
+debug_mode = false
+
+# Whether to truncate long lines in preview (default: true)
+# When true, long lines are truncated to terminal width with "…" indicator
+# When false, long lines wrap (legacy behavior)
+truncate_long_lines = true
+
+# Max line width for truncation (optional, default: terminal width)
+# Only used when truncate_long_lines = true
+# max_line_width = 120
 
 # Custom agent patterns (optional)
 # Patterns are matched against: command, title, cmdline, and child processes
@@ -362,6 +377,9 @@ tmuxcc --set poll_interval=1000 --set showdetached=false
 - `poll_interval_ms` (or `pollinterval`) - Polling interval in milliseconds
 - `capture_lines` (or `capturelines`) - Lines to capture from panes
 - `show_detached_sessions` (or `showdetached`) - Show/hide detached sessions
+- `debug_mode` (or `debug`) - Enable/disable debug logging in the TUI
+- `truncate_long_lines` (or `truncate`) - Enable/disable line truncation in preview
+- `max_line_width` (or `linewidth`) - Max line width for truncation (number or 'none')
 
 **Key normalization:** Underscores and hyphens are ignored, case-insensitive
 

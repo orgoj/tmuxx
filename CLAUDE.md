@@ -156,7 +156,8 @@ Parsers check ALL detection strings to handle various detection scenarios.
 
 ### Testing
 
-- **Test sessions**: `cc-test` (main TUI test), `cc-tmuxcc` (this app testing), or create custom with scripts
+- **Test sessions**: `ct-test` (for tmuxcc testing), `cc-test` (main TUI test), `cc-tmuxcc` (other testing)
+- **ONLY USE EXISTING SESSIONS** - NEVER create random tmux sessions!
 - **Test scripts**:
   - `scripts/cp-bin.sh` - Install tmuxcc to ~/bin after build (DON'T USE - user has working version there!)
   - `scripts/reload-test.sh` - Reload tmuxcc in ct-test session
@@ -170,6 +171,40 @@ Parsers check ALL detection strings to handle various detection scenarios.
   - **NEVER ask user to test** - testing is YOUR responsibility
   - **NEVER claim completion without runtime verification** - visual verification mandatory for UI features
 - **NEVER kill test sessions!** Use scripts to reload, not kill and recreate
+
+**CRITICAL TMUX SAFETY RULES (NON-NEGOTIABLE):**
+
+1. **NEVER use tail/head with capture-pane!**
+   - ❌ WRONG: `tmux capture-pane -t session -p | tail -30`
+   - ✅ CORRECT: `tmux capture-pane -t session -p`
+   - **Why**: Line 31 could be `reboot` or other destructive command!
+
+2. **Empty capture = ERROR state → STOP IMMEDIATELY!**
+   - If `capture-pane -p` returns empty → DON'T send any commands
+   - Check session exists, check for errors
+   - **NEVER proceed without visible output**
+
+3. **No bash prompt = ERROR state → STOP IMMEDIATELY!**
+   - If you don't see `$`, `>`, or clear input prompt → DON'T send commands
+   - Something is wrong with the session
+   - **NEVER blindly send Enter or other keys**
+
+4. **ALWAYS capture FULL screen first to understand state:**
+   ```bash
+   tmux capture-pane -t ct-test -p  # Full screen, no tail!
+   ```
+
+5. **Check what you're doing BEFORE sending keys:**
+   - Capture full screen
+   - Verify prompt is visible
+   - Verify expected state
+   - ONLY THEN send commands
+
+6. **NEVER send keys to session where tmuxcc is RUNNING!**
+   - ❌ FATAL: `tmux send-keys -t ct-test "y"` when tmuxcc runs there
+   - **Why**: tmuxcc forwards keys to monitored sessions → unintended approvals!
+   - ✅ CORRECT: Use dedicated test session WITHOUT tmuxcc for interactive testing
+   - **Testing tmuxcc**: Only capture output, NEVER send keys to ct-test!
 
 ### Problem Diagnosis
 
@@ -235,6 +270,38 @@ mcp__rtfmbro__get_documentation_tree package="ratatui/ratatui" version="==0.29" 
 
 ### Git Workflow
 
+**CRITICAL: Pre-commit checklist (NON-NEGOTIABLE):**
+
+Before EVERY commit with new features/config options:
+1. ✅ **Update CHANGELOG.md** - Add feature to Unreleased section
+   - Describe what was added/changed/fixed
+   - Include config options with defaults
+   - Include CLI override examples
+2. ✅ **Update README.md** - Add config options to Configuration section
+   - Add to config.toml example with comments
+   - Add to "Available config keys" list with description
+   - Update default values if changed
+3. ✅ **Build and test** - cargo build --release, cargo clippy, cargo fmt
+4. ✅ **Stage all changes** - git add <files>
+5. ✅ **Write commit message** - Clear description with Co-Authored-By
+
+**If you skip documentation updates, commit will be REJECTED!**
+
+**Commit message format:**
+```
+feat: Brief description (imperative mood)
+
+Problem: What issue this solves
+Solution: How it was solved (bullet points)
+
+Changes:
+- File changes
+- Config updates
+- Documentation updates
+
+Co-Authored-By: Claude Sonnet 4.5 <noreply@anthropic.com>
+```
+
 - **ALWAYS use `git add -A`** unless explicitly told otherwise by user
 - When staging files, prefer adding specific files by name is WRONG - use `git add -A`
 
@@ -277,22 +344,59 @@ Task done → Update CHANGELOG.md → Delete from TODO.md → Git commit
 
 **CRITICAL: Write ALL code files, documentation, and git commits in ENGLISH!**
 
-- ✅ Code files: English (comments, variable names, function names)
-- ✅ Documentation: English (README.md, CHANGELOG.md, CLAUDE.md)
-- ✅ Git commits: English (commit messages)
-- ✅ Comments in code: English
-- ❌ NEVER use Czech in code files or documentation
+**Rules for ALL code and documentation:**
+- ✅ **Source code (.rs files):** English ONLY
+  - Comments: English
+  - Variable names: English
+  - Function names: English
+  - Error messages: English
+  - CLI help text: English
+- ✅ **Documentation:** English (README.md, CHANGELOG.md, CLAUDE.md)
+- ✅ **Git commits:** English (commit messages)
+- ❌ **NEVER use:** Japanese (日本語), Czech (čeština), Chinese (中文), or any other language in code
+- ❌ **NO exceptions** for CLI help, error messages, or user-facing strings
 
-**Exceptions (Czech allowed):**
-- TODO.md (internal notes, user's native language)
-- Diary entries in `.claude/diary/` (session notes)
-- Implementation plans in `.claude/plans/` (working documents)
+**Language rules for ALL project files:**
+- ✅ Files WITHOUT language extension (`.cs`, `.ja`, etc.) → MUST be English
+- ✅ Files WITH language extension → Can be in that language
+  - `.cs` = Czech allowed
+  - `.ja` = Japanese allowed
+  - etc.
+
+**Examples:**
+- ❌ `.dippy` → MUST be English (no extension) OR rename to `.dippy.cs`
+- ✅ `.dippy.cs` → Czech OK (has `.cs` extension)
+- ❌ `notes` → MUST be English OR rename to `notes.cs`
+- ✅ `notes.cs` → Czech OK
+
+**Special exceptions (don't need `.cs`):**
+- TODO.md (internal working notes - Czech OK)
+- `.claude/diary/` (user's existing entries - don't translate old ones, new ones in English)
+- `.claude/plans/` (user's existing entries - don't translate old ones, new ones in English)
+
+**Action required for `.dippy`:**
+- [ ] Option 1: Translate `.dippy` to English
+- [ ] Option 2: Rename to `.dippy.cs` to mark as Czech content
+
+**CRITICAL: Auto-correct Czech to English:**
+- User writes in Czech in conversation → OK
+- User writes Czech in CODE/DOCS → AI fixes IMMEDIATELY when seen in diff
+- AI must check ALL diffs for Czech text in English-only files
+- If Czech found in .rs, README.md, CHANGELOG.md, CLAUDE.md → Fix to English immediately
+- User reads English well but writes Czech → AI translates for them
+- Don't ask permission, just fix it in the same response
+
+**Important:**
+- **Upstream inheritance:** Original fork (nyanko3141592/tmuxcc) was Japanese → must translate ALL Japanese text
+- CLI help was in Japanese → translate to English
+- Error messages were in Japanese → translate to English
+- This is NOT optional - project must be English for open source community
 
 **Why:**
-- Project is public fork of English codebase
+- Project is public fork - needs to be accessible globally
 - English is standard for open source projects
-- Makes code accessible to wider audience
-- Maintains consistency with upstream
+- Makes code readable by wider audience
+- Professional presentation for international community
 
 ## Project Context
 

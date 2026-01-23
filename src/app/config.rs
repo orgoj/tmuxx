@@ -19,6 +19,18 @@ pub struct Config {
     #[serde(default = "default_show_detached_sessions")]
     pub show_detached_sessions: bool,
 
+    /// Enable extra logging in the TUI
+    #[serde(default = "default_debug_mode")]
+    pub debug_mode: bool,
+
+    /// Whether to truncate long lines in preview (default: true)
+    #[serde(default = "default_truncate_long_lines")]
+    pub truncate_long_lines: bool,
+
+    /// Max line width for truncation (None = use terminal width)
+    #[serde(default)]
+    pub max_line_width: Option<u16>,
+
     /// Custom agent patterns (command -> agent type mapping)
     #[serde(default)]
     pub agent_patterns: Vec<AgentPattern>,
@@ -29,10 +41,18 @@ fn default_poll_interval() -> u64 {
 }
 
 fn default_capture_lines() -> u32 {
-    100
+    200
 }
 
 fn default_show_detached_sessions() -> bool {
+    true
+}
+
+fn default_debug_mode() -> bool {
+    false
+}
+
+fn default_truncate_long_lines() -> bool {
     true
 }
 
@@ -51,6 +71,9 @@ impl Default for Config {
             poll_interval_ms: default_poll_interval(),
             capture_lines: default_capture_lines(),
             show_detached_sessions: default_show_detached_sessions(),
+            debug_mode: default_debug_mode(),
+            truncate_long_lines: default_truncate_long_lines(),
+            max_line_width: None,
             agent_patterns: Vec::new(),
         }
     }
@@ -116,8 +139,11 @@ mod tests {
     fn test_default_config() {
         let config = Config::default();
         assert_eq!(config.poll_interval_ms, 500);
-        assert_eq!(config.capture_lines, 100);
+        assert_eq!(config.capture_lines, 200);
         assert!(config.show_detached_sessions);
+        assert!(!config.debug_mode);
+        assert!(config.truncate_long_lines);
+        assert_eq!(config.max_line_width, None);
     }
 
     #[test]
@@ -134,7 +160,9 @@ mod tests {
         let mut config = Config::default();
 
         // Test show_detached_sessions override
-        config.apply_override("show_detached_sessions", "false").unwrap();
+        config
+            .apply_override("show_detached_sessions", "false")
+            .unwrap();
         assert!(!config.show_detached_sessions);
 
         // Test short alias
@@ -145,10 +173,20 @@ mod tests {
         config.apply_override("poll_interval_ms", "1000").unwrap();
         assert_eq!(config.poll_interval_ms, 1000);
 
+        // Test debug_mode override
+        config.apply_override("debug_mode", "true").unwrap();
+        assert!(config.debug_mode);
+
+        // Test debug_mode override with short alias
+        config.apply_override("debug", "false").unwrap();
+        assert!(!config.debug_mode);
+
         // Test invalid key
         assert!(config.apply_override("invalid_key", "value").is_err());
 
         // Test invalid value
-        assert!(config.apply_override("show_detached_sessions", "invalid").is_err());
+        assert!(config
+            .apply_override("show_detached_sessions", "invalid")
+            .is_err());
     }
 }

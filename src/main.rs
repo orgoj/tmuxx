@@ -99,8 +99,9 @@ async fn main() -> Result<()> {
 
     // Apply --set overrides
     for override_str in &cli.config_overrides {
-        let (key, value) = override_str.split_once('=')
-            .ok_or_else(|| anyhow::anyhow!("Invalid --set format: '{}'. Use KEY=VALUE", override_str))?;
+        let (key, value) = override_str.split_once('=').ok_or_else(|| {
+            anyhow::anyhow!("Invalid --set format: '{}'. Use KEY=VALUE", override_str)
+        })?;
         if let Err(e) = config.apply_override(key.trim(), value.trim()) {
             eprintln!("Error applying config override: {}", e);
             std::process::exit(1);

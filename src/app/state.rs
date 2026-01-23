@@ -3,6 +3,8 @@ use crate::monitor::SystemStats;
 use std::collections::HashSet;
 use std::time::Instant;
 
+use super::Config;
+
 /// Which panel is currently focused
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 pub enum FocusedPanel {
@@ -77,6 +79,8 @@ const SPINNER_FRAMES: &[&str] = &["⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦
 /// Main application state
 #[derive(Debug)]
 pub struct AppState {
+    /// Application configuration
+    pub config: Config,
     /// Tree of monitored agents
     pub agents: AgentTree,
     /// Currently selected agent index (cursor position)
@@ -110,9 +114,10 @@ pub struct AppState {
 }
 
 impl AppState {
-    /// Creates a new AppState with default settings
-    pub fn new() -> Self {
+    /// Creates a new AppState with the given config
+    pub fn new(config: Config) -> Self {
         Self {
+            config,
             agents: AgentTree::new(),
             selected_index: 0,
             selected_agents: HashSet::new(),
@@ -342,7 +347,7 @@ impl AppState {
 
 impl Default for AppState {
     fn default() -> Self {
-        Self::new()
+        Self::new(Config::default())
     }
 }
 
@@ -353,7 +358,8 @@ mod tests {
 
     #[test]
     fn test_app_state_navigation() {
-        let mut state = AppState::new();
+        let config = Config::default();
+        let mut state = AppState::new(config);
 
         // Add some agents
         state.agents.root_agents.push(MonitoredAgent::new(
