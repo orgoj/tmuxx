@@ -9,9 +9,9 @@ allow tmux list-panes *
 allow tmux list-windows *
 allow tmux has-session *
 
-# allow tmux capture-pane *
+allow tmux capture-pane *
 # allow tmux send-keys *
-# allow tmux display-message *
+allow tmux display-message *
 
 allow tmux capture-pane -t ct-test *
 allow tmux send-keys -t ct-test *

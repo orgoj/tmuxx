@@ -150,6 +150,7 @@ Parsers check ALL detection strings to handle various detection scenarios.
 3. **tmux Escaping**: Pane content may contain ANSI codes - parsers handle raw text
 4. **Child Process Detection**: Agents run in shells need child process scanning
 5. **Multi-byte Characters**: Use `safe_tail()` helper for safe string slicing
+6. **Upstream Data Problems**: When a feature "doesn't work", check if upstream data exists FIRST (e.g., agent detection before testing focus functionality)
 
 ## Development Workflow
 
@@ -161,13 +162,20 @@ Parsers check ALL detection strings to handle various detection scenarios.
   - `scripts/reload-test.sh` - Reload tmuxcc in ct-test session
   - `scripts/start-test-session.sh` - Start ct-test session
   - `scripts/setup-multi-test.sh` - Setup ct-multi session with multiple windows
-- **CRITICAL: YOU test yourself using tmux-automation skill!**
+- **CRITICAL: YOU test yourself using tmux-automation skill - INVOKE IT, don't just mention it!**
   - Use `./target/release/tmuxcc` for testing (never cp-bin.sh)
   - Use `scripts/reload-test.sh` to reload tmuxcc in ct-test session
+  - **INVOKE tmux-automation skill with Skill tool** - don't skip this step!
   - Use tmux-automation skill to interact with TUI and verify behavior
   - **NEVER ask user to test** - testing is YOUR responsibility
   - **NEVER claim completion without runtime verification** - visual verification mandatory for UI features
 - **NEVER kill test sessions!** Use scripts to reload, not kill and recreate
+
+### Problem Diagnosis
+
+- **Run diagnostic commands FIRST**: Before analyzing code, gather real data (e.g., `tmux list-panes -a` when debugging detection)
+- **Check upstream problems**: Feature failures often indicate missing input data, not broken feature logic
+- **Integrate related problems**: Multiple related issues → ONE cohesive plan, not separate fixes or replacements
 
 ### Key Principles from tmuxclai-arch
 

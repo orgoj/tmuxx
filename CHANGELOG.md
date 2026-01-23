@@ -8,6 +8,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **Config Override System** - General `--set KEY=VALUE` CLI mechanism for config overrides
+  - New config option: `show_detached_sessions` (default: true) to control session visibility
+  - CLI override support: `--set show_detached_sessions=false` or `--set showdetached=0`
+  - Multiple format support for booleans: true/false, 1/0, yes/no, on/off
+  - Short aliases: `pollinterval`, `capturelines`, `showdetached`
+  - Key normalization (underscores/hyphens ignored, case-insensitive)
+  - Multiple `--set` flags can be used together
+  - Helpful error messages for invalid keys or values
 - **Custom Agent Patterns** - Configure regex patterns to detect any process as an agent
   - Support for wildcard `*` pattern to monitor ALL tmux panes
   - Flexible agent_type naming (e.g., "Node Agent", "Bash Agent", "All Panes")
@@ -28,6 +36,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Updated keyboard shortcuts documentation
 
 ### Changed
+- `TmuxClient` constructor changed to accept full `Config` reference via `from_config()`
+- Session filtering now applied in `TmuxClient::list_panes()` based on `show_detached_sessions`
+- CLI argument processing now supports multiple `--set` overrides applied after config load
 - `ParserRegistry` now accepts `Config` parameter for custom pattern support
 - Agent detection call chain updated (app.rs → monitor/task.rs → ParserRegistry)
 - Focus pane behavior enhanced for cross-session support
@@ -38,11 +49,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Custom agent types display correctly in UI with proper colors
 
 ### Technical Details
+- New file: `src/app/config_override.rs` - Config override parsing with alias support
+- Modified: `src/app/config.rs` - Added `show_detached_sessions` field and `apply_override()` method
+- Modified: `src/tmux/client.rs` - Added `show_detached_sessions` field, `from_config()` constructor, session filtering
+- Modified: `src/main.rs` - Added `--set` CLI argument and override application logic
+- Modified: `src/ui/app.rs` - Changed to use `TmuxClient::from_config()`
 - New file: `src/parsers/custom.rs` - CustomAgentParser implementation
 - Modified: `src/parsers/mod.rs` - Added `with_config()` method
 - Modified: `src/agents/types.rs` - Added `AgentType::Custom(String)` variant
-- Modified: `src/tmux/client.rs` - Added session detection, modified `focus_pane()`
-- Modified: `src/ui/app.rs` - Pass config to monitor task
 - Modified: `src/ui/components/agent_tree.rs` - Custom color handling
 - New file: `scripts/tmuxcc-wrapper.sh` - Wrapper script for reliable tmux integration
 

@@ -2,6 +2,8 @@ use anyhow::Result;
 use serde::{Deserialize, Serialize};
 use std::path::PathBuf;
 
+use super::config_override::ConfigOverride;
+
 /// Application configuration
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Config {
@@ -12,6 +14,10 @@ pub struct Config {
     /// Number of lines to capture from pane
     #[serde(default = "default_capture_lines")]
     pub capture_lines: u32,
+
+    /// Whether to show detached tmux sessions
+    #[serde(default = "default_show_detached_sessions")]
+    pub show_detached_sessions: bool,
 
     /// Custom agent patterns (command -> agent type mapping)
     #[serde(default)]
@@ -24,6 +30,10 @@ fn default_poll_interval() -> u64 {
 
 fn default_capture_lines() -> u32 {
     100
+}
+
+fn default_show_detached_sessions() -> bool {
+    true
 }
 
 /// Pattern for detecting agent types
@@ -40,6 +50,7 @@ impl Default for Config {
         Self {
             poll_interval_ms: default_poll_interval(),
             capture_lines: default_capture_lines(),
+            show_detached_sessions: default_show_detached_sessions(),
             agent_patterns: Vec::new(),
         }
     }
@@ -88,6 +99,13 @@ impl Config {
         std::fs::write(path, content)?;
         Ok(())
     }
+
+    /// Apply a configuration override
+    pub fn apply_override(&mut self, key: &str, value: &str) -> Result<()> {
+        let override_val = ConfigOverride::parse(key, value)?;
+        override_val.apply(self);
+        Ok(())
+    }
 }
 
 #[cfg(test)]
@@ -99,6 +117,7 @@ mod tests {
         let config = Config::default();
         assert_eq!(config.poll_interval_ms, 500);
         assert_eq!(config.capture_lines, 100);
+        assert!(config.show_detached_sessions);
     }
 
     #[test]
@@ -107,5 +126,29 @@ mod tests {
         let toml_str = toml::to_string(&config).unwrap();
         let parsed: Config = toml::from_str(&toml_str).unwrap();
         assert_eq!(config.poll_interval_ms, parsed.poll_interval_ms);
+        assert_eq!(config.show_detached_sessions, parsed.show_detached_sessions);
+    }
+
+    #[test]
+    fn test_apply_override() {
+        let mut config = Config::default();
+
+        // Test show_detached_sessions override
+        config.apply_override("show_detached_sessions", "false").unwrap();
+        assert!(!config.show_detached_sessions);
+
+        // Test short alias
+        config.apply_override("showdetached", "1").unwrap();
+        assert!(config.show_detached_sessions);
+
+        // Test poll_interval override
+        config.apply_override("poll_interval_ms", "1000").unwrap();
+        assert_eq!(config.poll_interval_ms, 1000);
+
+        // Test invalid key
+        assert!(config.apply_override("invalid_key", "value").is_err());
+
+        // Test invalid value
+        assert!(config.apply_override("show_detached_sessions", "invalid").is_err());
     }
 }

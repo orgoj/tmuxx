@@ -2,22 +2,39 @@ use anyhow::{Context, Result};
 use std::process::Command;
 
 use super::pane::PaneInfo;
+use crate::app::Config;
 
 /// Client for interacting with tmux
 pub struct TmuxClient {
     /// Number of lines to capture from pane
     capture_lines: u32,
+    /// Whether to show detached tmux sessions
+    show_detached_sessions: bool,
 }
 
 impl TmuxClient {
+    /// Creates a new TmuxClient from a Config
+    pub fn from_config(config: &Config) -> Self {
+        Self {
+            capture_lines: config.capture_lines,
+            show_detached_sessions: config.show_detached_sessions,
+        }
+    }
+
     /// Creates a new TmuxClient with default settings
     pub fn new() -> Self {
-        Self { capture_lines: 100 }
+        Self {
+            capture_lines: 100,
+            show_detached_sessions: true,
+        }
     }
 
     /// Creates a new TmuxClient with custom capture lines
     pub fn with_capture_lines(capture_lines: u32) -> Self {
-        Self { capture_lines }
+        Self {
+            capture_lines,
+            show_detached_sessions: true,
+        }
     }
 
     /// Check if tmux is available and running
@@ -52,11 +69,17 @@ impl TmuxClient {
         let panes: Vec<PaneInfo> = stdout
             .lines()
             .filter_map(|line| {
-                // First field is session_attached (0 or 1) - but we show ALL sessions
-                let (_attached, rest) = line.split_once('\t')?;
+                let (attached_str, rest) = line.split_once('\t')?;
 
-                // Parse all panes regardless of session attachment status
-                // This allows monitoring agents across all sessions, even when switching between them
+                // Filter based on config setting
+                if !self.show_detached_sessions {
+                    // Skip detached sessions (attached_str == "0")
+                    if attached_str != "1" {
+                        return None;
+                    }
+                }
+
+                // Parse pane info
                 PaneInfo::parse(rest)
             })
             .collect();

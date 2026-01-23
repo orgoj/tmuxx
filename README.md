@@ -255,6 +255,9 @@ poll_interval_ms = 500
 # Number of lines to capture from each pane
 capture_lines = 100
 
+# Whether to show detached tmux sessions (default: true)
+show_detached_sessions = true
+
 # Custom agent patterns (optional)
 # Patterns are matched against: command, title, cmdline, and child processes
 # Built-in agents (Claude Code, OpenCode, etc.) are detected first
@@ -294,6 +297,34 @@ agent_type = "Editor"
 **Priority:**
 - Built-in parsers (Claude Code, OpenCode, etc.) match first
 - Custom patterns are checked in order of definition
+
+### CLI Config Overrides
+
+Override any config option via command line using `--set KEY=VALUE`:
+
+```bash
+# Hide detached sessions (full name)
+tmuxcc --set show_detached_sessions=false
+
+# Hide detached sessions (short alias)
+tmuxcc --set showdetached=0
+
+# Multiple overrides
+tmuxcc --set poll_interval=1000 --set showdetached=false
+
+# Supported value formats
+--set showdetached=true     # true/false
+--set showdetached=1        # 1/0
+--set showdetached=yes      # yes/no
+--set showdetached=on       # on/off
+```
+
+**Available config keys:**
+- `poll_interval_ms` (or `pollinterval`) - Polling interval in milliseconds
+- `capture_lines` (or `capturelines`) - Lines to capture from panes
+- `show_detached_sessions` (or `showdetached`) - Show/hide detached sessions
+
+**Key normalization:** Underscores and hyphens are ignored, case-insensitive
 
 ---
 

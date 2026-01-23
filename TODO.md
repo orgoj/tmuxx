@@ -1,38 +1,5 @@
 # TODO - tmuxcc
 
-## Completed Tasks ✅
-
-### Custom Agent Patterns & Detection
-**Status:** ✅ HOTOVO (2026-01-23)
-**Implementace:**
-- ✅ CustomAgentParser s regex matching
-- ✅ Wildcard pattern `*` pro všechny panes
-- ✅ Config integration (agent_patterns v TOML)
-- ✅ AgentType::Custom(String) variant
-- ✅ Priority: built-in parsers first, pak custom patterns
-- ✅ Documentation v README.md
-- ✅ Testováno: wildcard detekuje všechny panes
-
-**Soubory změněny:**
-- `src/parsers/custom.rs` - nový CustomAgentParser
-- `src/parsers/mod.rs` - ParserRegistry.with_config()
-- `src/agents/types.rs` - AgentType::Custom variant
-- `src/ui/app.rs` - předání config do registry
-- `src/ui/components/agent_tree.rs` - Custom color handling
-
-### Cross-Session Focus (klávesa 'f' uvnitř tmux)
-**Status:** ✅ HOTOVO (2026-01-23)
-**Implementace:**
-- ✅ Detekce current vs target session
-- ✅ Same-session: select-window + select-pane
-- ✅ Cross-session: tmux switch-client
-- ✅ Error když běží mimo tmux
-- ✅ Testováno: z ct-test do cc-tmuxcc funguje
-
-**Soubory změněny:**
-- `src/tmux/client.rs` - focus_pane() s cross-session support
-
----
 
 ## Priority Tasks
 

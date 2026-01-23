@@ -36,6 +36,11 @@ struct Cli {
     /// デフォルト設定ファイルを生成
     #[arg(long)]
     init_config: bool,
+
+    /// Set config options (can be used multiple times)
+    /// Example: --set show_detached_sessions=false
+    #[arg(long = "set", value_name = "KEY=VALUE")]
+    config_overrides: Vec<String>,
 }
 
 #[tokio::main]
@@ -91,6 +96,16 @@ async fn main() -> Result<()> {
     // CLI args override config file
     config.poll_interval_ms = cli.poll_interval;
     config.capture_lines = cli.capture_lines;
+
+    // Apply --set overrides
+    for override_str in &cli.config_overrides {
+        let (key, value) = override_str.split_once('=')
+            .ok_or_else(|| anyhow::anyhow!("Invalid --set format: '{}'. Use KEY=VALUE", override_str))?;
+        if let Err(e) = config.apply_override(key.trim(), value.trim()) {
+            eprintln!("Error applying config override: {}", e);
+            std::process::exit(1);
+        }
+    }
 
     // Run the application
     run_app(config).await
