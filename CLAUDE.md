@@ -176,7 +176,11 @@ Parsers check ALL detection strings to handle various detection scenarios.
 
 ### Project-Specific Skills
 
-**CRITICAL: Use these skills - they contain essential workflows!**
+**CRITICAL: Project-specific skills have PRIORITY over generic skills!**
+
+- **Project skills FIRST**: tmuxcc-testing, tmuxcc-commit, etc. take precedence
+- **Generic skills (tmux-automation, etc.)**: Only if no project skill exists for the task
+- **Skill obligation applies to PROJECT skills**: The "must use skills" rule refers to these project skills
 
 All skills are in `.claude/skills/`:
 
