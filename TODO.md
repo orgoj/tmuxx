@@ -2,42 +2,6 @@
 
 ## Priority Tasks
 
-### CRITICAL: Modal Textarea Editor Issues (Shift+I)
-**Status:** 🐛 BUGS - Multiple critical problems
-**Current State:** Modal textarea is broken in multiple ways
-
-**Root Cause:** Editor was implemented without reading tui-textarea documentation properly
-
-**Issues Analysis:**
-
-1. **Cursor not visible**
-   - Cause: `set_cursor_style(Color::White)` on light gray background (200,200,200) = white on white, invisible
-   - Fix: Use `Color::Black` or `Style::default().add_modifier(Modifier::REVERSED)` for inverted cursor
-
-2. **No Ctrl+Enter submit for multi-line**
-   - Current: Editable mode uses `textarea.input(input)` which makes Enter insert newline (default per docs)
-   - Missing: Custom key mapping for Ctrl+Enter to return `true` (submit) in multi-line mode
-   - Fix: Add `Input { key: Key::Enter, ctrl: true, .. } => return true` before `textarea.input(input)`
-
-3. **Multi-line paste broken**
-   - Symptom: Pasting multi-line text shows only one line, arrow keys misbehave then freeze
-   - Textarea has all lines in memory (docs: "always contains at least one line")
-   - Possible cause: Issue in handle_input logic or rendering
-
-4. **No VISUAL scrollbar widget**
-   - tui-textarea does NOT include scrollbar (not a library feature)
-   - Must implement custom scrollbar widget from ratatui
-   - Should be visible on right side, shows current position in document
-
-**Required Actions:**
-- [ ] Fix cursor color (black or inverted)
-- [ ] Add Ctrl+Enter submit keybinding in handle_input
-- [ ] Debug multi-line paste issue (check handle_input logic)
-- [ ] Implement ratatui Scrollbar widget alongside textarea
-- [ ] Test all edge cases with long text, paste, scroll
-
----
-
 ### Notification System for Action-Required Events
 **Status:** 💡 Feature Request
 **Problem:** No alerts when agent needs user action → user must constantly watch tmuxcc

@@ -21,7 +21,7 @@ use crate::parsers::ParserRegistry;
 use crate::tmux::TmuxClient;
 
 use super::components::{
-    AgentTreeWidget, FooterWidget, HeaderWidget, HelpWidget, InputWidget, ModalTextareaWidget,
+    AgentTreeWidget, FooterWidget, HeaderWidget, InputWidget, ModalTextareaWidget,
     PanePreviewWidget, PopupInputWidget, SubagentLogWidget,
 };
 use super::Layout;
@@ -320,6 +320,25 @@ async fn run_loop(
                         continue;
                     }
 
+                    // Handle paste events
+                    if let Event::Paste(data) = &event {
+                        if let Some(modal) = &mut state.modal_textarea {
+                            if !modal.readonly {
+                                for line in data.lines() {
+                                    modal.textarea.insert_str(line);
+                                    modal.textarea.insert_newline();
+                                }
+                                // Remove the last extra newline if added (optional, but insert_newline adds one)
+                                modal.textarea.delete_char();
+                            }
+                        } else if !state.config.hide_bottom_input {
+                            // Also handle paste for main input widget if modal is not open
+                            for c in data.chars() {
+                                state.input_char(c);
+                            }
+                        }
+                    }
+
                     // Handle keyboard events
                     if let Event::Key(key) = event {
                         // Special handling for help scrolling (readonly modal textarea)
@@ -374,6 +393,10 @@ async fn run_loop(
                                     }
                                 }
                                 Action::HideModalTextarea => {
+                                    state.modal_textarea = None;
+                                }
+                                Action::HideHelp => {
+                                    state.show_help = false;
                                     state.modal_textarea = None;
                                 }
                                 _ => {
@@ -802,9 +825,11 @@ fn map_key_to_action(
     }
 
     // If modal textarea is shown, only handle special keys
-    if state.modal_textarea.is_some() {
+    if let Some(modal) = &state.modal_textarea {
         return match code {
             KeyCode::Esc => Action::HideModalTextarea,
+            KeyCode::Enter if modal.is_single_line => Action::ModalTextareaSubmit,
+            KeyCode::Enter if modifiers.contains(KeyModifiers::ALT) => Action::ModalTextareaSubmit,
             _ => Action::None, // All other keys handled directly in event loop
         };
     }
@@ -963,7 +988,7 @@ fn map_key_to_action(
         // Modal textarea input (Shift+I)
         KeyCode::Char('I') => Action::ShowModalTextarea {
             title: "Multi-line Input".to_string(),
-            prompt: "Enter message to agent (Enter to submit, Esc to cancel)".to_string(),
+            prompt: "Enter message to agent (Alt+Enter to submit, Esc to cancel)".to_string(),
             initial: String::new(),
             single_line: false,
         },

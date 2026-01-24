@@ -217,7 +217,7 @@ tcc
 | `f` / `F` | Focus on selected pane in tmux (supports cross-session, use wrapper script for best results) |
 | `Left` / `Right` | Switch focus (Sidebar / Input) |
 | `/` | Show popup input dialog (configurable) |
-| `Shift+I` | Open multi-line input modal (for sending longer text to agents) |
+| `Shift+I` | Open multi-line input modal (Submit with Alt+Enter) |
 
 ### Session Management
 

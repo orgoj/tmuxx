@@ -1,8 +1,11 @@
 use ratatui::{
     layout::{Constraint, Direction, Flex, Layout, Rect},
     style::{Color, Modifier, Style},
-    text::{Line, Span, Text},
-    widgets::{Block, BorderType, Borders, Clear, Paragraph},
+    text::{Line, Span},
+    widgets::{
+        Block, BorderType, Borders, Clear, Paragraph, Scrollbar, ScrollbarOrientation,
+        ScrollbarState,
+    },
     Frame,
 };
 use tui_textarea::{Input, Key, TextArea};
@@ -17,7 +20,13 @@ pub struct ModalTextareaState {
 }
 
 impl ModalTextareaState {
-    pub fn new(title: String, prompt: String, initial: String, single_line: bool, readonly: bool) -> Self {
+    pub fn new(
+        title: String,
+        prompt: String,
+        initial: String,
+        single_line: bool,
+        readonly: bool,
+    ) -> Self {
         let mut textarea = if initial.is_empty() {
             TextArea::default()
         } else {
@@ -29,7 +38,7 @@ impl ModalTextareaState {
 
         // Configure styling with background
         textarea.set_style(Style::default().fg(Color::White).bg(bg_color));
-        textarea.set_cursor_style(Style::default().fg(Color::White));
+        textarea.set_cursor_style(Style::default().bg(Color::Black).fg(Color::White));
         textarea.set_cursor_line_style(Style::default()); // Disable underline on cursor line
         textarea.set_placeholder_style(Style::default().fg(Color::DarkGray).bg(bg_color));
         textarea.set_placeholder_text(&prompt);
@@ -46,7 +55,7 @@ impl ModalTextareaState {
     /// Returns true if dialog should close (Esc pressed or Enter in single-line mode)
     pub fn handle_input(&mut self, input: Input) -> bool {
         match input {
-            Input { key: Key::Esc, .. } => return true, // Always close on Esc
+            Input { key: Key::Esc, .. } => true, // Always close on Esc
 
             // In readonly mode, only allow scrolling
             Input { key: Key::Up, .. } if self.readonly => {
@@ -57,11 +66,15 @@ impl ModalTextareaState {
                 self.textarea.move_cursor(tui_textarea::CursorMove::Down);
                 false
             }
-            Input { key: Key::PageUp, .. } if self.readonly => {
+            Input {
+                key: Key::PageUp, ..
+            } if self.readonly => {
                 self.textarea.scroll(tui_textarea::Scrolling::PageUp);
                 false
             }
-            Input { key: Key::PageDown, .. } if self.readonly => {
+            Input {
+                key: Key::PageDown, ..
+            } if self.readonly => {
                 self.textarea.scroll(tui_textarea::Scrolling::PageDown);
                 false
             }
@@ -69,9 +82,17 @@ impl ModalTextareaState {
             // Normal editable mode
             Input {
                 key: Key::Enter, ..
-            } if self.is_single_line => {
-                return true;
-            }
+            } if self.is_single_line => true,
+            /* Input {
+                key: Key::Enter,
+                ctrl: true,
+                ..
+            } => true, */
+            Input {
+                key: Key::Enter,
+                alt: true,
+                ..
+            } => true,
             input if !self.readonly => {
                 self.textarea.input(input);
                 false
@@ -126,6 +147,24 @@ impl ModalTextareaWidget {
         // Render textarea (placeholder is built-in)
         frame.render_widget(&state.textarea, chunks[0]);
 
+        // Render scrollbar
+        let lines_count = state.textarea.lines().len();
+        let (row, _) = state.textarea.cursor();
+        let scrollbar_state = ScrollbarState::new(lines_count).position(row);
+        let scrollbar = Scrollbar::default()
+            .orientation(ScrollbarOrientation::VerticalRight)
+            .begin_symbol(Some("↑"))
+            .end_symbol(Some("↓"));
+
+        frame.render_stateful_widget(
+            scrollbar,
+            chunks[0].inner(ratatui::layout::Margin {
+                vertical: 0,
+                horizontal: 0,
+            }), // Render over the textarea
+            &mut scrollbar_state.clone(), // Clone because we don't have mutable state here easily, but state is small
+        );
+
         // Render hints on ONE LINE
         let hints = if state.readonly {
             Line::from(vec![
@@ -140,7 +179,21 @@ impl ModalTextareaWidget {
                 Span::raw(if state.is_single_line {
                     " Submit  "
                 } else {
-                    " Insert newline  "
+                    " Newline  "
+                }),
+                Span::raw(if !state.is_single_line { "  " } else { "" }),
+                Span::styled(
+                    if !state.is_single_line {
+                        "[Alt+Enter]"
+                    } else {
+                        ""
+                    },
+                    Style::default().fg(Color::Yellow),
+                ),
+                Span::raw(if !state.is_single_line {
+                    " Submit  "
+                } else {
+                    ""
                 }),
                 Span::styled("[Esc]", Style::default().fg(Color::Yellow)),
                 Span::raw(" Cancel  "),

@@ -123,9 +123,9 @@ impl KeyBindings {
             match (a_chars, b_chars) {
                 (Some(ac), Some(bc)) => {
                     // Both lowercase or both uppercase - natural order
-                    if ac.is_lowercase() && bc.is_lowercase() {
-                        a.cmp(b)
-                    } else if ac.is_uppercase() && bc.is_uppercase() {
+                    if (ac.is_lowercase() && bc.is_lowercase())
+                        || (ac.is_uppercase() && bc.is_uppercase())
+                    {
                         a.cmp(b)
                     }
                     // Lowercase before uppercase

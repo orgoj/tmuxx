@@ -1,12 +1,4 @@
-use ratatui::{
-    layout::Rect,
-    style::Style,
-    widgets::{Block, BorderType, Borders, Clear},
-    Frame,
-};
-
 use crate::app::{Config, KeyAction, KillMethod, NavAction};
-use crate::ui::Layout;
 
 /// Help popup widget - deprecated, now using modal textarea
 pub struct HelpWidget;
@@ -26,19 +18,13 @@ impl HelpWidget {
         let prev_keys = kb.keys_for_action(&KeyAction::Navigate(NavAction::PrevAgent));
 
         if !next_keys.is_empty() {
-            lines.push(format!(
-                "  {} / ↓  Next agent",
-                next_keys.join(" / ")
-            ));
+            lines.push(format!("  {} / ↓  Next agent", next_keys.join(" / ")));
         } else {
             lines.push(String::from("  j / ↓  Next agent"));
         }
 
         if !prev_keys.is_empty() {
-            lines.push(format!(
-                "  {} / ↑  Previous agent",
-                prev_keys.join(" / ")
-            ));
+            lines.push(format!("  {} / ↑  Previous agent", prev_keys.join(" / ")));
         } else {
             lines.push(String::from("  k / ↑  Previous agent"));
         }
@@ -92,7 +78,7 @@ impl HelpWidget {
             }
         }
         if !number_keys.is_empty() {
-            lines.push(format!("  0-9      Quick approve (1=yes, 2=no)"));
+            lines.push("  0-9      Quick approve (1=yes, 2=no)".to_string());
         }
 
         // SendKeys actions

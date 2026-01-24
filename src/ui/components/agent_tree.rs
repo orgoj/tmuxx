@@ -81,11 +81,8 @@ impl AgentTreeWidget {
             .border_style(Style::default().fg(border_color));
 
         if filtered_agents.is_empty() {
-            let empty_msg = if state.filter_pattern.is_some() {
-                format!(
-                    "  No agents match filter '{}'",
-                    state.filter_pattern.as_ref().unwrap()
-                )
+            let empty_msg = if let Some(pattern) = &state.filter_pattern {
+                format!("  No agents match filter '{}'", pattern)
             } else {
                 "  No agents detected".to_string()
             };

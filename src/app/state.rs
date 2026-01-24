@@ -1,7 +1,7 @@
 use crate::agents::MonitoredAgent;
 use crate::monitor::SystemStats;
 use crate::ui::components::ModalTextareaState;
-use ratatui::style::{Color, Style};
+// use ratatui::style::{Color, Style};
 use std::collections::HashSet;
 use std::time::Instant;
 
