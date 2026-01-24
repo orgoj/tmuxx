@@ -5,23 +5,25 @@ All notable changes to this fork (orgoj/tmuxcc) will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [0.1.10] - 2026-01-24
+
 ### Added
-- **Interactive TUI Support** (Terminal Mode)
-  - `terminal = true` flag for `execute_command` to run interactive apps like `lazyclaude`, `nano`, `vim`
-  - Correctly suspends `tmuxcc`, gives child process terminal control, and restores TUI on exit
-- **Enhanced Status Bar** - Messages now expand to full terminal width to prevent truncation
-- **Improved Stdio Handling**
-  - Background processes (`blocking = false`) now have their output silenced (`/dev/null`) by default to prevent screen corruption
-  - In `debug_mode = true`, background outputs are redirected to `.tmuxcc.log`
-  - Blocking tasks in debug mode also log full output to `.tmuxcc.log`
+- **New Command Variables**: `${PANE_TARGET}`, `${WINDOW_INDEX}`, `${WINDOW_NAME}`, `${PANE_INDEX}`
+- **Enhanced Terminal Support**: Updated `t` binding example to use `${PANE_TARGET}` for direct attachment
+
+## [0.1.9] - 2026-01-24
+
+### Added
+- **Interactive TUI Support**: `terminal = true` flag for interactive apps (vim, lazyclaude)
+- **Status Bar**: Expanded messages to full width
+- **Stdio Handling**: Background jobs silenced; debug logging to `.tmuxcc.log`
 
 ### Changed
-- **Shift Key Mapping** - Shift+Key now maps to uppercase char (e.g. `M`) instead of `S-m` prefix, matching common config expectations
+- **Shift Key Mapping**: Shift+Key now maps to uppercase (e.g. `M`)
 
 ### Fixed
-- **Screen Redraw** - `Ctrl+l` now performs a full screen clear and redraw
-- **Key Binding Feedback** - `send_keys` actions now display the exact keys sent in the status bar for debugging
+- **Screen Redraw**: Standardized `Ctrl+l` behavior
+- **Key Feedback**: `send_keys` actions show exact keys in status bar
 
 ## [0.1.8] - 2026-01-24
 

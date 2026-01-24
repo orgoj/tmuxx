@@ -1131,6 +1131,10 @@ fn map_key_to_action(
 /// Supported variables:
 /// - `${SESSION_NAME}` - Agent's tmux session name
 /// - `${SESSION_DIR}` - Agent's working directory path
+/// - `${WINDOW_INDEX}` - Agent's tmux window index
+/// - `${WINDOW_NAME}` - Agent's tmux window name
+/// - `${PANE_INDEX}` - Agent's tmux pane index
+/// - `${PANE_TARGET}` - Agent's tmux target (session:window.pane)
 /// - `${ENV:VAR}` - Environment variable value
 fn expand_command_variables(template: &str, agent: &crate::agents::MonitoredAgent) -> String {
     use regex::Regex;
@@ -1142,6 +1146,18 @@ fn expand_command_variables(template: &str, agent: &crate::agents::MonitoredAgen
 
     // Replace ${SESSION_DIR}
     result = result.replace("${SESSION_DIR}", &agent.path);
+
+    // Replace ${WINDOW_INDEX}
+    result = result.replace("${WINDOW_INDEX}", &agent.window.to_string());
+
+    // Replace ${WINDOW_NAME}
+    result = result.replace("${WINDOW_NAME}", &agent.window_name);
+
+    // Replace ${PANE_INDEX}
+    result = result.replace("${PANE_INDEX}", &agent.pane.to_string());
+
+    // Replace ${PANE_TARGET}
+    result = result.replace("${PANE_TARGET}", &agent.target);
 
     // Replace ${ENV:VAR} using regex
     if let Ok(re) = Regex::new(r"\$\{ENV:([^}]+)\}") {

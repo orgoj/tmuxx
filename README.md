@@ -404,11 +404,11 @@ r = "rename_session"                  # Rename current session
 # Command execution (with variable expansion)
 z = { execute_command = { command = "zede ${SESSION_DIR}" } }
 v = { execute_command = { command = "code ${SESSION_DIR}" } }
-t = { execute_command = { command = "wezterm cli attach-session ${SESSION_NAME}" } }
+t = { execute_command = { command = "wezterm start -- tmux attach -t ${PANE_TARGET}" } }
 d = { execute_command = { command = "zede ~/.dippy" } }
 
 # With modifier keys
-"M-t" = { execute_command = { command = "wezterm cli attach-session ${SESSION_NAME}", blocking = true } }
+"M-t" = { execute_command = { command = "wezterm start -- tmux attach -t ${PANE_TARGET}", blocking = true } }
 
 # Using environment variables
 x = { execute_command = { command = "echo ${ENV:USER} - ${SESSION_NAME}" } }
@@ -534,11 +534,16 @@ KeyCode::Char('I') => Action::ShowModalTextarea { ... }
 - Variables:
   - `${SESSION_NAME}` - Selected agent's tmux session name
   - `${SESSION_DIR}` - Selected agent's working directory path
+  - `${WINDOW_INDEX}` - Selected agent's tmux window index
+  - `${WINDOW_NAME}` - Selected agent's tmux window name
+  - `${PANE_INDEX}` - Selected agent's tmux pane index
+  - `${PANE_TARGET}` - Selected agent's tmux target (session:window.pane)
   - `${ENV:VAR}` - Environment variable value
 
 Example:
 ```toml
 z = { execute_command = { command = "zede ${SESSION_DIR}" } }  # Open editor in agent's directory
+t = { execute_command = { command = "wezterm start -- tmux attach -t ${PANE_TARGET}" } } # Attach to pane
 "M-t" = { execute_command = { command = "wezterm cli attach ${SESSION_NAME}", blocking = true } }
 ```
 
