@@ -218,12 +218,18 @@ tcc
 | `Left` / `Right` | Switch focus (Sidebar / Input) |
 | `/` | Show popup input dialog (configurable) |
 
+### Session Management
+
+| Key | Action |
+|-----|--------|
+| `r` | Rename current session (opens dialog) |
+
 ### View
 
 | Key | Action |
 |-----|--------|
 | `s` / `S` | Toggle subagent log |
-| `r` | Refresh agent list |
+| `Ctrl+L` | Refresh / clear error |
 | `h` / `?` | Show help |
 | `q` | Quit |
 
@@ -386,6 +392,8 @@ C = { send_keys = "C-c" }             # Send Ctrl-C
 D = { send_keys = "C-d" }             # Send Ctrl-D
 K = { kill_app = { method = "sigterm" } }  # Kill with SIGTERM
 # or: K = { kill_app = { method = "ctrlc_ctrld" } }  # Ctrl-C then Ctrl-D
+r = "rename_session"                  # Rename current session
+"C-l" = "refresh"                     # Refresh screen (Ctrl+L)
 ```
 
 **Valid tmux key names for send_keys:**
@@ -475,8 +483,14 @@ tmuxcc --set kb.X=send_keys:C-z
 - `send_keys:KEYS` - Send tmux key sequence (e.g., `Escape`, `C-c`, `Enter`)
 - `kill_app:sigterm` - Kill app with SIGTERM (graceful)
 - `kill_app:ctrlc_ctrld` - Kill app with Ctrl-C+Ctrl-D (forced)
+- `rename_session` - Open rename session dialog
+- `refresh` - Refresh screen / clear error
 - `navigate:next_agent` - Navigate to next agent
 - `navigate:prev_agent` - Navigate to previous agent
+
+**Key format for modifier keys:**
+- `"C-x"` - Ctrl+X (use quotes in TOML for keys with special characters)
+- `"M-x"` - Alt+X (Meta key)
 
 **Key normalization:** Underscores and hyphens are ignored, case-insensitive (except for key names themselves which are case-sensitive)
 

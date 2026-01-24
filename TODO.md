@@ -4,6 +4,8 @@
 
 - config pro sirku leveho sloupce: pocet znaku nebo procenta
 
+- opravit zbytecne | v zobrazeni session tree - podivej se na tmux s pomoci projekt skill
+
 - konfigurovatelny jiny rezim pro TODO cast obrazovky, chci tam videt zacatek souboru TODO.md pokud je v projektu nebo jiny konfigurovatelny nace, vice nazvu i glob prvni co najde tam zobrazi
 
 
@@ -23,36 +25,14 @@
 
 ## Priority Tasks
 
-### 1. Session filtering - show only specific sessions
-**Status:** 💡 Feature Request - PRIORITY
-**Problem:** tmuxcc shows ALL sessions → difficult testing (see production sessions during testing)
-**Use case:** `tmuxcc --filter test` → shows only ct-test, cc-test, etc.
-**Solution:**
-- Add `--filter <PATTERN>` CLI argument
-- Add `session_filter` to Config (regex or glob pattern)
-- Filter sessions in TmuxClient.list_panes() or MonitorTask
-- If filter not set → show all (current behavior)
+### 1. CLI --filter argument for session filtering
+**Status:** 💡 Missing CLI option
+**What works:** Runtime `/` filter, config `ignore_sessions`
+**What's missing:** CLI `--filter` argument for startup filtering
 
 **Actions:**
-- [ ] Add `--filter` argument to CLI (main.rs)
-- [ ] Add `session_filter: Option<String>` to Config
-- [ ] Implement filtering in MonitorTask or TmuxClient
-- [ ] Test: `./tmuxcc --filter test` → see only test sessions
-- [ ] Test: `./tmuxcc` → see all sessions (default)
+- [ ] Add `--filter <PATTERN>` argument to CLI (main.rs)
 - [ ] Document in README.md and --help
-- [ ] Change test scripts/* to auto setup test filter
-
-**Example usage:**
-```bash
-# Show only test sessions
-./tmuxcc --filter test
-
-# Show only cc-* sessions
-./tmuxcc --filter "^cc-"
-
-# Show all (default)
-./tmuxcc
-```
 
 ### 2. Translate entire project to English
 **Status:** 🌍 i18n - PRIORITY
@@ -157,7 +137,7 @@ tui-textarea = "*"
 - [ ] Design layout: where statusline will be, what it shows
 - [ ] Implement statusline for session (similar to header)
 - [ ] Remove input buffer from main layout
-- [ ] Connect with modal input dialog from task #5
+- [ ] Connect with modal input dialog from task #4
 
 ### 6. Notification System for Action-Required Events
 **Status:** 💡 Feature Request
@@ -264,6 +244,7 @@ requires_confirmation = true
 
 ## Other ideas
 
+- colapse session? - potrebuje select na session a i session menu
 - preview preserver importasnt lines, wrap, must scroll to end after wrap
 - scroll in preview area?
 

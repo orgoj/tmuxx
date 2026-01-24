@@ -23,6 +23,11 @@ pub enum PopupType {
     Filter,
     /// General text input to send to agent
     GeneralInput,
+    /// Rename a tmux session
+    RenameSession {
+        /// The current session name to rename
+        session: String,
+    },
 }
 
 /// State for popup input dialog

@@ -164,6 +164,9 @@ Parsers check ALL detection strings to handle various detection scenarios.
 10. **Trailing Content in UI**: When displaying "last N lines", trim trailing empty content first to ensure actual data is visible
 11. **Skipping Skills**: Attempting tasks without invoking relevant skills leads to mistakes - check `.claude/skills/` first
 12. **Batch Operations Without Verification**: Sending multiple commands at once can cause destructive failures - verify each step
+13. **View/Model Index Mismatch**: When filtering affects display, navigation MUST use filtered indices - otherwise cursor lands on hidden items or skips erratically
+14. **Single Method Fix Tunnel Vision**: When fixing one method, audit entire API for same pattern - often multiple methods have the same issue
+15. **Designing Before Understanding Use Case**: Ask "what will this be used for?" before architecture design - specific use cases beat generic abstractions
 
 ## Development Workflow
 
@@ -221,6 +224,7 @@ All skills are in `.claude/skills/`:
 - User provides precise corrections with exact code examples - apply them before implementation
 - For complex bugs/features: use Task tool Explore → Plan workflow, expect user review phase before implementation begins
 - Before committing features: verify README documents user-facing behavior, CHANGELOG.md has entry, config options are documented
+- Use `git commit --only <file>` for selective commits while keeping other changes staged
 
 ### Key Principles from tmuxclai-arch
 

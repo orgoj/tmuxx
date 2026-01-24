@@ -65,3 +65,10 @@ D = { send_keys = "C-d" }
 K = { kill_app = { method = "sigterm" } }
 # Alternative: forced kill with Ctrl-C + Ctrl-D
 # K = { kill_app = { method = "ctrlc_ctrld" } }
+
+# Session management
+r = "rename_session"
+
+# Screen refresh (Ctrl+L - standard terminal redraw key)
+# Note: Keys with special characters must be quoted in TOML
+"C-l" = "refresh"

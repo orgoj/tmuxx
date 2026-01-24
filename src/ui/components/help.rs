@@ -159,6 +159,16 @@ impl HelpWidget {
             }
         }
 
+        // Rename session
+        let rename_keys = kb.keys_for_action(&KeyAction::RenameSession);
+        if !rename_keys.is_empty() {
+            let keys_str = format!("  {:9}", rename_keys.join(" / "));
+            help_text.push(Line::from(vec![
+                Span::styled(keys_str, key_style),
+                Span::styled("Rename current session", desc_style),
+            ]));
+        }
+
         help_text.push(Line::from(vec![
             Span::styled("  ← / →    ", key_style),
             Span::styled("Switch focus (Sidebar / Input)", desc_style),
@@ -184,10 +194,15 @@ impl HelpWidget {
             Span::styled("  t / T    ", key_style),
             Span::styled("Toggle TODO/Tools display", desc_style),
         ]));
-        help_text.push(Line::from(vec![
-            Span::styled("  r        ", key_style),
-            Span::styled("Refresh / clear error", desc_style),
-        ]));
+        // Refresh - show configured key or default
+        let refresh_keys = kb.keys_for_action(&KeyAction::Refresh);
+        if !refresh_keys.is_empty() {
+            let keys_str = format!("  {:9}", refresh_keys.join(" / "));
+            help_text.push(Line::from(vec![
+                Span::styled(keys_str, key_style),
+                Span::styled("Refresh / clear error", desc_style),
+            ]));
+        }
         help_text.push(Line::from(vec![]));
 
         // General (hardcoded)

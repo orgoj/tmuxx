@@ -269,6 +269,20 @@ impl TmuxClient {
 
         Ok(())
     }
+
+    /// Renames a tmux session
+    pub fn rename_session(&self, old_name: &str, new_name: &str) -> Result<()> {
+        let output = Command::new("tmux")
+            .args(["rename-session", "-t", old_name, new_name])
+            .output()
+            .context("Failed to execute tmux rename-session")?;
+
+        if !output.status.success() {
+            let stderr = String::from_utf8_lossy(&output.stderr);
+            anyhow::bail!("tmux rename-session failed: {}", stderr);
+        }
+        Ok(())
+    }
 }
 
 impl Default for TmuxClient {

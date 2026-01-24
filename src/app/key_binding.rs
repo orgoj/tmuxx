@@ -37,6 +37,10 @@ pub enum KeyAction {
     SendKeys(String),
     /// Kill the application in target pane
     KillApp { method: KillMethod },
+    /// Rename current session
+    RenameSession,
+    /// Refresh/redraw the screen
+    Refresh,
 }
 
 /// Holds all key binding configuration
@@ -77,6 +81,12 @@ impl Default for KeyBindings {
                 method: KillMethod::Sigterm,
             },
         );
+
+        // Session management
+        bindings.insert("r".to_string(), KeyAction::RenameSession);
+
+        // Screen refresh (Ctrl+L)
+        bindings.insert("C-l".to_string(), KeyAction::Refresh);
 
         Self { bindings }
     }

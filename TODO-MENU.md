@@ -114,7 +114,7 @@ command = "cat @{INPUT_LINE:Dippy rule:allow } >> ${SESSION_DIR}/.dippy"
 key = "t"
 label = "Translate screen"
 command = "cat @{SCREEN:-30} > ${TMP} && editor ${TMP} && cat ${TMP} | claude -p 'Translate to English'"
-paste_result = true
+paste_result = yes/no/edit
 shell = "bash"
 
 [[session_menu]]
@@ -155,7 +155,8 @@ command = "cargo test"
 ### Phase 4: Pipeline Execution
 - [ ] Detect if command needs bash (pipes, redirects, &&, ||)
 - [ ] Execute complex pipelines in bash subshell
-- [ ] Capture stdout for `paste_result = true`
+- [ ] Capture stdout for `paste_result = yes`
+- [ ] Capture stdout and allow edit in internal popup before paste (can cancel) `paste_result = edit`
 - [ ] Paste result to tmux pane
 - [ ] Test: complex pipeline with editor + claude
 

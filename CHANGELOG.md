@@ -8,6 +8,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **Session Rename** - Rename tmux sessions directly from tmuxcc (default: `r` key)
+  - Opens popup dialog with current session name pre-filled
+  - Cursor positioned at end of text for easy editing
+  - Validates session name (no empty, no `.` or `:` characters)
+  - Configurable via `[key_bindings]`: `r = "rename_session"`
+- **Configurable Refresh Key** - Refresh/redraw moved from hardcoded `r` to configurable binding
+  - Default: `Ctrl+L` (standard terminal redraw key)
+  - Supports modifier key format: `"C-l"` (Ctrl), `"M-l"` (Alt)
+  - Configurable via `[key_bindings]`: `"C-l" = "refresh"`
+- **Modifier Key Support in Key Bindings** - Key bindings now support Ctrl and Alt modifiers
+  - Format: `"C-x"` for Ctrl+X, `"M-x"` for Alt+X
+  - TOML requires quotes for keys with special characters
+
 - **Session Ignore Filter** - Config option to ignore (hide) specific tmux sessions at data-collection level
   - `ignore_sessions` - List of patterns to ignore (supports fixed, glob, regex)
   - `ignore_self = true` - Auto-ignore the session where tmuxcc runs (default: true)

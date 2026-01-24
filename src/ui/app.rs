@@ -492,11 +492,13 @@ async fn run_loop(
                                 popup_type,
                             } => {
                                 use crate::app::PopupInputState;
+                                // Set cursor at end of buffer for rename dialog (easier to edit)
+                                let cursor = initial.len();
                                 state.popup_input = Some(PopupInputState {
                                     title,
                                     prompt,
                                     buffer: initial,
-                                    cursor: 0,
+                                    cursor,
                                     popup_type,
                                 });
                             }
@@ -526,6 +528,19 @@ async fn run_loop(
                                                     state.set_error(format!("Failed to send input: {}", e));
                                                 }
                                             }
+                                        }
+                                        PopupType::RenameSession { session } => {
+                                            let new_name = popup.buffer.trim();
+                                            if new_name.is_empty() {
+                                                state.set_error("Session name cannot be empty".to_string());
+                                            } else if new_name.contains('.') || new_name.contains(':') {
+                                                state.set_error("Session name cannot contain '.' or ':'".to_string());
+                                            } else if new_name != session {
+                                                if let Err(e) = tmux_client.rename_session(&session, new_name) {
+                                                    state.set_error(format!("Failed to rename session: {}", e));
+                                                }
+                                            }
+                                            // If new_name == session, just close dialog silently
                                         }
                                     }
                                 }
@@ -670,10 +685,20 @@ fn map_key_to_action(
 
     // Sidebar focused - check popup trigger key first
     if let KeyCode::Char(c) = code {
-        let key_str = c.to_string();
+        // Build key string with modifier prefix for binding lookup
+        let key_str = if modifiers.contains(KeyModifiers::CONTROL) {
+            format!("C-{}", c.to_ascii_lowercase())
+        } else if modifiers.contains(KeyModifiers::ALT) {
+            format!("M-{}", c.to_ascii_lowercase())
+        } else {
+            c.to_string()
+        };
 
-        // Check popup trigger key
-        if key_str == config.popup_trigger_key {
+        // Check popup trigger key (only for unmodified keys)
+        if !modifiers.contains(KeyModifiers::CONTROL)
+            && !modifiers.contains(KeyModifiers::ALT)
+            && key_str == config.popup_trigger_key
+        {
             return Action::ShowPopupInput {
                 title: "Filter Agents".to_string(),
                 prompt: "Pattern (name/session/window/dir):".to_string(),
@@ -695,6 +720,21 @@ fn map_key_to_action(
                 KeyAction::KillApp { method } => Action::KillApp {
                     method: method.clone(),
                 },
+                KeyAction::RenameSession => {
+                    if let Some(agent) = state.selected_agent() {
+                        Action::ShowPopupInput {
+                            title: "Rename Session".to_string(),
+                            prompt: "New session name:".to_string(),
+                            initial: agent.session.clone(),
+                            popup_type: crate::app::PopupType::RenameSession {
+                                session: agent.session.clone(),
+                            },
+                        }
+                    } else {
+                        Action::None
+                    }
+                }
+                KeyAction::Refresh => Action::Refresh,
             };
         }
     }
@@ -726,7 +766,6 @@ fn map_key_to_action(
 
         KeyCode::Char('s') | KeyCode::Char('S') => Action::ToggleSubagentLog,
         KeyCode::Char('t') | KeyCode::Char('T') => Action::ToggleSummaryDetail,
-        KeyCode::Char('r') => Action::Refresh,
 
         // Sidebar resize (only < and >)
         KeyCode::Char('<') => Action::SidebarNarrower,
