@@ -6,7 +6,7 @@ use tokio::sync::mpsc;
 use tracing::{debug, error, warn};
 
 use crate::agents::{AgentStatus, MonitoredAgent};
-use crate::app::AgentTree;
+use crate::app::{AgentTree, Config};
 use crate::parsers::ParserRegistry;
 use crate::tmux::{refresh_process_cache, TmuxClient};
 
@@ -25,6 +25,10 @@ pub struct MonitorTask {
     parser_registry: Arc<ParserRegistry>,
     tx: mpsc::Sender<MonitorUpdate>,
     poll_interval: Duration,
+    /// Configuration for session filtering
+    config: Config,
+    /// Current session name (for ignore_self feature)
+    current_session: Option<String>,
     /// Track when each agent was last seen as "active" (Processing/AwaitingApproval)
     /// Key: agent target string
     last_active: HashMap<String, Instant>,
@@ -36,12 +40,18 @@ impl MonitorTask {
         parser_registry: Arc<ParserRegistry>,
         tx: mpsc::Sender<MonitorUpdate>,
         poll_interval: Duration,
+        config: Config,
     ) -> Self {
+        // Get current session once at startup (for ignore_self feature)
+        let current_session = tmux_client.get_current_session().ok().flatten();
+
         Self {
             tmux_client,
             parser_registry,
             tx,
             poll_interval,
+            config,
+            current_session,
             last_active: HashMap::new(),
         }
     }
@@ -74,6 +84,15 @@ impl MonitorTask {
         let mut tree = AgentTree::new();
 
         for pane in panes {
+            // Filter out ignored sessions (before any processing)
+            if self
+                .config
+                .should_ignore_session(&pane.session, self.current_session.as_deref())
+            {
+                debug!("Ignoring session: {}", pane.session);
+                continue;
+            }
+
             // Try to find a matching parser for the pane (checks command, title, cmdline)
             if let Some(parser) = self.parser_registry.find_parser_for_pane(&pane) {
                 let target = pane.target();

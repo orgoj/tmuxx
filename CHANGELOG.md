@@ -8,6 +8,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **Session Ignore Filter** - Config option to ignore (hide) specific tmux sessions at data-collection level
+  - `ignore_sessions` - List of patterns to ignore (supports fixed, glob, regex)
+  - `ignore_self = true` - Auto-ignore the session where tmuxcc runs (default: true)
+  - Pattern auto-detection:
+    - `/pattern/` → regex (e.g., `/^ssh-\d+$/`)
+    - Contains `*` or `?` → glob (e.g., `test-*`, `cc-?-prod`)
+    - Plain string → fixed (exact match)
+  - CLI override: `--set ignore_sessions=prod-*,ssh-tunnel` and `--set ignore_self=false`
+  - Applied at data-collection level (before agent processing) for efficiency
+  - Added SessionPattern module with comprehensive test coverage
+
+### Fixed
+- **Filter Navigation Anti-Pattern** - Fixed critical bug where up/down navigation moved through hidden agents
+  - Navigation now only moves through visible (filtered) agents
+  - `select_all()` only selects visible agents
+  - `toggle_selection()` is no-op for hidden agents
+  - `get_operation_indices()` only returns visible indices
+  - When filter is applied, cursor jumps to first visible agent if current is hidden
+  - Multi-selection is cleaned up when filter changes (removes hidden agents)
+  - Added `visible_agent_indices()` and `ensure_visible_selection()` helpers
+  - Added 7 unit tests for filter-aware navigation behavior
+
+### Added
 - **Popup Input Dialog** - Added popup input dialog feature with configurable trigger key (default `/`)
   - Reusable component for quick text input without switching focus
   - Single-line input with cursor navigation (Home/End/Left/Right)

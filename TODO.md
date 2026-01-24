@@ -1,5 +1,26 @@
 # TODO - tmuxcc
 
+- Netrimuje dlouhe cary (ramecky)
+
+- jak definovat Alt-T ? A-T = { send_keys = "S-Tab" }
+
+- config pro sirku leveho sloupce: pocet znaku nebo procenta
+
+- konfigurovatelny jiny rezim pro TODO cast obrazovky, chci tam videt zacatek souboru TODO.md pokud je v projektu nebo jiny konfigurovatelny nace, vice nazvu i glob prvni co najde tam zobrazi
+
+
+- nedetekuje query tool - pise to idle
+
+- todo detekce je spatna toto nepoznal
+```
+││✢ Processing anthropics/skills… (esc to interrupt · ctrl+t to hide tasks · 1m 17s · ↑ 414 tokens)                  │
+││  ⎿  ◼ #1 Process anthropics/skills repository                                                                     │
+││     ◻ #2 Process fcakyon/claude-codex-settings repository                                                         │
+││     ◻ #3 Process nikiforovall.blog article                                                                        │
+││     ◻ #4 Process wshobson GitHub profile                                                                          │
+││     ◻ #5 Process wshobson/agents repository
+```
+
 
 ## Priority Tasks
 

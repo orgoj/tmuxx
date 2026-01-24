@@ -52,7 +52,7 @@ impl AgentTreeWidget {
     pub fn render(frame: &mut Frame, area: Rect, state: &AppState) {
         // Get filtered agents (returns Vec<&MonitoredAgent>)
         let filtered_agents = state.filtered_agents();
-        let agents = &state.agents.root_agents; // Keep for counts
+        let _agents = &state.agents.root_agents; // Keep for counts
         let active_count = state.agents.active_count();
         let subagent_count = state.agents.running_subagent_count();
         let selected_count = state.selected_agents.len();

@@ -8,7 +8,6 @@ use ratatui::{
 use unicode_width::{UnicodeWidthChar, UnicodeWidthStr};
 
 use crate::app::PopupInputState;
-use crate::ui::Layout as AppLayout;
 
 /// Popup input dialog widget
 pub struct PopupInputWidget;
@@ -34,7 +33,11 @@ impl PopupInputWidget {
             .borders(Borders::ALL)
             .border_type(BorderType::Rounded)
             .title(state.title.clone())
-            .title_style(Style::default().fg(Color::Cyan).add_modifier(Modifier::BOLD))
+            .title_style(
+                Style::default()
+                    .fg(Color::Cyan)
+                    .add_modifier(Modifier::BOLD),
+            )
             .style(Style::default().fg(Color::Cyan));
         let inner = block.inner(popup_area);
         frame.render_widget(block, popup_area);

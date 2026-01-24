@@ -207,7 +207,7 @@ impl TmuxClient {
     }
 
     /// Get current tmux session name (if inside tmux)
-    fn get_current_session(&self) -> Result<Option<String>> {
+    pub fn get_current_session(&self) -> Result<Option<String>> {
         if !Self::is_inside_tmux() {
             return Ok(None);
         }

@@ -4,6 +4,7 @@ use std::path::PathBuf;
 
 use super::config_override::ConfigOverride;
 use super::key_binding::KeyBindings;
+use super::session_pattern::SessionPattern;
 
 /// Application configuration
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -43,6 +44,17 @@ pub struct Config {
     /// Trigger key for popup input dialog (default: "/")
     #[serde(default = "default_popup_trigger_key")]
     pub popup_trigger_key: String,
+
+    /// Sessions to ignore (supports fixed, glob, regex patterns)
+    /// - Fixed: "session-name" (exact match)
+    /// - Glob: "test-*" (shell wildcards)
+    /// - Regex: "/^ssh-\\d+$/" (wrapped in slashes)
+    #[serde(default)]
+    pub ignore_sessions: Vec<String>,
+
+    /// Auto-ignore the session where tmuxcc itself runs (default: true)
+    #[serde(default = "default_ignore_self")]
+    pub ignore_self: bool,
 }
 
 fn default_poll_interval() -> u64 {
@@ -69,6 +81,10 @@ fn default_popup_trigger_key() -> String {
     "/".to_string()
 }
 
+fn default_ignore_self() -> bool {
+    true
+}
+
 /// Pattern for detecting agent types
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct AgentPattern {
@@ -90,6 +106,8 @@ impl Default for Config {
             agent_patterns: Vec::new(),
             key_bindings: KeyBindings::default(),
             popup_trigger_key: default_popup_trigger_key(),
+            ignore_sessions: Vec::new(),
+            ignore_self: default_ignore_self(),
         }
     }
 }
@@ -143,6 +161,43 @@ impl Config {
         let override_val = ConfigOverride::parse(key, value)?;
         override_val.apply(self);
         Ok(())
+    }
+
+    /// Check if a session should be ignored based on configuration.
+    ///
+    /// A session is ignored if:
+    /// 1. `ignore_self` is true AND session matches current_session
+    /// 2. Session matches any pattern in `ignore_sessions`
+    ///
+    /// # Arguments
+    /// * `session` - The session name to check
+    /// * `current_session` - The session where tmuxcc is running (for ignore_self)
+    pub fn should_ignore_session(&self, session: &str, current_session: Option<&str>) -> bool {
+        // Check ignore_self
+        if self.ignore_self {
+            if let Some(current) = current_session {
+                if session == current {
+                    return true;
+                }
+            }
+        }
+
+        // Check ignore_sessions patterns
+        for pattern_str in &self.ignore_sessions {
+            match SessionPattern::parse(pattern_str) {
+                Ok(pattern) => {
+                    if pattern.matches(session) {
+                        return true;
+                    }
+                }
+                Err(e) => {
+                    // Log warning but continue (invalid patterns are skipped)
+                    tracing::warn!("Invalid ignore_sessions pattern '{}': {}", pattern_str, e);
+                }
+            }
+        }
+
+        false
     }
 }
 
@@ -211,5 +266,77 @@ mod tests {
         // Verify key_bindings field exists and has defaults
         assert!(config.key_bindings.get_action("y").is_some());
         assert!(config.key_bindings.get_action("n").is_some());
+    }
+
+    #[test]
+    fn test_should_ignore_session_default() {
+        let config = Config::default();
+
+        // Default: ignore_self=true, empty ignore_sessions
+        // Should ignore own session
+        assert!(config.should_ignore_session("my-session", Some("my-session")));
+        // Should NOT ignore other sessions
+        assert!(!config.should_ignore_session("other", Some("my-session")));
+        // When not inside tmux (current_session=None), nothing is ignored
+        assert!(!config.should_ignore_session("my-session", None));
+    }
+
+    #[test]
+    fn test_should_ignore_session_patterns() {
+        let mut config = Config::default();
+        config.ignore_self = false; // Disable to test patterns only
+        config.ignore_sessions = vec![
+            "prod-*".to_string(),       // glob
+            "/^vpn-\\d+$/".to_string(), // regex
+            "ssh-tunnel".to_string(),   // fixed
+        ];
+
+        // Fixed match
+        assert!(config.should_ignore_session("ssh-tunnel", None));
+        assert!(!config.should_ignore_session("ssh-tunnel-2", None));
+
+        // Glob match
+        assert!(config.should_ignore_session("prod-main", None));
+        assert!(config.should_ignore_session("prod-backup", None));
+        assert!(!config.should_ignore_session("dev-prod", None));
+
+        // Regex match
+        assert!(config.should_ignore_session("vpn-123", None));
+        assert!(!config.should_ignore_session("vpn-abc", None));
+        assert!(!config.should_ignore_session("my-vpn-1", None));
+
+        // Non-matching
+        assert!(!config.should_ignore_session("dev-session", None));
+    }
+
+    #[test]
+    fn test_should_ignore_session_combined() {
+        let mut config = Config::default();
+        config.ignore_self = true;
+        config.ignore_sessions = vec!["test-*".to_string()];
+
+        // Both ignore_self and patterns work together
+        assert!(config.should_ignore_session("tmuxcc", Some("tmuxcc"))); // ignore_self
+        assert!(config.should_ignore_session("test-1", Some("tmuxcc"))); // pattern
+        assert!(!config.should_ignore_session("dev", Some("tmuxcc"))); // neither
+    }
+
+    #[test]
+    fn test_ignore_sessions_override() {
+        let mut config = Config::default();
+
+        // Test ignore_sessions override
+        config
+            .apply_override("ignore_sessions", "prod-*,ssh-tunnel")
+            .unwrap();
+        assert_eq!(config.ignore_sessions.len(), 2);
+        assert_eq!(config.ignore_sessions[0], "prod-*");
+        assert_eq!(config.ignore_sessions[1], "ssh-tunnel");
+
+        // Test ignore_self override
+        config.apply_override("ignore_self", "false").unwrap();
+        assert!(!config.ignore_self);
+        config.apply_override("ignore_self", "true").unwrap();
+        assert!(config.ignore_self);
     }
 }

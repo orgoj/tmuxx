@@ -55,6 +55,7 @@ pub async fn run_app(config: Config) -> Result<()> {
         parser_registry.clone(),
         tx,
         Duration::from_millis(config.poll_interval_ms),
+        config.clone(),
     );
     let monitor_handle = tokio::spawn(async move {
         monitor.run().await;
@@ -513,9 +514,8 @@ async fn run_loop(
                                             } else {
                                                 state.filter_pattern = Some(popup.buffer);
                                             }
-                                            // Reset selection to first visible agent
-                                            state.selected_index = 0;
-                                            state.clear_selection();
+                                            // Ensure selection points to visible agent and clean up selections
+                                            state.ensure_visible_selection();
                                         }
                                         PopupType::GeneralInput => {
                                             // Send to selected agent

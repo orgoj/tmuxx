@@ -14,6 +14,8 @@ pub enum ConfigOverride {
     MaxLineWidth(Option<u16>),
     KeyBinding(String, KeyAction),
     PopupTriggerKey(String),
+    IgnoreSessions(Vec<String>),
+    IgnoreSelf(bool),
 }
 
 impl ConfigOverride {
@@ -72,6 +74,23 @@ impl ConfigOverride {
             "popuptriggerkey" | "popupkey" => {
                 Ok(ConfigOverride::PopupTriggerKey(value.to_string()))
             }
+            "ignoresessions" | "ignore_sessions" => {
+                let sessions: Vec<String> = value
+                    .split(',')
+                    .map(|s| s.trim().to_string())
+                    .filter(|s| !s.is_empty())
+                    .collect();
+                Ok(ConfigOverride::IgnoreSessions(sessions))
+            }
+            "ignoreself" | "ignore_self" => {
+                let val = parse_bool(value).ok_or_else(|| {
+                    anyhow!(
+                        "Invalid value for ignore_self: '{}'. Expected: true/false, 1/0, yes/no, on/off",
+                        value
+                    )
+                })?;
+                Ok(ConfigOverride::IgnoreSelf(val))
+            }
             s if s.starts_with("keybindings.") || s.starts_with("kb.") => {
                 let key = if let Some(k) = normalized_key.strip_prefix("keybindings.") {
                     k
@@ -83,7 +102,7 @@ impl ConfigOverride {
                 Ok(ConfigOverride::KeyBinding(key.to_string(), action))
             }
             _ => Err(anyhow!(
-                "Unknown config key: '{}'. Valid keys: poll_interval_ms, capture_lines, show_detached_sessions, debug_mode, truncate_long_lines, max_line_width, popup_trigger_key, keybindings.KEY (or kb.KEY)",
+                "Unknown config key: '{}'. Valid keys: poll_interval_ms, capture_lines, show_detached_sessions, debug_mode, truncate_long_lines, max_line_width, popup_trigger_key, ignore_sessions, ignore_self, keybindings.KEY (or kb.KEY)",
                 key
             )),
         }
@@ -102,6 +121,8 @@ impl ConfigOverride {
                 config.key_bindings.bindings.insert(key, action);
             }
             ConfigOverride::PopupTriggerKey(val) => config.popup_trigger_key = val,
+            ConfigOverride::IgnoreSessions(sessions) => config.ignore_sessions = sessions,
+            ConfigOverride::IgnoreSelf(val) => config.ignore_self = val,
         }
     }
 }

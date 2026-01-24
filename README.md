@@ -320,6 +320,22 @@ truncate_long_lines = true
 # Trigger key for popup input dialog (default: "/")
 popup_trigger_key = "/"
 
+# Session Filtering
+# Auto-ignore the session where tmuxcc runs (default: true)
+# This prevents tmuxcc from showing itself in the dashboard
+ignore_self = true
+
+# Ignore specific sessions by pattern (optional)
+# Supports three pattern types:
+# - Fixed: exact match (e.g., "cc-prod")
+# - Glob: shell wildcards (* and ?) (e.g., "test-*", "cc-?-prod")
+# - Regex: wrapped in slashes (e.g., "/^ssh-\d+$/")
+ignore_sessions = [
+  "ssh-tunnel",        # fixed: exact match
+  "prod-*",            # glob: matches prod-main, prod-backup, etc.
+  "/^(vpn|log)-.*$/",  # regex: matches vpn-* or log-*
+]
+
 # Custom agent patterns (optional)
 # Patterns are matched against: command, title, cmdline, and child processes
 # Built-in agents (Claude Code, OpenCode, etc.) are detected first
@@ -420,7 +436,18 @@ tmuxcc --set poll_interval=1000 --set showdetached=false
 - `truncate_long_lines` (or `truncate`) - Enable/disable line truncation in preview
 - `max_line_width` (or `linewidth`) - Max line width for truncation (number or 'none')
 - `popup_trigger_key` (or `popupkey`) - Key to trigger popup input dialog (default: "/")
+- `ignore_sessions` (or `ignoresessions`) - Comma-separated list of sessions to ignore (supports glob/regex)
+- `ignore_self` (or `ignoreself`) - Auto-ignore own session (default: true)
 - `keybindings.KEY` (or `kb.KEY`) - Map key to action (see below)
+
+**Session filtering examples:**
+```bash
+# Ignore specific sessions (comma-separated patterns)
+tmuxcc --set ignore_sessions=prod-*,ssh-tunnel,/^vpn-\d+$/
+
+# Show your own session (disable ignore_self)
+tmuxcc --set ignore_self=false
+```
 
 **Key binding overrides:**
 ```bash
