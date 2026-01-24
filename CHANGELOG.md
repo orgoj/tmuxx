@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- **Modal Multi-line Input Dialog** - Rich text editor for sending longer messages to agents
+  - Press `Shift+I` to open modal textarea dialog
+  - Multi-line editing with proper cursor movement
+  - Undo/Redo support (Ctrl+U / Ctrl+R)
+  - Emacs-style shortcuts supported
+  - Enter inserts newlines (submit with Esc or add to keybindings)
+  - `hide_bottom_input` config option (default: true) - hides bottom input box when modal is preferred
+  - Uses `tui-textarea` library for advanced text editing
+
 ### Changed
 - **Full English Translation** - Translated all Japanese and Czech text to English
   - CLI help text (--help) now fully in English

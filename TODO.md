@@ -1,29 +1,143 @@
 # TODO - tmuxcc
 
--- --debug-log zapisova vsechen debug a co sposusti do ./.tmuxcc.log
-je to
-- Config for left column width: character count or percentage
-
-- Fix unnecessary | in session tree display - check tmux with project skill
-
-- Configurable different mode for TODO section of screen, want to see beginning of TODO.md file if in project or other configurable name, multiple names and glob - first found is displayed
-
-
-
-- Does not detect query tool - shows idle
-
-- TODO detection is broken, did not recognize this
-```
-││✢ Processing anthropics/skills… (esc to interrupt · ctrl+t to hide tasks · 1m 17s · ↑ 414 tokens)                  │
-││  ⎿  ◼ #1 Process anthropics/skills repository                                                                     │
-││     ◻ #2 Process fcakyon/claude-codex-settings repository                                                         │
-││     ◻ #3 Process nikiforovall.blog article                                                                        │
-││     ◻ #4 Process wshobson GitHub profile                                                                          │
-││     ◻ #5 Process wshobson/agents repository
-```
-
-
 ## Priority Tasks
+
+### CRITICAL: Modal Textarea Editor Issues (Shift+I)
+**Status:** 🐛 BUGS - Multiple critical problems
+**Current State:** Modal textarea is broken in multiple ways
+
+**Root Cause:** Editor was implemented without reading tui-textarea documentation properly
+
+**Issues Analysis:**
+
+1. **Cursor not visible**
+   - Cause: `set_cursor_style(Color::White)` on light gray background (200,200,200) = white on white, invisible
+   - Fix: Use `Color::Black` or `Style::default().add_modifier(Modifier::REVERSED)` for inverted cursor
+
+2. **No Ctrl+Enter submit for multi-line**
+   - Current: Editable mode uses `textarea.input(input)` which makes Enter insert newline (default per docs)
+   - Missing: Custom key mapping for Ctrl+Enter to return `true` (submit) in multi-line mode
+   - Fix: Add `Input { key: Key::Enter, ctrl: true, .. } => return true` before `textarea.input(input)`
+
+3. **Multi-line paste broken**
+   - Symptom: Pasting multi-line text shows only one line, arrow keys misbehave then freeze
+   - Textarea has all lines in memory (docs: "always contains at least one line")
+   - Possible cause: Issue in handle_input logic or rendering
+
+4. **No VISUAL scrollbar widget**
+   - tui-textarea does NOT include scrollbar (not a library feature)
+   - Must implement custom scrollbar widget from ratatui
+   - Should be visible on right side, shows current position in document
+
+**Required Actions:**
+- [ ] Fix cursor color (black or inverted)
+- [ ] Add Ctrl+Enter submit keybinding in handle_input
+- [ ] Debug multi-line paste issue (check handle_input logic)
+- [ ] Implement ratatui Scrollbar widget alongside textarea
+- [ ] Test all edge cases with long text, paste, scroll
+
+---
+
+### Notification System for Action-Required Events
+**Status:** 💡 Feature Request
+**Problem:** No alerts when agent needs user action → user must constantly watch tmuxcc
+**Use case:** Agent awaits approval → terminal bell + desktop notification + custom command
+**Solution:**
+- Notification system with multiple channels (terminal, command, hooks)
+- Only notify for actionable events (approval, error, question)
+- Do NOT notify for informational events (subagent done, idle, processing)
+- Configurable via TOML (enable/disable, channels, custom commands)
+
+**Actions:**
+- [ ] Design notification architecture (event detection, channel dispatch)
+- [ ] Implement terminal notifications (visual bell/flash)
+- [ ] Implement command execution (`notify-send`, `osascript`, custom)
+- [ ] Implement hook system (callback scripts per event type)
+- [ ] Add config options to Config struct and TOML
+- [ ] Event filtering: only approval_needed, agent_error, user_question
+- [ ] Test: agent approval → notification fires
+- [ ] Test: subagent done → NO notification
+- [ ] Document in README.md and config reference
+
+**Config example:**
+```toml
+[notifications]
+enabled = true
+channels = ["terminal", "command"]
+command = "notify-send 'tmuxcc' '{message}'"
+
+[[notifications.hook]]
+event = "approval_needed"
+script = "/path/to/notify.sh"
+```
+
+### Enhanced Process Detection (Parent + Tree + Content)
+**Status:** 💡 Feature Request
+**Problem:** Current detection only checks process command → misses agents in wrappers/shells
+**Use case:** Agent launched via wrapper script → current detection fails
+**Solution:**
+- Multi-strategy detection with fallback chain
+- Detect parent process (agent wrapper)
+- Scan process tree (entire hierarchy)
+- Content-based AI type detection (parse output for Claude/Gemini/Codex patterns)
+
+**Actions:**
+- [ ] Research: how to get parent PID and process tree on Linux/macOS
+- [ ] Implement parent process detection in PaneInfo
+- [ ] Implement process tree scanning (recursive parent/child)
+- [ ] Implement content-based AI type detection (regex patterns per AI)
+- [ ] Update ParserRegistry to use enhanced detection
+- [ ] Add detection strategy config (enable/disable strategies)
+- [ ] Test: agent in wrapper → detected correctly
+- [ ] Test: content-based detection → correct AI type identified
+- [ ] Document detection strategies in README.md
+
+### AI-Specific Control Configuration
+**Status:** 💡 Feature Request
+**Problem:** All AI agents use same key bindings (Y/N) → not flexible for different AI types
+**Use case:** Claude uses Y/N, Gemini uses A/R, custom AI uses different workflow
+**Solution:**
+- Define AI profiles in config with custom key bindings
+- Per-AI approval workflows (single-key vs confirmation)
+- Custom actions/commands per AI type
+
+**Actions:**
+- [ ] Design AI profile config schema (TOML format)
+- [ ] Add `ai_profiles` to Config struct
+- [ ] Implement AI profile matching (agent type → profile)
+- [ ] Update key handling to use AI-specific bindings
+- [ ] Support custom approval workflows per AI
+- [ ] Add AI-specific action definitions
+- [ ] Test: Claude agent → Y/N keys work
+- [ ] Test: Gemini agent → A/R keys work (if configured)
+- [ ] Document AI profiles in config reference
+
+**Config example:**
+```toml
+[[ai_profile]]
+name = "claude-code"
+approval_keys = { yes = "y", no = "n" }
+requires_confirmation = false
+
+[[ai_profile]]
+name = "gemini"
+approval_keys = { approve = "a", reject = "r" }
+requires_confirmation = true
+```
+
+### Configurable Action Menus per Session
+**Status:** 💡 Feature Request - COMPLEX SYSTEM (See TODO-MENU.md)
+
+**Problem:** No way to define custom actions/workflows for specific sessions
+
+**Vision:** Powerful action system with variables, inputs, screen capture, editor, and bash pipelines
+
+**Full specification:** See [TODO-MENU.md](TODO-MENU.md) for complete details including:
+- Variable system (`${SESSION_DIR}`, `${TMP}`, etc.)
+- Input mechanisms (`@{INPUT_LINE}`, `@{SCREEN}`, `@{EDITOR}`)
+- Pipeline execution with bash support
+- 5 implementation phases
+- Config examples and technical challenges
 
 ### CLI --filter argument for session filtering - NOTE: toto je snad hotovo jen to nema --filter ale standardni --set ...
 **Status:** 💡 Missing CLI option
@@ -65,148 +179,32 @@ je to
 - `README.md` - documents workaround usage
 
 
-### 3. Modal Input Dialog with Text Editor
-**Status:** 💡 Ready to implement - Library selected
-**Actions:**
-- [ ] Add tui-textarea to Cargo.toml
-- [ ] Study popup_placeholder.rs example from library
-- [ ] Implement modal popup dialog with TextArea
-- [ ] Connect with event handling (Esc closes, Enter sends)
-- [ ] Replace current input buffer with this solution
-- [ ] Test: open popup, enter text, send
-
-**Problem:** Current input buffer has bugs, we need modal dialog with quality editor
-**Solution:** Use **tui-textarea** library (by rhysd)
-
-**Selected library: tui-textarea**
-- Repo: https://github.com/rhysd/tui-textarea
-- Docs: https://docs.rs/tui-textarea
-- Supports ratatui 0.29 ✅
-- Has popup example! (examples/popup_placeholder.rs)
-- Features: multi-line, undo/redo, selection, search, Emacs shortcuts
-
-**Installation:**
-```toml
-tui-textarea = "*"
-```
-
-### 4. Statusline for Session + Move Input to Modal Dialog
-**Status:** 🎨 UI Enhancement
-**Problem:** Input buffer takes space where statusline for session could be
-**Solution:**
-- Remove always-visible input buffer from layout
-- Add statusline for selected session (status, context %, activity)
-- Move input to modal dialog (see task #5)
-**Actions:**
-- [ ] Design layout: where statusline will be, what it shows
-- [ ] Implement statusline for session (similar to header)
-- [ ] Remove input buffer from main layout
-- [ ] Connect with modal input dialog from task #4
-
-### 5. Notification System for Action-Required Events
-**Status:** 💡 Feature Request
-**Problem:** No alerts when agent needs user action → user must constantly watch tmuxcc
-**Use case:** Agent awaits approval → terminal bell + desktop notification + custom command
-**Solution:**
-- Notification system with multiple channels (terminal, command, hooks)
-- Only notify for actionable events (approval, error, question)
-- Do NOT notify for informational events (subagent done, idle, processing)
-- Configurable via TOML (enable/disable, channels, custom commands)
-
-**Actions:**
-- [ ] Design notification architecture (event detection, channel dispatch)
-- [ ] Implement terminal notifications (visual bell/flash)
-- [ ] Implement command execution (`notify-send`, `osascript`, custom)
-- [ ] Implement hook system (callback scripts per event type)
-- [ ] Add config options to Config struct and TOML
-- [ ] Event filtering: only approval_needed, agent_error, user_question
-- [ ] Test: agent approval → notification fires
-- [ ] Test: subagent done → NO notification
-- [ ] Document in README.md and config reference
-
-**Config example:**
-```toml
-[notifications]
-enabled = true
-channels = ["terminal", "command"]
-command = "notify-send 'tmuxcc' '{message}'"
-
-[[notifications.hook]]
-event = "approval_needed"
-script = "/path/to/notify.sh"
-```
-
-### 6. Enhanced Process Detection (Parent + Tree + Content)
-**Status:** 💡 Feature Request
-**Problem:** Current detection only checks process command → misses agents in wrappers/shells
-**Use case:** Agent launched via wrapper script → current detection fails
-**Solution:**
-- Multi-strategy detection with fallback chain
-- Detect parent process (agent wrapper)
-- Scan process tree (entire hierarchy)
-- Content-based AI type detection (parse output for Claude/Gemini/Codex patterns)
-
-**Actions:**
-- [ ] Research: how to get parent PID and process tree on Linux/macOS
-- [ ] Implement parent process detection in PaneInfo
-- [ ] Implement process tree scanning (recursive parent/child)
-- [ ] Implement content-based AI type detection (regex patterns per AI)
-- [ ] Update ParserRegistry to use enhanced detection
-- [ ] Add detection strategy config (enable/disable strategies)
-- [ ] Test: agent in wrapper → detected correctly
-- [ ] Test: content-based detection → correct AI type identified
-- [ ] Document detection strategies in README.md
-
-### 7. AI-Specific Control Configuration
-**Status:** 💡 Feature Request
-**Problem:** All AI agents use same key bindings (Y/N) → not flexible for different AI types
-**Use case:** Claude uses Y/N, Gemini uses A/R, custom AI uses different workflow
-**Solution:**
-- Define AI profiles in config with custom key bindings
-- Per-AI approval workflows (single-key vs confirmation)
-- Custom actions/commands per AI type
-
-**Actions:**
-- [ ] Design AI profile config schema (TOML format)
-- [ ] Add `ai_profiles` to Config struct
-- [ ] Implement AI profile matching (agent type → profile)
-- [ ] Update key handling to use AI-specific bindings
-- [ ] Support custom approval workflows per AI
-- [ ] Add AI-specific action definitions
-- [ ] Test: Claude agent → Y/N keys work
-- [ ] Test: Gemini agent → A/R keys work (if configured)
-- [ ] Document AI profiles in config reference
-
-**Config example:**
-```toml
-[[ai_profile]]
-name = "claude-code"
-approval_keys = { yes = "y", no = "n" }
-requires_confirmation = false
-
-[[ai_profile]]
-name = "gemini"
-approval_keys = { approve = "a", reject = "r" }
-requires_confirmation = true
-```
-
-### 8. Configurable Action Menus per Session
-**Status:** 💡 Feature Request - COMPLEX SYSTEM (See TODO-MENU.md)
-
-**Problem:** No way to define custom actions/workflows for specific sessions
-
-**Vision:** Powerful action system with variables, inputs, screen capture, editor, and bash pipelines
-
-**Full specification:** See [TODO-MENU.md](TODO-MENU.md) for complete details including:
-- Variable system (`${SESSION_DIR}`, `${TMP}`, etc.)
-- Input mechanisms (`@{INPUT_LINE}`, `@{SCREEN}`, `@{EDITOR}`)
-- Pipeline execution with bash support
-- 5 implementation phases
-- Config examples and technical challenges
-
 ---
 
-## Other ideas
+## Other
+
+-- --debug-log zapisova vsechen debug a co sposusti do ./.tmuxcc.log
+
+- Config for left column width: character count or percentage
+
+- Fix unnecessary | in session tree display - check tmux with project skill
+
+- Configurable different mode for TODO section of screen, want to see beginning of TODO.md file if in project or other configurable name, multiple names and glob - first found is displayed
+
+
+- Does not detect query tool - shows idle
+
+- TODO detection is broken, did not recognize this
+```
+││✢ Processing anthropics/skills… (esc to interrupt · ctrl+t to hide tasks · 1m 17s · ↑ 414 tokens)                  │
+││  ⎿  ◼ #1 Process anthropics/skills repository                                                                     │
+││     ◻ #2 Process fcakyon/claude-codex-settings repository                                                         │
+││     ◻ #3 Process nikiforovall.blog article                                                                        │
+││     ◻ #4 Process wshobson GitHub profile                                                                          │
+││     ◻ #5 Process wshobson/agents repository
+```
+
+
 
 - collapse session? - needs select on session and session menu
 - preview preserver importasnt lines, wrap, must scroll to end after wrap

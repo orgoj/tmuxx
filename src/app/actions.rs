@@ -103,6 +103,17 @@ pub enum Action {
     PopupInputCursorEnd,
     /// Execute a shell command with variable expansion
     ExecuteCommand { command: String, blocking: bool },
+    /// Show modal textarea dialog
+    ShowModalTextarea {
+        title: String,
+        prompt: String,
+        initial: String,
+        single_line: bool,
+    },
+    /// Hide modal textarea without submitting
+    HideModalTextarea,
+    /// Submit modal textarea (returns text)
+    ModalTextareaSubmit,
     /// No action (used for unbound keys)
     None,
 }
@@ -158,6 +169,9 @@ impl Action {
             Action::PopupInputCursorHome => "Move cursor home (popup)",
             Action::PopupInputCursorEnd => "Move cursor end (popup)",
             Action::ExecuteCommand { .. } => "Execute command",
+            Action::ShowModalTextarea { .. } => "Show modal textarea",
+            Action::HideModalTextarea => "Hide modal textarea",
+            Action::ModalTextareaSubmit => "Submit modal textarea",
             Action::None => "",
         }
     }

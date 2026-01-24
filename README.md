@@ -217,6 +217,7 @@ tcc
 | `f` / `F` | Focus on selected pane in tmux (supports cross-session, use wrapper script for best results) |
 | `Left` / `Right` | Switch focus (Sidebar / Input) |
 | `/` | Show popup input dialog (configurable) |
+| `Shift+I` | Open multi-line input modal (for sending longer text to agents) |
 
 ### Session Management
 
@@ -326,6 +327,11 @@ truncate_long_lines = true
 # Trigger key for popup input dialog (default: "/")
 popup_trigger_key = "/"
 
+# Hide bottom input buffer (use modal textarea instead, default: true)
+# When true, the bottom input box is hidden - use Shift+I for multi-line input
+# When false, the bottom input box is always visible at the bottom of screen
+hide_bottom_input = true
+
 # Session Filtering
 # Auto-ignore the session where tmuxcc runs (default: true)
 # This prevents tmuxcc from showing itself in the dashboard
@@ -416,6 +422,102 @@ x = { execute_command = { command = "echo ${ENV:USER} - ${SESSION_NAME}" } }
 - Other: `Home`, `End`, `PageUp`, `PageDown`, `Insert`, `Delete`
 
 See `man tmux` section on `send-keys` for complete list.
+
+### Available Key Binding Actions
+
+All key bindings use this format:
+```toml
+[key_bindings]
+# Simple actions (string shorthand)
+key = "action_name"
+
+# Complex actions (table format)
+key = { action_type = { ... } }
+```
+
+**Navigation Actions:**
+```toml
+j = "next_agent"           # Next agent (down)
+k = "prev_agent"           # Previous agent (up)
+```
+
+**Approval Actions:**
+```toml
+y = "approve"              # Approve selected request(s)
+n = "reject"               # Reject selected request(s)
+a = "approve_all"          # Approve ALL pending requests
+```
+
+**Number Choice Actions:**
+```toml
+"0" = { send_number = 0 }  # Send choice number 0-9
+"1" = { send_number = 1 }
+# ... up to 9
+```
+
+**Send Keys Actions:**
+```toml
+E = { send_keys = "Escape" }       # Send ESC to agent
+C = { send_keys = "C-c" }          # Send Ctrl-C
+D = { send_keys = "C-d" }          # Send Ctrl-D
+```
+
+**Kill App Actions:**
+```toml
+K = { kill_app = { method = "sigterm" } }        # Kill with SIGTERM
+K = { kill_app = { method = "ctrlc_ctrld" } }    # Kill with Ctrl-C then Ctrl-D
+```
+
+**Session Management:**
+```toml
+r = "rename_session"       # Open dialog to rename session
+```
+
+**Refresh Action:**
+```toml
+"C-l" = "refresh"          # Refresh / clear error
+```
+
+**Command Execution:**
+```toml
+# Simple command (non-blocking)
+z = { execute_command = { command = "zede ${SESSION_DIR}" } }
+
+# Blocking command (waits for completion)
+"M-t" = { execute_command = { command = "attach ${SESSION_NAME}", blocking = true } }
+```
+
+### Modifier Key Syntax
+
+Modifier keys are prefixes to the key name:
+
+| Prefix | Modifier | Example | Description |
+|--------|----------|---------|-------------|
+| `C-` | Ctrl | `C-l` | Ctrl+L |
+| `M-` | Alt | `M-t` | Alt+T (Meta) |
+| `S-` | Shift | `S-i` | Shift+I (explicit) |
+
+**Note:** Uppercase letters implicitly include Shift:
+- `I` = Shift+i (implicit)
+- `S-i` = Shift+i (explicit, same result)
+- `M-I` = Alt+Shift+i
+
+### Customizing Hardcoded Keys
+
+Some keys are hardcoded in the application and cannot be changed via config:
+- **`Shift+I`** (open multi-line input modal) - hardcoded for convenience
+- **`Space`** (toggle selection) - hardcoded
+- **`Tab`** (cycle agents) - hardcoded
+- **`Esc`** (cancel/close) - hardcoded
+- **`h` / `?`** (help) - hardcoded
+- **`q`** (quit) - hardcoded
+- **Arrow keys** - hardcoded fallback
+
+To change the modal input binding, you would need to modify the source code in `src/ui/app.rs`:
+```rust
+// Line ~869: Change 'I' to your preferred key
+KeyCode::Char('I') => Action::ShowModalTextarea { ... }
+```
 
 **Command execution:**
 - Execute shell commands from keybindings with variable expansion

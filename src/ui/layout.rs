@@ -29,6 +29,39 @@ impl Layout {
         (chunks[0], chunks[1])
     }
 
+    /// Splits the content area with summary and preview (NO input)
+    /// Returns (sidebar, summary, preview)
+    pub fn content_layout_no_input(
+        area: Rect,
+        sidebar_width: u16,
+        show_summary: bool,
+    ) -> (Rect, Rect, Rect) {
+        let columns = ratatui::layout::Layout::default()
+            .direction(Direction::Horizontal)
+            .constraints([
+                Constraint::Percentage(sidebar_width),
+                Constraint::Percentage(100 - sidebar_width),
+            ])
+            .split(area);
+
+        if show_summary {
+            let summary_height = 15;
+
+            let right_side = ratatui::layout::Layout::default()
+                .direction(Direction::Vertical)
+                .constraints([
+                    Constraint::Length(summary_height), // Summary (TODO + activity)
+                    Constraint::Min(5),                 // Preview (pane content)
+                ])
+                .split(columns[1]);
+
+            (columns[0], right_side[0], right_side[1])
+        } else {
+            // No summary - just preview
+            (columns[0], columns[1], columns[1])
+        }
+    }
+
     /// Splits the content area with summary, preview, and input
     /// Returns (sidebar, summary, preview, input)
     pub fn content_layout_with_input(

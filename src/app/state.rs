@@ -1,5 +1,7 @@
 use crate::agents::MonitoredAgent;
 use crate::monitor::SystemStats;
+use crate::ui::components::ModalTextareaState;
+use ratatui::style::{Color, Style};
 use std::collections::HashSet;
 use std::time::Instant;
 
@@ -127,6 +129,8 @@ pub struct AppState {
     pub show_help: bool,
     /// Popup input dialog state (None = not shown)
     pub popup_input: Option<PopupInputState>,
+    /// Modal textarea dialog state (None = not shown)
+    pub modal_textarea: Option<ModalTextareaState>,
     /// Current filter pattern (None = no filter, Some("") = show all, Some("text") = filter)
     pub filter_pattern: Option<String>,
     /// Whether subagent log is shown
@@ -160,6 +164,7 @@ impl AppState {
             cursor_position: 0,
             show_help: false,
             popup_input: None,
+            modal_textarea: None,
             filter_pattern: None,
             show_subagent_log: false,
             show_summary_detail: true,
@@ -401,6 +406,22 @@ impl AppState {
     /// Toggles help display
     pub fn toggle_help(&mut self) {
         self.show_help = !self.show_help;
+        // Create help modal textarea when opening
+        if self.show_help && self.modal_textarea.is_none() {
+            use crate::ui::components::ModalTextareaState;
+            let help_text = ModalTextareaState::new(
+                "Help (Readonly)".to_string(),
+                "".to_string(),
+                crate::ui::components::HelpWidget::generate_help_text(&self.config),
+                false, // not single_line
+                true,  // readonly!
+            );
+            self.modal_textarea = Some(help_text);
+        }
+        // Clear modal textarea when closing help
+        if !self.show_help {
+            self.modal_textarea = None;
+        }
     }
 
     /// Toggles subagent log display

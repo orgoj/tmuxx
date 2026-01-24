@@ -13,6 +13,7 @@ use crossterm::{
 };
 use ratatui::{backend::CrosstermBackend, Terminal};
 use tokio::sync::mpsc;
+use tui_textarea::Input;
 
 use crate::app::{Action, AppState, Config, KeyAction, NavAction};
 use crate::monitor::{MonitorTask, SystemStatsCollector};
@@ -20,8 +21,8 @@ use crate::parsers::ParserRegistry;
 use crate::tmux::TmuxClient;
 
 use super::components::{
-    AgentTreeWidget, FooterWidget, HeaderWidget, HelpWidget, InputWidget, PanePreviewWidget,
-    PopupInputWidget, SubagentLogWidget,
+    AgentTreeWidget, FooterWidget, HeaderWidget, HelpWidget, InputWidget, ModalTextareaWidget,
+    PanePreviewWidget, PopupInputWidget, SubagentLogWidget,
 };
 use super::Layout;
 
@@ -110,8 +111,12 @@ async fn run_loop(
             // Header
             HeaderWidget::render(frame, main_chunks[0], state);
 
-            // Always show input widget at bottom of right column
-            let input_height = InputWidget::calculate_height(state.get_input(), 6);
+            // Calculate input height based on config
+            let input_height = if state.config.hide_bottom_input {
+                0 // No input widget shown
+            } else {
+                InputWidget::calculate_height(state.get_input(), 6)
+            };
 
             if state.show_subagent_log {
                 // With subagent log: sidebar | summary+preview+input | subagent_log
@@ -130,22 +135,40 @@ async fn run_loop(
                     .split(preview);
                 PanePreviewWidget::render_summary(frame, preview_chunks[0], state);
                 PanePreviewWidget::render_detailed(frame, preview_chunks[1], state);
-                InputWidget::render(frame, preview_chunks[2], state);
+                // Only render input if not hidden
+                if !state.config.hide_bottom_input {
+                    InputWidget::render(frame, preview_chunks[2], state);
+                }
                 SubagentLogWidget::render(frame, subagent_log, state);
             } else {
-                // Normal: sidebar | summary+preview+input
-                let (left, summary, preview, input_area) = Layout::content_layout_with_input(
-                    main_chunks[1],
-                    state.sidebar_width,
-                    input_height,
-                    state.show_summary_detail,
-                );
-                AgentTreeWidget::render(frame, left, state);
-                if state.show_summary_detail {
-                    PanePreviewWidget::render_summary(frame, summary, state);
+                // Normal: sidebar | summary+preview±input
+                if state.config.hide_bottom_input {
+                    // No input panel at all
+                    let (left, summary, preview) = Layout::content_layout_no_input(
+                        main_chunks[1],
+                        state.sidebar_width,
+                        state.show_summary_detail,
+                    );
+                    AgentTreeWidget::render(frame, left, state);
+                    if state.show_summary_detail {
+                        PanePreviewWidget::render_summary(frame, summary, state);
+                    }
+                    PanePreviewWidget::render_detailed(frame, preview, state);
+                } else {
+                    // With input panel
+                    let (left, summary, preview, input_area) = Layout::content_layout_with_input(
+                        main_chunks[1],
+                        state.sidebar_width,
+                        input_height,
+                        state.show_summary_detail,
+                    );
+                    AgentTreeWidget::render(frame, left, state);
+                    if state.show_summary_detail {
+                        PanePreviewWidget::render_summary(frame, summary, state);
+                    }
+                    PanePreviewWidget::render_detailed(frame, preview, state);
+                    InputWidget::render(frame, input_area, state);
                 }
-                PanePreviewWidget::render_detailed(frame, preview, state);
-                InputWidget::render(frame, input_area, state);
             }
 
             // Footer
@@ -156,9 +179,16 @@ async fn run_loop(
                 PopupInputWidget::render(frame, size, popup_state);
             }
 
+            // Modal textarea (before help)
+            if let Some(modal_state) = &state.modal_textarea {
+                ModalTextareaWidget::render(frame, size, modal_state);
+            }
+
             // Help overlay (highest priority - render last)
             if state.show_help {
-                HelpWidget::render(frame, size, &state.config);
+                if let Some(modal_state) = &state.modal_textarea {
+                    ModalTextareaWidget::render(frame, size, modal_state);
+                }
             }
         })?;
 
@@ -292,368 +322,456 @@ async fn run_loop(
 
                     // Handle keyboard events
                     if let Event::Key(key) = event {
-                        let action = map_key_to_action(key.code, key.modifiers, state, &state.config);
+                        // Special handling for help scrolling (readonly modal textarea)
+                        if state.show_help {
+                            if let Some(modal) = &state.modal_textarea {
+                                if modal.readonly {
+                                    match key.code {
+                                        KeyCode::Up => {
+                                            if let Some(m) = state.modal_textarea.as_mut() {
+                                                m.textarea.scroll((0, -1));
+                                            }
+                                        }
+                                        KeyCode::Down => {
+                                            if let Some(m) = state.modal_textarea.as_mut() {
+                                                m.textarea.scroll((0, 1));
+                                            }
+                                        }
+                                        KeyCode::PageUp => {
+                                            if let Some(m) = state.modal_textarea.as_mut() {
+                                                m.textarea.scroll((0, -10));
+                                            }
+                                        }
+                                        KeyCode::PageDown => {
+                                            if let Some(m) = state.modal_textarea.as_mut() {
+                                                m.textarea.scroll((0, 10));
+                                            }
+                                        }
+                                        _ => {
+                                            // Other keys go to action processing for Esc
+                                        }
+                                    }
+                                }
+                            }
+                            // Continue to action processing for Esc
+                        }
 
-                        match action {
-                            Action::Quit => {
-                                state.should_quit = true;
+                        // Special handling for modal textarea (both editable and readonly)
+                        if state.modal_textarea.is_some() {
+                            // Check for special keys first
+                            let action = map_key_to_action(key.code, key.modifiers, state, &state.config);
+
+                            match action {
+                                Action::ModalTextareaSubmit => {
+                                    if let Some(modal) = state.modal_textarea.take() {
+                                        let text = modal.get_text();
+                                        // Send text to selected agent
+                                        if let Some(agent) = state.agents.get_agent(state.selected_index) {
+                                            if let Err(e) = tmux_client.send_keys(&agent.target, &text) {
+                                                state.set_error(format!("Failed to send input: {}", e));
+                                            }
+                                        }
+                                    }
+                                }
+                                Action::HideModalTextarea => {
+                                    state.modal_textarea = None;
+                                }
+                                _ => {
+                                    // Pass all other keys to textarea using Into<Input> trait
+                                    if let Some(modal) = &mut state.modal_textarea {
+                                        let input: Input = key.into();
+                                        let should_close = modal.handle_input(input);
+                                        if should_close {
+                                            state.modal_textarea = None;
+                                        }
+                                    }
+                                }
                             }
-                            Action::NextAgent => {
-                                state.select_next();
-                            }
-                            Action::PrevAgent => {
-                                state.select_prev();
-                            }
-                            Action::ToggleSelection => {
-                                state.toggle_selection();
-                            }
-                            Action::SelectAll => {
-                                state.select_all();
-                            }
-                            Action::ClearSelection => {
-                                state.clear_selection();
-                            }
-                            Action::Approve => {
-                                let indices = state.get_operation_indices();
-                                for idx in indices {
-                                    if let Some(agent) = state.agents.get_agent(idx) {
+                        } else {
+                            // Normal key handling when modal is not active
+                            let action = map_key_to_action(key.code, key.modifiers, state, &state.config);
+
+                            match action {
+                                Action::Quit => {
+                                    state.should_quit = true;
+                                }
+                                Action::NextAgent => {
+                                    state.select_next();
+                                }
+                                Action::PrevAgent => {
+                                    state.select_prev();
+                                }
+                                Action::ToggleSelection => {
+                                    state.toggle_selection();
+                                }
+                                Action::SelectAll => {
+                                    state.select_all();
+                                }
+                                Action::ClearSelection => {
+                                    state.clear_selection();
+                                }
+                                Action::Approve => {
+                                    let indices = state.get_operation_indices();
+                                    for idx in indices {
+                                        if let Some(agent) = state.agents.get_agent(idx) {
+                                            if agent.status.needs_attention() {
+                                                let target = agent.target.clone();
+                                                if let Err(e) = tmux_client.send_keys(&target, "y") {
+                                                    state.set_error(format!("Failed to approve: {}", e));
+                                                    break;
+                                                }
+                                                if let Err(e) = tmux_client.send_keys(&target, "Enter") {
+                                                    state.set_error(format!("Failed to send Enter: {}", e));
+                                                    break;
+                                                }
+                                            }
+                                        }
+                                    }
+                                    state.clear_selection();
+                                }
+                                Action::Reject => {
+                                    let indices = state.get_operation_indices();
+                                    for idx in indices {
+                                        if let Some(agent) = state.agents.get_agent(idx) {
+                                            if agent.status.needs_attention() {
+                                                let target = agent.target.clone();
+                                                if let Err(e) = tmux_client.send_keys(&target, "n") {
+                                                    state.set_error(format!("Failed to reject: {}", e));
+                                                    break;
+                                                }
+                                                if let Err(e) = tmux_client.send_keys(&target, "Enter") {
+                                                    state.set_error(format!("Failed to send Enter: {}", e));
+                                                    break;
+                                                }
+                                            }
+                                        }
+                                    }
+                                    state.clear_selection();
+                                }
+                                Action::ApproveAll => {
+                                    for agent in &state.agents.root_agents {
                                         if agent.status.needs_attention() {
-                                            let target = agent.target.clone();
-                                            if let Err(e) = tmux_client.send_keys(&target, "y") {
-                                                state.set_error(format!("Failed to approve: {}", e));
+                                            if let Err(e) = tmux_client.send_keys(&agent.target, "y") {
+                                                state.set_error(format!("Failed to approve {}: {}", agent.target, e));
                                                 break;
                                             }
-                                            if let Err(e) = tmux_client.send_keys(&target, "Enter") {
-                                                state.set_error(format!("Failed to send Enter: {}", e));
-                                                break;
-                                            }
-                                        }
-                                    }
-                                }
-                                state.clear_selection();
-                            }
-                            Action::Reject => {
-                                let indices = state.get_operation_indices();
-                                for idx in indices {
-                                    if let Some(agent) = state.agents.get_agent(idx) {
-                                        if agent.status.needs_attention() {
-                                            let target = agent.target.clone();
-                                            if let Err(e) = tmux_client.send_keys(&target, "n") {
-                                                state.set_error(format!("Failed to reject: {}", e));
-                                                break;
-                                            }
-                                            if let Err(e) = tmux_client.send_keys(&target, "Enter") {
-                                                state.set_error(format!("Failed to send Enter: {}", e));
+                                            if let Err(e) = tmux_client.send_keys(&agent.target, "Enter") {
+                                                state.set_error(format!("Failed to send Enter to {}: {}", agent.target, e));
                                                 break;
                                             }
                                         }
                                     }
                                 }
-                                state.clear_selection();
-                            }
-                            Action::ApproveAll => {
-                                for agent in &state.agents.root_agents {
-                                    if agent.status.needs_attention() {
-                                        if let Err(e) = tmux_client.send_keys(&agent.target, "y") {
-                                            state.set_error(format!("Failed to approve {}: {}", agent.target, e));
-                                            break;
-                                        }
-                                        if let Err(e) = tmux_client.send_keys(&agent.target, "Enter") {
-                                            state.set_error(format!("Failed to send Enter to {}: {}", agent.target, e));
-                                            break;
-                                        }
-                                    }
-                                }
-                            }
-                            Action::FocusPane => {
-                                if let Some(agent) = state.selected_agent() {
-                                    let target = agent.target.clone();
-                                    if let Err(e) = tmux_client.focus_pane(&target) {
-                                        state.set_error(format!("Failed to focus: {}", e));
-                                    }
-                                }
-                            }
-                            Action::ToggleSubagentLog => {
-                                state.toggle_subagent_log();
-                            }
-                            Action::ToggleSummaryDetail => {
-                                state.toggle_summary_detail();
-                            }
-                            Action::Refresh => {
-                                state.clear_error();
-                            }
-                            Action::ShowHelp => {
-                                state.toggle_help();
-                            }
-                            Action::HideHelp => {
-                                state.show_help = false;
-                            }
-                            Action::FocusInput => {
-                                state.focus_input();
-                            }
-                            Action::FocusSidebar => {
-                                state.focus_sidebar();
-                            }
-                            Action::ClearInput => {
-                                state.take_input();
-                            }
-                            Action::InputChar(c) => {
-                                state.input_char(c);
-                            }
-                            Action::InputNewline => {
-                                state.input_newline();
-                            }
-                            Action::InputBackspace => {
-                                state.input_backspace();
-                            }
-                            Action::CursorLeft => {
-                                state.cursor_left();
-                            }
-                            Action::CursorRight => {
-                                state.cursor_right();
-                            }
-                            Action::CursorHome => {
-                                state.cursor_home();
-                            }
-                            Action::CursorEnd => {
-                                state.cursor_end();
-                            }
-                            Action::SendInput => {
-                                let input = state.take_input();
-                                if !input.is_empty() {
+                                Action::FocusPane => {
                                     if let Some(agent) = state.selected_agent() {
                                         let target = agent.target.clone();
-                                        // Send the input text
-                                        if let Err(e) = tmux_client.send_keys(&target, &input) {
-                                            state.set_error(format!("Failed to send input: {}", e));
+                                        if let Err(e) = tmux_client.focus_pane(&target) {
+                                            state.set_error(format!("Failed to focus: {}", e));
+                                        }
+                                    }
+                                }
+                                Action::ToggleSubagentLog => {
+                                    state.toggle_subagent_log();
+                                }
+                                Action::ToggleSummaryDetail => {
+                                    state.toggle_summary_detail();
+                                }
+                                Action::Refresh => {
+                                    state.clear_error();
+                                }
+                                Action::ShowHelp => {
+                                    state.toggle_help();
+                                }
+                                Action::HideHelp => {
+                                    state.show_help = false;
+                                }
+                                Action::FocusInput => {
+                                    // Only allow input focus when input panel is visible
+                                    if !state.config.hide_bottom_input {
+                                        state.focus_input();
+                                    }
+                                }
+                                Action::FocusSidebar => {
+                                    state.focus_sidebar();
+                                }
+                                Action::ClearInput => {
+                                    state.take_input();
+                                }
+                                Action::InputChar(c) => {
+                                    state.input_char(c);
+                                }
+                                Action::InputNewline => {
+                                    state.input_newline();
+                                }
+                                Action::InputBackspace => {
+                                    state.input_backspace();
+                                }
+                                Action::CursorLeft => {
+                                    state.cursor_left();
+                                }
+                                Action::CursorRight => {
+                                    state.cursor_right();
+                                }
+                                Action::CursorHome => {
+                                    state.cursor_home();
+                                }
+                                Action::CursorEnd => {
+                                    state.cursor_end();
+                                }
+                                Action::SendInput => {
+                                    let input = state.take_input();
+                                    if !input.is_empty() {
+                                        if let Some(agent) = state.selected_agent() {
+                                            let target = agent.target.clone();
+                                            // Send the input text
+                                            if let Err(e) = tmux_client.send_keys(&target, &input) {
+                                                state.set_error(format!("Failed to send input: {}", e));
+                                            } else if let Err(e) = tmux_client.send_keys(&target, "Enter") {
+                                                state.set_error(format!("Failed to send Enter: {}", e));
+                                            }
+                                        }
+                                    }
+                                    // Stay in input mode for consecutive inputs
+                                }
+                                Action::SendNumber(num) => {
+                                    if let Some(agent) = state.selected_agent() {
+                                        let target = agent.target.clone();
+                                        let num_str = num.to_string();
+                                        if let Err(e) = tmux_client.send_keys(&target, &num_str) {
+                                            state.set_error(format!("Failed to send number: {}", e));
                                         } else if let Err(e) = tmux_client.send_keys(&target, "Enter") {
                                             state.set_error(format!("Failed to send Enter: {}", e));
                                         }
                                     }
                                 }
-                                // Stay in input mode for consecutive inputs
-                            }
-                            Action::SendNumber(num) => {
-                                if let Some(agent) = state.selected_agent() {
-                                    let target = agent.target.clone();
-                                    let num_str = num.to_string();
-                                    if let Err(e) = tmux_client.send_keys(&target, &num_str) {
-                                        state.set_error(format!("Failed to send number: {}", e));
-                                    } else if let Err(e) = tmux_client.send_keys(&target, "Enter") {
-                                        state.set_error(format!("Failed to send Enter: {}", e));
-                                    }
+                                Action::SidebarWider => {
+                                    state.sidebar_width = (state.sidebar_width + 5).min(70);
                                 }
-                            }
-                            Action::SidebarWider => {
-                                state.sidebar_width = (state.sidebar_width + 5).min(70);
-                            }
-                            Action::SidebarNarrower => {
-                                state.sidebar_width = state.sidebar_width.saturating_sub(5).max(15);
-                            }
-                            Action::SelectAgent(idx) => {
-                                state.select_agent(idx);
-                            }
-                            Action::ScrollUp => {
-                                state.select_prev();
-                            }
-                            Action::ScrollDown => {
-                                state.select_next();
-                            }
-                            Action::SendKeys(keys) => {
-                                let indices = state.get_operation_indices();
-                                for idx in indices {
-                                    if let Some(agent) = state.agents.get_agent(idx) {
-                                        let target = agent.target.clone();
-                                        if let Err(e) = tmux_client.send_keys(&target, &keys) {
-                                            state.set_error(format!("Failed to send keys: {}", e));
-                                            break;
+                                Action::SidebarNarrower => {
+                                    state.sidebar_width = state.sidebar_width.saturating_sub(5).max(15);
+                                }
+                                Action::SelectAgent(idx) => {
+                                    state.select_agent(idx);
+                                }
+                                Action::ScrollUp => {
+                                    state.select_prev();
+                                }
+                                Action::ScrollDown => {
+                                    state.select_next();
+                                }
+                                Action::SendKeys(keys) => {
+                                    let indices = state.get_operation_indices();
+                                    for idx in indices {
+                                        if let Some(agent) = state.agents.get_agent(idx) {
+                                            let target = agent.target.clone();
+                                            if let Err(e) = tmux_client.send_keys(&target, &keys) {
+                                                state.set_error(format!("Failed to send keys: {}", e));
+                                                break;
+                                            }
                                         }
                                     }
+                                    state.clear_selection();
                                 }
-                                state.clear_selection();
-                            }
-                            Action::KillApp { method } => {
-                                let indices = state.get_operation_indices();
-                                for idx in indices {
-                                    if let Some(agent) = state.agents.get_agent(idx) {
-                                        let target = agent.target.clone();
-                                        if let Err(e) = tmux_client.kill_application(&target, &method) {
-                                            state.set_error(format!("Failed to kill app: {}", e));
-                                            break;
+                                Action::KillApp { method } => {
+                                    let indices = state.get_operation_indices();
+                                    for idx in indices {
+                                        if let Some(agent) = state.agents.get_agent(idx) {
+                                            let target = agent.target.clone();
+                                            if let Err(e) = tmux_client.kill_application(&target, &method) {
+                                                state.set_error(format!("Failed to kill app: {}", e));
+                                                break;
+                                            }
                                         }
                                     }
+                                    state.clear_selection();
                                 }
-                                state.clear_selection();
-                            }
-                            Action::ExecuteCommand { command, blocking } => {
-                                if let Some(agent) = state.selected_agent() {
-                                    let expanded = expand_command_variables(&command, agent);
-                                    let result = if blocking {
-                                        tokio::process::Command::new("bash")
-                                            .args(["-c", &expanded])
-                                            .output()
-                                            .await
-                                            .map(|output| {
-                                                if output.status.success() {
-                                                    let stdout = String::from_utf8_lossy(&output.stdout).to_string();
-                                                    if stdout.is_empty() {
-                                                        format!("Executed: {}", expanded)
+                                Action::ExecuteCommand { command, blocking } => {
+                                    if let Some(agent) = state.selected_agent() {
+                                        let expanded = expand_command_variables(&command, agent);
+                                        let result = if blocking {
+                                            tokio::process::Command::new("bash")
+                                                .args(["-c", &expanded])
+                                                .output()
+                                                .await
+                                                .map(|output| {
+                                                    if output.status.success() {
+                                                        let stdout = String::from_utf8_lossy(&output.stdout).to_string();
+                                                        if stdout.is_empty() {
+                                                            format!("Executed: {}", expanded)
+                                                        } else {
+                                                            format!("Executed: {} → {}", expanded, stdout.trim())
+                                                        }
                                                     } else {
-                                                        format!("Executed: {} → {}", expanded, stdout.trim())
+                                                        let stderr = String::from_utf8_lossy(&output.stderr).to_string();
+                                                        format!("Failed: {} | Error: {}", expanded, stderr.trim())
                                                     }
-                                                } else {
-                                                    let stderr = String::from_utf8_lossy(&output.stderr).to_string();
-                                                    format!("Failed: {} | Error: {}", expanded, stderr.trim())
-                                                }
-                                            })
-                                            .map_err(|e| format!("Failed to execute: {}", e))
-                                    } else {
-                                        tokio::process::Command::new("bash")
-                                            .args(["-c", &expanded])
-                                            .spawn()
-                                            .map(|_| format!("Started: {}", expanded))
-                                            .map_err(|e| format!("Failed to spawn: {}", e))
-                                    };
+                                                })
+                                                .map_err(|e| format!("Failed to execute: {}", e))
+                                        } else {
+                                            tokio::process::Command::new("bash")
+                                                .args(["-c", &expanded])
+                                                .spawn()
+                                                .map(|_| format!("Started: {}", expanded))
+                                                .map_err(|e| format!("Failed to spawn: {}", e))
+                                        };
 
-                                    match result {
-                                        Ok(msg) => state.set_status(msg),
-                                        Err(e) => state.set_error(e),
+                                        match result {
+                                            Ok(msg) => state.set_status(msg),
+                                            Err(e) => state.set_error(e),
+                                        }
+                                    } else {
+                                        state.set_error("No agent selected".to_string());
                                     }
-                                } else {
-                                    state.set_error("No agent selected".to_string());
                                 }
-                            }
-                            Action::ShowPopupInput {
-                                title,
-                                prompt,
-                                initial,
-                                popup_type,
-                            } => {
-                                use crate::app::PopupInputState;
-                                // Set cursor at end of buffer for rename dialog (easier to edit)
-                                let cursor = initial.len();
-                                state.popup_input = Some(PopupInputState {
+                                Action::ShowPopupInput {
                                     title,
                                     prompt,
-                                    buffer: initial,
-                                    cursor,
+                                    initial,
                                     popup_type,
-                                });
-                            }
-                            Action::HidePopupInput => {
-                                state.popup_input = None;
-                            }
-                            Action::PopupInputSubmit => {
-                                use crate::app::PopupType;
-                                if let Some(popup) = state.popup_input.take() {
-                                    match popup.popup_type {
-                                        PopupType::Filter => {
-                                            // Apply filter
-                                            if popup.buffer.is_empty() {
-                                                state.filter_pattern = None; // Clear filter
-                                            } else {
-                                                state.filter_pattern = Some(popup.buffer);
+                                } => {
+                                    use crate::app::PopupInputState;
+                                    // Set cursor at end of buffer for rename dialog (easier to edit)
+                                    let cursor = initial.len();
+                                    state.popup_input = Some(PopupInputState {
+                                        title,
+                                        prompt,
+                                        buffer: initial,
+                                        cursor,
+                                        popup_type,
+                                    });
+                                }
+                                Action::ShowModalTextarea {
+                                    title,
+                                    prompt,
+                                    initial,
+                                    single_line,
+                                } => {
+                                    use crate::ui::components::ModalTextareaState;
+                                    state.modal_textarea = Some(ModalTextareaState::new(
+                                        title, prompt, initial, single_line, false, // not readonly
+                                    ));
+                                }
+                                Action::HidePopupInput => {
+                                    state.popup_input = None;
+                                }
+                                Action::PopupInputSubmit => {
+                                    use crate::app::PopupType;
+                                    if let Some(popup) = state.popup_input.take() {
+                                        match popup.popup_type {
+                                            PopupType::Filter => {
+                                                // Apply filter
+                                                if popup.buffer.is_empty() {
+                                                    state.filter_pattern = None; // Clear filter
+                                                } else {
+                                                    state.filter_pattern = Some(popup.buffer);
+                                                }
+                                                // Ensure selection points to visible agent and clean up selections
+                                                state.ensure_visible_selection();
                                             }
-                                            // Ensure selection points to visible agent and clean up selections
-                                            state.ensure_visible_selection();
-                                        }
-                                        PopupType::GeneralInput => {
-                                            // Send to selected agent
-                                            let text = popup.buffer;
-                                            if let Some(agent) = state.selected_agent() {
-                                                if let Err(e) = tmux_client.send_keys(&agent.target, &text)
-                                                {
-                                                    state.set_error(format!("Failed to send input: {}", e));
+                                            PopupType::GeneralInput => {
+                                                // Send to selected agent
+                                                let text = popup.buffer;
+                                                if let Some(agent) = state.selected_agent() {
+                                                    if let Err(e) = tmux_client.send_keys(&agent.target, &text)
+                                                    {
+                                                        state.set_error(format!("Failed to send input: {}", e));
+                                                    }
                                                 }
                                             }
-                                        }
-                                        PopupType::RenameSession { session } => {
-                                            let new_name = popup.buffer.trim();
-                                            if new_name.is_empty() {
-                                                state.set_error("Session name cannot be empty".to_string());
-                                            } else if new_name.contains('.') || new_name.contains(':') {
-                                                state.set_error("Session name cannot contain '.' or ':'".to_string());
-                                            } else if new_name != session {
-                                                if let Err(e) = tmux_client.rename_session(&session, new_name) {
-                                                    state.set_error(format!("Failed to rename session: {}", e));
+                                            PopupType::RenameSession { session } => {
+                                                let new_name = popup.buffer.trim();
+                                                if new_name.is_empty() {
+                                                    state.set_error("Session name cannot be empty".to_string());
+                                                } else if new_name.contains('.') || new_name.contains(':') {
+                                                    state.set_error("Session name cannot contain '.' or ':'".to_string());
+                                                } else if new_name != session {
+                                                    if let Err(e) = tmux_client.rename_session(&session, new_name) {
+                                                        state.set_error(format!("Failed to rename session: {}", e));
+                                                    }
                                                 }
+                                                // If new_name == session, just close dialog silently
                                             }
-                                            // If new_name == session, just close dialog silently
                                         }
                                     }
                                 }
-                            }
-                            Action::PopupInputChar(c) => {
-                                if let Some(popup) = &mut state.popup_input {
-                                    popup.buffer.insert(popup.cursor, c);
-                                    popup.cursor += c.len_utf8();
-                                }
-                            }
-                            Action::PopupInputBackspace => {
-                                if let Some(popup) = &mut state.popup_input {
-                                    if popup.cursor > 0 {
-                                        let prev = popup.buffer[..popup.cursor]
-                                            .char_indices()
-                                            .last()
-                                            .map(|(i, _)| i)
-                                            .unwrap_or(0);
-                                        popup.buffer.remove(prev);
-                                        popup.cursor = prev;
+                                Action::PopupInputChar(c) => {
+                                    if let Some(popup) = &mut state.popup_input {
+                                        popup.buffer.insert(popup.cursor, c);
+                                        popup.cursor += c.len_utf8();
                                     }
                                 }
-                            }
-                            Action::PopupInputDelete => {
-                                if let Some(popup) = &mut state.popup_input {
-                                    if popup.cursor < popup.buffer.len() {
-                                        if let Some(ch) = popup.buffer[popup.cursor..].chars().next() {
-                                            popup.buffer.drain(popup.cursor..popup.cursor + ch.len_utf8());
+                                Action::PopupInputBackspace => {
+                                    if let Some(popup) = &mut state.popup_input {
+                                        if popup.cursor > 0 {
+                                            let prev = popup.buffer[..popup.cursor]
+                                                .char_indices()
+                                                .last()
+                                                .map(|(i, _)| i)
+                                                .unwrap_or(0);
+                                            popup.buffer.remove(prev);
+                                            popup.cursor = prev;
                                         }
                                     }
                                 }
-                            }
-                            Action::PopupInputClear => {
-                                if let Some(popup) = &mut state.popup_input {
-                                    popup.buffer.clear();
-                                    popup.cursor = 0;
-                                }
-                            }
-                            Action::PopupInputSelectAll => {
-                                if let Some(popup) = &mut state.popup_input {
-                                    popup.buffer.clear();
-                                    popup.cursor = 0;
-                                }
-                            }
-                            Action::PopupInputCursorLeft => {
-                                if let Some(popup) = &mut state.popup_input {
-                                    if popup.cursor > 0 {
-                                        popup.cursor = popup.buffer[..popup.cursor]
-                                            .char_indices()
-                                            .last()
-                                            .map(|(i, _)| i)
-                                            .unwrap_or(0);
-                                    }
-                                }
-                            }
-                            Action::PopupInputCursorRight => {
-                                if let Some(popup) = &mut state.popup_input {
-                                    if popup.cursor < popup.buffer.len() {
-                                        if let Some(c) = popup.buffer[popup.cursor..].chars().next() {
-                                            popup.cursor += c.len_utf8();
+                                Action::PopupInputDelete => {
+                                    if let Some(popup) = &mut state.popup_input {
+                                        if popup.cursor < popup.buffer.len() {
+                                            if let Some(ch) = popup.buffer[popup.cursor..].chars().next() {
+                                                popup.buffer.drain(popup.cursor..popup.cursor + ch.len_utf8());
+                                            }
                                         }
                                     }
                                 }
-                            }
-                            Action::PopupInputCursorHome => {
-                                if let Some(popup) = &mut state.popup_input {
-                                    popup.cursor = 0;
+                                Action::PopupInputClear => {
+                                    if let Some(popup) = &mut state.popup_input {
+                                        popup.buffer.clear();
+                                        popup.cursor = 0;
+                                    }
                                 }
-                            }
-                            Action::PopupInputCursorEnd => {
-                                if let Some(popup) = &mut state.popup_input {
-                                    popup.cursor = popup.buffer.len();
+                                Action::PopupInputSelectAll => {
+                                    if let Some(popup) = &mut state.popup_input {
+                                        popup.buffer.clear();
+                                        popup.cursor = 0;
+                                    }
                                 }
+                                Action::PopupInputCursorLeft => {
+                                    if let Some(popup) = &mut state.popup_input {
+                                        if popup.cursor > 0 {
+                                            popup.cursor = popup.buffer[..popup.cursor]
+                                                .char_indices()
+                                                .last()
+                                                .map(|(i, _)| i)
+                                                .unwrap_or(0);
+                                        }
+                                    }
+                                }
+                                Action::PopupInputCursorRight => {
+                                    if let Some(popup) = &mut state.popup_input {
+                                        if popup.cursor < popup.buffer.len() {
+                                            if let Some(c) = popup.buffer[popup.cursor..].chars().next() {
+                                                popup.cursor += c.len_utf8();
+                                            }
+                                        }
+                                    }
+                                }
+                                Action::PopupInputCursorHome => {
+                                    if let Some(popup) = &mut state.popup_input {
+                                        popup.cursor = 0;
+                                    }
+                                }
+                                Action::PopupInputCursorEnd => {
+                                    if let Some(popup) = &mut state.popup_input {
+                                        popup.cursor = popup.buffer.len();
+                                    }
+                                }
+                                Action::HideModalTextarea => {
+                                    // This should not happen here (handled in modal textarea mode)
+                                }
+                                Action::ModalTextareaSubmit => {
+                                    // This should not happen here (handled in modal textarea mode)
+                                }
+                                Action::None => {}
                             }
-                            Action::None => {}
                         }
                     }
                 }
@@ -674,9 +792,21 @@ fn map_key_to_action(
     state: &AppState,
     config: &Config,
 ) -> Action {
-    // If help is shown, any key closes it
+    // If help is shown, handle scrolling or close
     if state.show_help {
-        return Action::HideHelp;
+        return match code {
+            KeyCode::Esc => Action::HideHelp,
+            KeyCode::Up | KeyCode::Down | KeyCode::PageUp | KeyCode::PageDown => Action::None,
+            _ => Action::HideHelp, // Any other key closes help
+        };
+    }
+
+    // If modal textarea is shown, only handle special keys
+    if state.modal_textarea.is_some() {
+        return match code {
+            KeyCode::Esc => Action::HideModalTextarea,
+            _ => Action::None, // All other keys handled directly in event loop
+        };
     }
 
     // If popup is shown, intercept all keys
@@ -804,7 +934,14 @@ fn map_key_to_action(
         KeyCode::Tab => Action::NextAgent,
 
         // Left/Right arrows for focus navigation
-        KeyCode::Right => Action::FocusInput,
+        KeyCode::Right => {
+            // Only allow input focus when input panel is visible
+            if config.hide_bottom_input {
+                Action::None
+            } else {
+                Action::FocusInput
+            }
+        }
         KeyCode::Left => Action::None, // Already on sidebar
 
         // Multi-selection
@@ -822,6 +959,14 @@ fn map_key_to_action(
         KeyCode::Char('>') => Action::SidebarWider,
 
         KeyCode::Char('h') | KeyCode::Char('?') => Action::ShowHelp,
+
+        // Modal textarea input (Shift+I)
+        KeyCode::Char('I') => Action::ShowModalTextarea {
+            title: "Multi-line Input".to_string(),
+            prompt: "Enter message to agent (Enter to submit, Esc to cancel)".to_string(),
+            initial: String::new(),
+            single_line: false,
+        },
 
         KeyCode::Esc => {
             if !state.selected_agents.is_empty() {

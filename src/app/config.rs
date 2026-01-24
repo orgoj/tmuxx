@@ -55,6 +55,10 @@ pub struct Config {
     /// Auto-ignore the session where tmuxcc itself runs (default: true)
     #[serde(default = "default_ignore_self")]
     pub ignore_self: bool,
+
+    /// Hide bottom input buffer (use modal textarea instead)
+    #[serde(default = "default_hide_bottom_input")]
+    pub hide_bottom_input: bool,
 }
 
 fn default_poll_interval() -> u64 {
@@ -85,6 +89,10 @@ fn default_ignore_self() -> bool {
     true
 }
 
+fn default_hide_bottom_input() -> bool {
+    true
+}
+
 /// Pattern for detecting agent types
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct AgentPattern {
@@ -108,6 +116,7 @@ impl Default for Config {
             popup_trigger_key: default_popup_trigger_key(),
             ignore_sessions: Vec::new(),
             ignore_self: default_ignore_self(),
+            hide_bottom_input: default_hide_bottom_input(),
         }
     }
 }
