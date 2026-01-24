@@ -2,7 +2,7 @@ use ratatui::{
     layout::{Constraint, Direction, Layout, Rect},
     style::{Color, Modifier, Style},
     text::{Line, Span},
-    widgets::{Block, BorderType, Borders, Paragraph, Wrap},
+    widgets::{Block, BorderType, Borders, Paragraph},
     Frame,
 };
 use unicode_width::{UnicodeWidthChar, UnicodeWidthStr};
@@ -10,19 +10,9 @@ use unicode_width::{UnicodeWidthChar, UnicodeWidthStr};
 use crate::agents::AgentStatus;
 use crate::app::AppState;
 
-/// Truncate a line to fit within max_width, preserving important markers
+/// Truncate a line to fit within max_width
 /// Returns (truncated_string, was_truncated)
 fn truncate_line(line: &str, max_width: usize) -> (String, bool) {
-    // Important markers that should never be truncated
-    let important_markers = ["[y/n]", "[Y/n]", "⚠", "approve", "reject", "Allow", "Deny"];
-
-    let has_important = important_markers.iter().any(|m| line.contains(m));
-
-    // If line has important markers, don't truncate
-    if has_important {
-        return (line.to_string(), false);
-    }
-
     let width = line.width();
     if width <= max_width {
         return (line.to_string(), false);
@@ -175,7 +165,7 @@ impl PanePreviewWidget {
                 )]));
             }
 
-            let todo_paragraph = Paragraph::new(todo_lines).wrap(Wrap { trim: false });
+            let todo_paragraph = Paragraph::new(todo_lines);
             frame.render_widget(todo_paragraph, columns[0]);
 
             // Right column: Activity and tools
@@ -237,7 +227,7 @@ impl PanePreviewWidget {
                 }
             }
 
-            let activity_paragraph = Paragraph::new(activity_lines).wrap(Wrap { trim: false });
+            let activity_paragraph = Paragraph::new(activity_lines);
             frame.render_widget(activity_paragraph, columns[1]);
         } else {
             // No agent selected
@@ -297,7 +287,6 @@ impl PanePreviewWidget {
 
         let paragraph = Paragraph::new(content)
             .block(block)
-            .wrap(Wrap { trim: false })
             .style(Style::default().fg(Color::White));
 
         frame.render_widget(paragraph, area);
@@ -331,12 +320,8 @@ impl PanePreviewWidget {
             let start = content_lines.len().saturating_sub(available_lines);
 
             for line in &content_lines[start..] {
-                // Apply truncation if enabled
-                let (display_line, _was_truncated) = if state.config.truncate_long_lines {
-                    truncate_line(line, max_line_width)
-                } else {
-                    (line.to_string(), false)
-                };
+                // Always truncate lines to fit display width (no wrapping)
+                let (display_line, _was_truncated) = truncate_line(line, max_line_width);
 
                 // Apply syntax highlighting to the display line
                 let spans = if display_line.starts_with('+') && !display_line.starts_with("+++") {
@@ -384,16 +369,9 @@ impl PanePreviewWidget {
             .border_type(BorderType::Rounded)
             .border_style(Style::default().fg(Color::Gray));
 
-        // Disable wrapping when truncation is enabled, lines are already truncated
-        let paragraph = if state.config.truncate_long_lines {
-            // Lines already truncated - no wrapping needed
-            Paragraph::new(lines).block(block)
-        } else {
-            // Legacy behavior - wrap long lines
-            Paragraph::new(lines)
-                .block(block)
-                .wrap(Wrap { trim: false })
-        };
+        // Never wrap - lines are truncated, each source line = 1 visual line
+        // This ensures "last N lines" shows exactly the last N visual lines
+        let paragraph = Paragraph::new(lines).block(block);
 
         frame.render_widget(paragraph, area);
     }

@@ -1,12 +1,11 @@
 # TODO - tmuxcc
 
-- Netrimuje dlouhe cary (ramecky)
-
 - jak definovat Alt-T ? A-T = { send_keys = "S-Tab" }
 
 - config pro sirku leveho sloupce: pocet znaku nebo procenta
 
 - konfigurovatelny jiny rezim pro TODO cast obrazovky, chci tam videt zacatek souboru TODO.md pokud je v projektu nebo jiny konfigurovatelny nace, vice nazvu i glob prvni co najde tam zobrazi
+
 
 
 - nedetekuje query tool - pise to idle
@@ -260,6 +259,13 @@ requires_confirmation = true
 - Pipeline execution with bash support
 - 5 implementation phases
 - Config examples and technical challenges
+
+---
+
+## Other ideas
+
+- preview preserver importasnt lines, wrap, must scroll to end after wrap
+- scroll in preview area?
 
 ---
 

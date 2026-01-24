@@ -20,6 +20,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Added SessionPattern module with comprehensive test coverage
 
 ### Fixed
+- **Preview Line Truncation** - Fixed long lines in preview area not being truncated
+  - All lines are now always truncated to fit display width (no wrapping)
+  - Removed "important markers" exception that prevented truncation of lines with [y/n], ⚠, etc.
+  - Removed `.wrap()` from all Paragraph widgets to prevent line wrapping
+  - Each source line = 1 visual line, ensuring "last N lines" shows exactly N visual lines
+  - User always sees the actual end of content without lines being pushed off screen
+
 - **Filter Navigation Anti-Pattern** - Fixed critical bug where up/down navigation moved through hidden agents
   - Navigation now only moves through visible (filtered) agents
   - `select_all()` only selects visible agents
