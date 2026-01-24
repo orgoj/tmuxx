@@ -485,7 +485,15 @@ z = { execute_command = { command = "zede ${SESSION_DIR}" } }
 
 # Blocking command (waits for completion)
 "M-t" = { execute_command = { command = "attach ${SESSION_NAME}", blocking = true } }
+
+# Terminal application (interactive, takes over screen)
+m = { execute_command = { command = "lazyclaude -m", terminal = true } }
 ```
+
+### Stdio Redirection
+- **Terminal Apps** (`terminal = true`): Inherit stdio (fully visible and interactive).
+- **Background Apps** (`blocking = false`): Output is silenced (`/dev/null`) to prevent UI corruption.
+- **Debug Mode**: If `debug_mode = true` in config, background output and full results of blocking tasks are written to `.tmuxcc.log` for troubleshooting.
 
 ### Modifier Key Syntax
 
@@ -616,7 +624,7 @@ tmuxcc --set kb.X=send_keys:C-z
 - `refresh` - Refresh screen / clear error
 - `navigate:next_agent` - Navigate to next agent
 - `navigate:prev_agent` - Navigate to previous agent
-- `command:CMD` - Execute shell command (supports variable expansion, use `command:CMD:blocking` for blocking)
+- `command:CMD` - Execute shell command (supports variable expansion, use `command:CMD:blocking` for blocking or `command:CMD:terminal` for interactive apps)
 
 **Key format for modifier keys:**
 - `"C-x"` - Ctrl+X (use quotes in TOML for keys with special characters)

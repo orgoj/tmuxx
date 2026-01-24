@@ -102,7 +102,11 @@ pub enum Action {
     /// Move popup cursor to end
     PopupInputCursorEnd,
     /// Execute a shell command with variable expansion
-    ExecuteCommand { command: String, blocking: bool },
+    ExecuteCommand {
+        command: String,
+        blocking: bool,
+        terminal: bool,
+    },
     /// Show modal textarea dialog
     ShowModalTextarea {
         title: String,

@@ -145,18 +145,20 @@ impl FooterWidget {
             }
 
             if let Some(msg) = &state.last_error {
-                spans.push(Span::styled(" │ ", sep));
+                // Calculate remaining space
+                let used_width: u16 = spans.iter().map(|s| s.content.len() as u16).sum();
+                let available_width = area.width.saturating_sub(used_width).saturating_sub(4); // 4 for " | " and padding
+
                 // Check if it's a status message (starts with ✓) or error
-                // Note: ✓ is multi-byte UTF-8, so we strip by chars not bytes
                 if msg.starts_with("✓ ") {
                     let text = msg.chars().skip(2).collect::<String>();
                     spans.push(Span::styled(
-                        format!("✓ {}", truncate_error(&text, 30)),
+                        format!("✓ {}", truncate_error(&text, available_width as usize)),
                         Style::default().fg(Color::Green),
                     ));
                 } else {
                     spans.push(Span::styled(
-                        format!("✗ {}", truncate_error(msg, 30)),
+                        format!("✗ {}", truncate_error(msg, available_width as usize)),
                         Style::default().fg(Color::Red),
                     ));
                 };
@@ -171,9 +173,17 @@ impl FooterWidget {
 }
 
 fn truncate_error(s: &str, max_len: usize) -> String {
+    if max_len == 0 {
+        return String::new();
+    }
     if s.chars().count() <= max_len {
         s.to_string()
     } else {
-        format!("{}…", s.chars().take(max_len - 1).collect::<String>())
+        format!(
+            "{}…",
+            s.chars()
+                .take(max_len.saturating_sub(1))
+                .collect::<String>()
+        )
     }
 }

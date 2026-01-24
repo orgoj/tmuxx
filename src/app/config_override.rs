@@ -176,7 +176,11 @@ fn parse_key_action(value: &str) -> Result<KeyAction> {
             } else {
                 (cmd_part.to_string(), false)
             };
-            Ok(KeyAction::ExecuteCommand { command, blocking })
+            Ok(KeyAction::ExecuteCommand {
+                command,
+                blocking,
+                terminal: false, // Default to false for overrides for now, or would need to parse
+            })
         }
         _ => Err(anyhow!(
             "Invalid key action: '{}'. Valid formats: approve, reject, approve_all, rename_session, refresh, send_number:N, send_keys:KEYS, kill_app:METHOD, navigate:ACTION, command:CMD[:blocking]",
@@ -368,10 +372,18 @@ mod tests {
         // Test non-blocking command
         let override_val = ConfigOverride::parse("kb.z", "command:echo test").unwrap();
         match override_val {
-            ConfigOverride::KeyBinding(key, KeyAction::ExecuteCommand { command, blocking }) => {
+            ConfigOverride::KeyBinding(
+                key,
+                KeyAction::ExecuteCommand {
+                    command,
+                    blocking,
+                    terminal,
+                },
+            ) => {
                 assert_eq!(key, "z");
                 assert_eq!(command, "echo test");
                 assert!(!blocking);
+                assert!(!terminal);
             }
             _ => panic!("Expected ExecuteCommand action"),
         }
@@ -379,10 +391,18 @@ mod tests {
         // Test blocking command
         let override_val = ConfigOverride::parse("kb.x", "command:ls -la:blocking").unwrap();
         match override_val {
-            ConfigOverride::KeyBinding(key, KeyAction::ExecuteCommand { command, blocking }) => {
+            ConfigOverride::KeyBinding(
+                key,
+                KeyAction::ExecuteCommand {
+                    command,
+                    blocking,
+                    terminal,
+                },
+            ) => {
                 assert_eq!(key, "x");
                 assert_eq!(command, "ls -la");
                 assert!(blocking);
+                assert!(!terminal);
             }
             _ => panic!("Expected ExecuteCommand action with blocking=true"),
         }
@@ -394,10 +414,18 @@ mod tests {
         )
         .unwrap();
         match override_val {
-            ConfigOverride::KeyBinding(key, KeyAction::ExecuteCommand { command, blocking }) => {
+            ConfigOverride::KeyBinding(
+                key,
+                KeyAction::ExecuteCommand {
+                    command,
+                    blocking,
+                    terminal,
+                },
+            ) => {
                 assert_eq!(key, "y");
                 assert_eq!(command, "wezterm cli attach-session ${SESSION_NAME}");
                 assert!(blocking);
+                assert!(!terminal);
             }
             _ => panic!("Expected ExecuteCommand action"),
         }

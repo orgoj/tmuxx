@@ -501,6 +501,9 @@ async fn run_loop(
                                 }
                                 Action::Refresh => {
                                     state.clear_error();
+                                    if let Err(e) = terminal.clear() {
+                                        state.set_error(format!("Failed to clear screen: {}", e));
+                                    }
                                 }
                                 Action::ShowHelp => {
                                     state.toggle_help();
@@ -590,6 +593,8 @@ async fn run_loop(
                                             if let Err(e) = tmux_client.send_keys(&target, &keys) {
                                                 state.set_error(format!("Failed to send keys: {}", e));
                                                 break;
+                                            } else {
+                                                state.set_status(format!("Sent keys to {}: {}", target, keys));
                                             }
                                         }
                                     }
@@ -608,39 +613,148 @@ async fn run_loop(
                                     }
                                     state.clear_selection();
                                 }
-                                Action::ExecuteCommand { command, blocking } => {
+                                Action::ExecuteCommand {
+                                    command,
+                                    blocking,
+                                    terminal: is_terminal,
+                                } => {
                                     if let Some(agent) = state.selected_agent() {
                                         let expanded = expand_command_variables(&command, agent);
-                                        let result = if blocking {
-                                            tokio::process::Command::new("bash")
+
+                                        // Case 1: Terminal application (interactive, takes over screen)
+                                        if is_terminal {
+                                            // Suspend TUI
+                                            if let Err(e) = disable_raw_mode() {
+                                                state.set_error(format!("Failed to disable raw mode: {}", e));
+                                            }
+                                            if let Err(e) = execute!(
+                                                terminal.backend_mut(),
+                                                LeaveAlternateScreen,
+                                                DisableMouseCapture
+                                            ) {
+                                                state
+                                                    .set_error(format!("Failed to leave alternate screen: {}", e));
+                                            }
+                                            if let Err(e) = terminal.show_cursor() {
+                                                state.set_error(format!("Failed to show cursor: {}", e));
+                                            }
+
+                                            // Run command synchronously with inherited stdio
+                                            let result = std::process::Command::new("bash")
+                                                .args(["-c", &expanded])
+                                                .stdin(std::process::Stdio::inherit())
+                                                .stdout(std::process::Stdio::inherit())
+                                                .stderr(std::process::Stdio::inherit())
+                                                .status();
+
+                                            // Restore TUI
+                                            if let Err(e) = enable_raw_mode() {
+                                                state.set_error(format!("Failed to enable raw mode: {}", e));
+                                            }
+                                            if let Err(e) = execute!(
+                                                terminal.backend_mut(),
+                                                EnterAlternateScreen,
+                                                EnableMouseCapture
+                                            ) {
+                                                state
+                                                    .set_error(format!("Failed to enter alternate screen: {}", e));
+                                            }
+                                            if let Err(e) = terminal.hide_cursor() {
+                                                state.set_error(format!("Failed to hide cursor: {}", e));
+                                            }
+                                            if let Err(e) = terminal.clear() {
+                                                state.set_error(format!("Failed to clear terminal: {}", e));
+                                            }
+
+                                            match result {
+                                                Ok(status) => {
+                                                    if status.success() {
+                                                        state.set_status(format!("Executed: {}", expanded));
+                                                    } else {
+                                                        state.set_error(format!(
+                                                            "Command failed: {} (exit code: {})",
+                                                            expanded,
+                                                            status.code().unwrap_or(-1)
+                                                        ));
+                                                    }
+                                                }
+                                                Err(e) => {
+                                                    state.set_error(format!("Failed to execute: {}", e))
+                                                }
+                                            }
+                                        }
+                                        // Case 2: Blocking background command (waits for output)
+                                        else if blocking {
+                                            use std::io::Write;
+                                            let debug_mode = state.config.debug_mode;
+
+                                            let result = tokio::process::Command::new("bash")
                                                 .args(["-c", &expanded])
                                                 .output()
                                                 .await
                                                 .map(|output| {
+                                                    // Helper to log if debug enabled
+                                                    if debug_mode {
+                                                         if let Ok(mut file) = std::fs::OpenOptions::new()
+                                                            .create(true)
+                                                            .append(true)
+                                                            .open(".tmuxcc.log")
+                                                        {
+                                                            let _ = writeln!(file, "--- Command: {} ---", expanded);
+                                                            let _ = file.write_all(&output.stdout);
+                                                            let _ = file.write_all(&output.stderr);
+                                                            let _ = writeln!(file, "-------------------");
+                                                        }
+                                                    }
+
                                                     if output.status.success() {
-                                                        let stdout = String::from_utf8_lossy(&output.stdout).to_string();
+                                                        let stdout = String::from_utf8_lossy(&output.stdout)
+                                                            .to_string();
                                                         if stdout.is_empty() {
                                                             format!("Executed: {}", expanded)
                                                         } else {
-                                                            format!("Executed: {} → {}", expanded, stdout.trim())
+                                                            format!(
+                                                                "Executed: {} → {}",
+                                                                expanded,
+                                                                stdout.trim()
+                                                            )
                                                         }
                                                     } else {
-                                                        let stderr = String::from_utf8_lossy(&output.stderr).to_string();
-                                                        format!("Failed: {} | Error: {}", expanded, stderr.trim())
+                                                        let stderr = String::from_utf8_lossy(&output.stderr)
+                                                            .to_string();
+                                                        format!(
+                                                            "Failed: {} | Error: {}",
+                                                            expanded,
+                                                            stderr.trim()
+                                                        )
                                                     }
                                                 })
-                                                .map_err(|e| format!("Failed to execute: {}", e))
-                                        } else {
-                                            tokio::process::Command::new("bash")
+                                                .map_err(|e| format!("Failed to execute: {}", e));
+
+                                            match result {
+                                                Ok(msg) => state.set_status(msg),
+                                                Err(e) => state.set_error(e),
+                                            }
+                                        }
+                                        // Case 3: Non-blocking background command (fire and forget)
+                                        else {
+                                            let debug_mode = state.config.debug_mode;
+
+                                            // Non-blocking (async) - prevent output to screen UNLESS debug
+                                            // If debug, redirect to log. If not debug, null.
+                                            let result = tokio::process::Command::new("bash")
                                                 .args(["-c", &expanded])
+                                                .stdin(std::process::Stdio::null())
+                                                .stdout(get_log_stdio(debug_mode))
+                                                .stderr(get_log_stdio(debug_mode))
                                                 .spawn()
                                                 .map(|_| format!("Started: {}", expanded))
-                                                .map_err(|e| format!("Failed to spawn: {}", e))
-                                        };
+                                                .map_err(|e| format!("Failed to spawn: {}", e));
 
-                                        match result {
-                                            Ok(msg) => state.set_status(msg),
-                                            Err(e) => state.set_error(e),
+                                            match result {
+                                                Ok(msg) => state.set_status(msg),
+                                                Err(e) => state.set_error(e),
+                                            }
                                         }
                                     } else {
                                         state.set_error("No agent selected".to_string());
@@ -893,9 +1007,9 @@ fn map_key_to_action(
             (false, true, true, _) => format!("M-S-{}", base_lowercase), // explicit S- prefix
             (false, true, false, true) => format!("M-{}", base_lowercase), // implicit: M-T
             (false, true, false, false) => format!("M-{}", base_lowercase),
-            (false, false, true, _) => format!("S-{}", base_lowercase), // explicit S-t
-            (false, false, false, true) => c.to_string(),               // implicit: T
-            (false, false, false, false) => c.to_string(),              // just: t
+            (false, false, true, _) => c.to_uppercase().to_string(), // Shift+t -> T instead of S-t
+            (false, false, false, true) => c.to_string(),            // implicit: T
+            (false, false, false, false) => c.to_string(),           // just: t
         };
 
         // Check popup trigger key (only for unmodified keys)
@@ -936,9 +1050,14 @@ fn map_key_to_action(
                     }
                 }
                 KeyAction::Refresh => Action::Refresh,
-                KeyAction::ExecuteCommand { command, blocking } => Action::ExecuteCommand {
+                KeyAction::ExecuteCommand {
+                    command,
+                    blocking,
+                    terminal,
+                } => Action::ExecuteCommand {
                     command: command.clone(),
                     blocking: *blocking,
+                    terminal: *terminal,
                 },
             };
         }
@@ -1035,4 +1154,19 @@ fn expand_command_variables(template: &str, agent: &crate::agents::MonitoredAgen
     }
 
     result
+}
+
+/// Helper to get stdio for logging (debug mode) or null
+fn get_log_stdio(debug_mode: bool) -> std::process::Stdio {
+    if debug_mode {
+        // Try to open .tmuxcc.log in current directory
+        if let Ok(file) = std::fs::OpenOptions::new()
+            .create(true)
+            .append(true)
+            .open(".tmuxcc.log")
+        {
+            return std::process::Stdio::from(file);
+        }
+    }
+    std::process::Stdio::null()
 }

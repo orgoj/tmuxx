@@ -6,6 +6,22 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+### Added
+- **Interactive TUI Support** (Terminal Mode)
+  - `terminal = true` flag for `execute_command` to run interactive apps like `lazyclaude`, `nano`, `vim`
+  - Correctly suspends `tmuxcc`, gives child process terminal control, and restores TUI on exit
+- **Enhanced Status Bar** - Messages now expand to full terminal width to prevent truncation
+- **Improved Stdio Handling**
+  - Background processes (`blocking = false`) now have their output silenced (`/dev/null`) by default to prevent screen corruption
+  - In `debug_mode = true`, background outputs are redirected to `.tmuxcc.log`
+  - Blocking tasks in debug mode also log full output to `.tmuxcc.log`
+
+### Changed
+- **Shift Key Mapping** - Shift+Key now maps to uppercase char (e.g. `M`) instead of `S-m` prefix, matching common config expectations
+
+### Fixed
+- **Screen Redraw** - `Ctrl+l` now performs a full screen clear and redraw
+- **Key Binding Feedback** - `send_keys` actions now display the exact keys sent in the status bar for debugging
 
 ## [0.1.8] - 2026-01-24
 

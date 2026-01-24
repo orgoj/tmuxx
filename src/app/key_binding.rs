@@ -47,6 +47,8 @@ pub enum KeyAction {
         command: String,
         #[serde(default)]
         blocking: bool,
+        #[serde(default)]
+        terminal: bool,
     },
 }
 
@@ -255,6 +257,7 @@ mod tests {
             KeyAction::ExecuteCommand {
                 command: "zede ${SESSION_DIR}".to_string(),
                 blocking: false,
+                terminal: false,
             },
         );
         bindings.insert(
@@ -262,6 +265,7 @@ mod tests {
             KeyAction::ExecuteCommand {
                 command: "wezterm cli attach ${SESSION_NAME}".to_string(),
                 blocking: true,
+                terminal: false,
             },
         );
 
@@ -277,16 +281,26 @@ mod tests {
         // Verify round-trip
         assert_eq!(kb.bindings.len(), parsed.bindings.len());
         match parsed.get_action("z") {
-            Some(KeyAction::ExecuteCommand { command, blocking }) => {
+            Some(KeyAction::ExecuteCommand {
+                command,
+                blocking,
+                terminal,
+            }) => {
                 assert_eq!(command, "zede ${SESSION_DIR}");
                 assert!(!blocking);
+                assert!(!terminal);
             }
             _ => panic!("Expected ExecuteCommand action"),
         }
         match parsed.get_action("M-t") {
-            Some(KeyAction::ExecuteCommand { command, blocking }) => {
+            Some(KeyAction::ExecuteCommand {
+                command,
+                blocking,
+                terminal,
+            }) => {
                 assert_eq!(command, "wezterm cli attach ${SESSION_NAME}");
                 assert!(blocking);
+                assert!(!terminal);
             }
             _ => panic!("Expected ExecuteCommand action"),
         }

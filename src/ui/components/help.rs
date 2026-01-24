@@ -134,7 +134,7 @@ impl HelpWidget {
         let refresh_keys = kb.keys_for_action(&KeyAction::Refresh);
         if !refresh_keys.is_empty() {
             lines.push(format!(
-                "  {:9}Refresh / clear error",
+                "  {:9}Redraw screen / clear error",
                 refresh_keys.join(" / ")
             ));
         }
