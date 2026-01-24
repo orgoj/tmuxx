@@ -59,6 +59,10 @@ pub struct Config {
     /// Hide bottom input buffer (use modal textarea instead)
     #[serde(default = "default_hide_bottom_input")]
     pub hide_bottom_input: bool,
+
+    /// Whether to log all actions to the status bar (default: true)
+    #[serde(default = "default_log_actions")]
+    pub log_actions: bool,
 }
 
 fn default_poll_interval() -> u64 {
@@ -93,6 +97,10 @@ fn default_hide_bottom_input() -> bool {
     true
 }
 
+fn default_log_actions() -> bool {
+    true
+}
+
 /// Pattern for detecting agent types
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct AgentPattern {
@@ -117,6 +125,7 @@ impl Default for Config {
             ignore_sessions: Vec::new(),
             ignore_self: default_ignore_self(),
             hide_bottom_input: default_hide_bottom_input(),
+            log_actions: default_log_actions(),
         }
     }
 }
@@ -231,6 +240,7 @@ mod tests {
         assert!(config.show_detached_sessions);
         assert!(!config.debug_mode);
         assert!(config.truncate_long_lines);
+        assert!(config.log_actions);
         assert_eq!(config.max_line_width, None);
     }
 
@@ -268,6 +278,12 @@ mod tests {
         // Test debug_mode override with short alias
         config.apply_override("debug", "false").unwrap();
         assert!(!config.debug_mode);
+
+        // Test log_actions override
+        config.apply_override("log_actions", "false").unwrap();
+        assert!(!config.log_actions);
+        config.apply_override("log", "1").unwrap();
+        assert!(config.log_actions);
 
         // Test invalid key
         assert!(config.apply_override("invalid_key", "value").is_err());

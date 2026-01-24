@@ -16,6 +16,7 @@ pub enum ConfigOverride {
     PopupTriggerKey(String),
     IgnoreSessions(Vec<String>),
     IgnoreSelf(bool),
+    LogActions(bool),
 }
 
 impl ConfigOverride {
@@ -103,8 +104,17 @@ impl ConfigOverride {
                 })?;
                 Ok(ConfigOverride::IgnoreSelf(val))
             }
+            "logactions" | "log" => {
+                let val = parse_bool(value).ok_or_else(|| {
+                    anyhow!(
+                        "Invalid value for log_actions: '{}'. Expected: true/false, 1/0, yes/no, on/off",
+                        value
+                    )
+                })?;
+                Ok(ConfigOverride::LogActions(val))
+            }
             _ => Err(anyhow!(
-                "Unknown config key: '{}'. Valid keys: poll_interval_ms, capture_lines, show_detached_sessions, debug_mode, truncate_long_lines, max_line_width, popup_trigger_key, ignore_sessions, ignore_self, keybindings.KEY (or kb.KEY)",
+                "Unknown config key: '{}'. Valid keys: poll_interval_ms, capture_lines, show_detached_sessions, debug_mode, truncate_long_lines, max_line_width, popup_trigger_key, ignore_sessions, ignore_self, log_actions, keybindings.KEY (or kb.KEY)",
                 key
             )),
         }
@@ -125,6 +135,7 @@ impl ConfigOverride {
             ConfigOverride::PopupTriggerKey(val) => config.popup_trigger_key = val,
             ConfigOverride::IgnoreSessions(sessions) => config.ignore_sessions = sessions,
             ConfigOverride::IgnoreSelf(val) => config.ignore_self = val,
+            ConfigOverride::LogActions(val) => config.log_actions = val,
         }
     }
 }

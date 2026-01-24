@@ -169,7 +169,10 @@ impl AppState {
             show_subagent_log: false,
             show_summary_detail: true,
             should_quit: false,
-            last_error: None,
+            last_error: Some(format!(
+                "tmuxcc v{} - Press ? for help",
+                env!("CARGO_PKG_VERSION")
+            )),
             sidebar_width: 35,
             tick: 0,
             last_tick: Instant::now(),
@@ -447,6 +450,38 @@ impl AppState {
     /// Clears the error message
     pub fn clear_error(&mut self) {
         self.last_error = None;
+    }
+
+    /// Logs an action to the status bar if log_actions is enabled
+    pub fn log_action(&mut self, action: &super::Action) {
+        if !self.config.log_actions {
+            return;
+        }
+
+        use super::Action;
+        match action {
+            Action::None
+            | Action::InputChar(_)
+            | Action::InputNewline
+            | Action::InputBackspace
+            | Action::CursorLeft
+            | Action::CursorRight
+            | Action::CursorHome
+            | Action::CursorEnd
+            | Action::PopupInputChar(_)
+            | Action::PopupInputBackspace
+            | Action::PopupInputDelete
+            | Action::PopupInputCursorLeft
+            | Action::PopupInputCursorRight
+            | Action::PopupInputCursorHome
+            | Action::PopupInputCursorEnd => {}
+            _ => {
+                let desc = action.description();
+                if !desc.is_empty() {
+                    self.set_status(desc.to_string());
+                }
+            }
+        }
     }
 
     /// Check if an agent matches the current filter pattern

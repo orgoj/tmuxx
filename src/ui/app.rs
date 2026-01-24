@@ -219,7 +219,7 @@ async fn run_loop(
                         let size = terminal.size()?;
                         let area = ratatui::layout::Rect::new(0, 0, size.width, size.height);
                         let main_chunks = Layout::main_layout(area);
-                        let footer_area = main_chunks[2];
+                        let _footer_area = main_chunks[2];
                         let (sidebar, _, _, input_area) = Layout::content_layout_with_input(
                             main_chunks[1], state.sidebar_width, 3, state.show_summary_detail
                         );
@@ -229,63 +229,8 @@ async fn run_loop(
                                 let x = mouse.column;
                                 let y = mouse.row;
 
-                                // Check footer button clicks first
-                                if let Some(button) = FooterWidget::hit_test(x, y, footer_area, state, &state.config) {
-                                    use super::components::FooterButton;
-                                    match button {
-                                        FooterButton::Approve => {
-                                            let indices = state.get_operation_indices();
-                                            for idx in indices {
-                                                if let Some(agent) = state.agents.get_agent(idx) {
-                                                    if agent.status.needs_attention() {
-                                                        let target = agent.target.clone();
-                                                        let _ = tmux_client.send_keys(&target, "y");
-                                                        let _ = tmux_client.send_keys(&target, "Enter");
-                                                    }
-                                                }
-                                            }
-                                            state.clear_selection();
-                                        }
-                                        FooterButton::Reject => {
-                                            let indices = state.get_operation_indices();
-                                            for idx in indices {
-                                                if let Some(agent) = state.agents.get_agent(idx) {
-                                                    if agent.status.needs_attention() {
-                                                        let target = agent.target.clone();
-                                                        let _ = tmux_client.send_keys(&target, "n");
-                                                        let _ = tmux_client.send_keys(&target, "Enter");
-                                                    }
-                                                }
-                                            }
-                                            state.clear_selection();
-                                        }
-                                        FooterButton::ApproveAll => {
-                                            for agent in &state.agents.root_agents {
-                                                if agent.status.needs_attention() {
-                                                    let _ = tmux_client.send_keys(&agent.target, "y");
-                                                    let _ = tmux_client.send_keys(&agent.target, "Enter");
-                                                }
-                                            }
-                                        }
-                                        FooterButton::ToggleSelect => {
-                                            state.toggle_selection();
-                                        }
-                                        FooterButton::Focus => {
-                                            if let Some(agent) = state.selected_agent() {
-                                                let target = agent.target.clone();
-                                                let _ = tmux_client.focus_pane(&target);
-                                            }
-                                        }
-                                        FooterButton::Help => {
-                                            state.toggle_help();
-                                        }
-                                        FooterButton::Quit => {
-                                            state.should_quit = true;
-                                        }
-                                    }
-                                }
                                 // Check if click is in sidebar - try to select agent
-                                else if x >= sidebar.x && x < sidebar.x + sidebar.width
+                                if x >= sidebar.x && x < sidebar.x + sidebar.width
                                     && y >= sidebar.y && y < sidebar.y + sidebar.height
                                 {
                                     state.focus_sidebar();
@@ -379,6 +324,7 @@ async fn run_loop(
                         if state.modal_textarea.is_some() {
                             // Check for special keys first
                             let action = map_key_to_action(key.code, key.modifiers, state, &state.config);
+                            state.log_action(&action);
 
                             match action {
                                 Action::ModalTextareaSubmit => {
@@ -413,6 +359,7 @@ async fn run_loop(
                         } else {
                             // Normal key handling when modal is not active
                             let action = map_key_to_action(key.code, key.modifiers, state, &state.config);
+                            state.log_action(&action);
 
                             match action {
                                 Action::Quit => {

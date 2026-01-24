@@ -332,6 +332,10 @@ popup_trigger_key = "/"
 # When false, the bottom input box is always visible at the bottom of screen
 hide_bottom_input = true
 
+# Whether to log all actions to the status bar (default: true)
+# When true, a message is shown in the footer for every key binding action triggered
+log_actions = true
+
 # Session Filtering
 # Auto-ignore the session where tmuxcc runs (default: true)
 # This prevents tmuxcc from showing itself in the dashboard
@@ -588,6 +592,7 @@ tmuxcc --set poll_interval=1000 --set showdetached=false
 - `popup_trigger_key` (or `popupkey`) - Key to trigger popup input dialog (default: "/")
 - `ignore_sessions` (or `ignoresessions`) - Comma-separated list of sessions to ignore (supports glob/regex)
 - `ignore_self` (or `ignoreself`) - Auto-ignore own session (default: true)
+- `log_actions` (or `log`) - Enable/disable action logging to status bar
 - `keybindings.KEY` (or `kb.KEY`) - Map key to action (see below)
 
 **Session filtering examples:**

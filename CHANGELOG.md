@@ -5,6 +5,18 @@ All notable changes to this fork (orgoj/tmuxcc) will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.1.12] - 2026-01-24
+
+### Added
+- **Action Logging**: All key binding actions are now logged to the status bar for immediate feedback
+- **Config Option**: Added `log_actions` (default: true) to enable/disable action logging
+
+## [0.1.11] - 2026-01-24
+
+### Changed
+- **UI Simplification**: Removed footer buttons and characters; footer now shows only status/error messages
+- **Startup Message**: Added program version and help instructions to the status line on startup
+
 ## [0.1.10] - 2026-01-24
 
 ### Added
