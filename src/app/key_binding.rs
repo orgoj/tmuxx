@@ -22,6 +22,7 @@ pub enum KillMethod {
 /// Actions that can be bound to keys
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
+#[serde(deny_unknown_fields)]
 pub enum KeyAction {
     /// Navigate in UI
     Navigate(NavAction),
@@ -41,6 +42,12 @@ pub enum KeyAction {
     RenameSession,
     /// Refresh/redraw the screen
     Refresh,
+    /// Execute a shell command with variable expansion
+    ExecuteCommand {
+        command: String,
+        #[serde(default)]
+        blocking: bool,
+    },
 }
 
 /// Holds all key binding configuration
@@ -238,5 +245,67 @@ mod tests {
             Some(&KeyAction::SendKeys("Escape".to_string()))
         );
         assert_eq!(parsed.get_action("y"), Some(&KeyAction::Approve));
+    }
+
+    #[test]
+    fn test_execute_command_toml() {
+        let mut bindings = HashMap::new();
+        bindings.insert(
+            "z".to_string(),
+            KeyAction::ExecuteCommand {
+                command: "zede ${SESSION_DIR}".to_string(),
+                blocking: false,
+            },
+        );
+        bindings.insert(
+            "M-t".to_string(),
+            KeyAction::ExecuteCommand {
+                command: "wezterm cli attach ${SESSION_NAME}".to_string(),
+                blocking: true,
+            },
+        );
+
+        let kb = KeyBindings { bindings };
+
+        // Serialize to TOML
+        let toml_str = toml::to_string_pretty(&kb).unwrap();
+        println!("Serialized TOML:\n{}", toml_str);
+
+        // Deserialize back
+        let parsed: KeyBindings = toml::from_str(&toml_str).unwrap();
+
+        // Verify round-trip
+        assert_eq!(kb.bindings.len(), parsed.bindings.len());
+        match parsed.get_action("z") {
+            Some(KeyAction::ExecuteCommand { command, blocking }) => {
+                assert_eq!(command, "zede ${SESSION_DIR}");
+                assert!(!blocking);
+            }
+            _ => panic!("Expected ExecuteCommand action"),
+        }
+        match parsed.get_action("M-t") {
+            Some(KeyAction::ExecuteCommand { command, blocking }) => {
+                assert_eq!(command, "wezterm cli attach ${SESSION_NAME}");
+                assert!(blocking);
+            }
+            _ => panic!("Expected ExecuteCommand action"),
+        }
+    }
+
+    #[test]
+    fn test_invalid_command_format_rejected() {
+        // Test that using 'command' instead of 'execute_command' causes an error
+        // This ensures users get immediate feedback instead of silent failure
+        let toml_str = r#"
+            [key_bindings]
+            z = { command = "zede ${SESSION_DIR}" }
+        "#;
+
+        let result: std::result::Result<KeyBindings, _> = toml::from_str(toml_str);
+        assert!(
+            result.is_err(),
+            "Expected error for invalid 'command' format, got: {:?}",
+            result
+        );
     }
 }

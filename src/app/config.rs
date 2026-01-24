@@ -119,16 +119,25 @@ impl Config {
     }
 
     /// Loads config from the default path or returns defaults
+    ///
+    /// # Panics
+    /// Panics if config file exists but contains invalid TOML or unknown fields.
+    /// This ensures users get immediate feedback on configuration errors.
     pub fn load() -> Self {
-        Self::default_path()
-            .and_then(|path| {
-                if path.exists() {
-                    Self::load_from(&path).ok()
-                } else {
-                    None
-                }
-            })
-            .unwrap_or_default()
+        if let Some(path) = Self::default_path() {
+            if path.exists() {
+                return Self::load_from(&path).unwrap_or_else(|e| {
+                    eprintln!("Error loading config from {}: {}", path.display(), e);
+                    eprintln!("\nHint: Check if all key bindings use valid format:");
+                    eprintln!("  - execute_command = {{ command = \"...\" }}");
+                    eprintln!("  - kill_app = {{ method = \"sigterm\" }}");
+                    eprintln!("  - send_keys = \"...\"");
+                    eprintln!("  - navigate: next_agent or prev_agent");
+                    std::process::exit(1);
+                });
+            }
+        }
+        Self::default()
     }
 
     /// Loads config from a specific path

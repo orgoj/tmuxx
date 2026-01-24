@@ -394,6 +394,18 @@ K = { kill_app = { method = "sigterm" } }  # Kill with SIGTERM
 # or: K = { kill_app = { method = "ctrlc_ctrld" } }  # Ctrl-C then Ctrl-D
 r = "rename_session"                  # Rename current session
 "C-l" = "refresh"                     # Refresh screen (Ctrl+L)
+
+# Command execution (with variable expansion)
+z = { execute_command = { command = "zede ${SESSION_DIR}" } }
+v = { execute_command = { command = "code ${SESSION_DIR}" } }
+t = { execute_command = { command = "wezterm cli attach-session ${SESSION_NAME}" } }
+d = { execute_command = { command = "zede ~/.dippy" } }
+
+# With modifier keys
+"M-t" = { execute_command = { command = "wezterm cli attach-session ${SESSION_NAME}", blocking = true } }
+
+# Using environment variables
+x = { execute_command = { command = "echo ${ENV:USER} - ${SESSION_NAME}" } }
 ```
 
 **Valid tmux key names for send_keys:**
@@ -404,6 +416,21 @@ r = "rename_session"                  # Rename current session
 - Other: `Home`, `End`, `PageUp`, `PageDown`, `Insert`, `Delete`
 
 See `man tmux` section on `send-keys` for complete list.
+
+**Command execution:**
+- Execute shell commands from keybindings with variable expansion
+- `execute_command = { command = "shell command" }` - Execute a shell command (non-blocking by default)
+- `blocking = true` - Wait for command to finish and show output (default: false)
+- Variables:
+  - `${SESSION_NAME}` - Selected agent's tmux session name
+  - `${SESSION_DIR}` - Selected agent's working directory path
+  - `${ENV:VAR}` - Environment variable value
+
+Example:
+```toml
+z = { execute_command = { command = "zede ${SESSION_DIR}" } }  # Open editor in agent's directory
+"M-t" = { execute_command = { command = "wezterm cli attach ${SESSION_NAME}", blocking = true } }
+```
 
 **Pattern Matching:**
 - Use `*` for wildcard (matches everything)
@@ -487,6 +514,7 @@ tmuxcc --set kb.X=send_keys:C-z
 - `refresh` - Refresh screen / clear error
 - `navigate:next_agent` - Navigate to next agent
 - `navigate:prev_agent` - Navigate to previous agent
+- `command:CMD` - Execute shell command (supports variable expansion, use `command:CMD:blocking` for blocking)
 
 **Key format for modifier keys:**
 - `"C-x"` - Ctrl+X (use quotes in TOML for keys with special characters)

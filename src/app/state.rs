@@ -418,6 +418,11 @@ impl AppState {
         self.last_error = Some(message);
     }
 
+    /// Set a status message (non-error, displayed differently)
+    pub fn set_status(&mut self, message: String) {
+        self.last_error = Some(format!("✓ {}", message));
+    }
+
     /// Clears the error message
     pub fn clear_error(&mut self) {
         self.last_error = None;

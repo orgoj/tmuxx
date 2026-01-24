@@ -485,6 +485,44 @@ async fn run_loop(
                                 }
                                 state.clear_selection();
                             }
+                            Action::ExecuteCommand { command, blocking } => {
+                                if let Some(agent) = state.selected_agent() {
+                                    let expanded = expand_command_variables(&command, agent);
+                                    let result = if blocking {
+                                        tokio::process::Command::new("bash")
+                                            .args(["-c", &expanded])
+                                            .output()
+                                            .await
+                                            .map(|output| {
+                                                if output.status.success() {
+                                                    let stdout = String::from_utf8_lossy(&output.stdout).to_string();
+                                                    if stdout.is_empty() {
+                                                        format!("Executed: {}", expanded)
+                                                    } else {
+                                                        format!("Executed: {} → {}", expanded, stdout.trim())
+                                                    }
+                                                } else {
+                                                    let stderr = String::from_utf8_lossy(&output.stderr).to_string();
+                                                    format!("Failed: {} | Error: {}", expanded, stderr.trim())
+                                                }
+                                            })
+                                            .map_err(|e| format!("Failed to execute: {}", e))
+                                    } else {
+                                        tokio::process::Command::new("bash")
+                                            .args(["-c", &expanded])
+                                            .spawn()
+                                            .map(|_| format!("Started: {}", expanded))
+                                            .map_err(|e| format!("Failed to spawn: {}", e))
+                                    };
+
+                                    match result {
+                                        Ok(msg) => state.set_status(msg),
+                                        Err(e) => state.set_error(e),
+                                    }
+                                } else {
+                                    state.set_error("No agent selected".to_string());
+                                }
+                            }
                             Action::ShowPopupInput {
                                 title,
                                 prompt,
@@ -686,19 +724,27 @@ fn map_key_to_action(
     // Sidebar focused - check popup trigger key first
     if let KeyCode::Char(c) = code {
         // Build key string with modifier prefix for binding lookup
-        let key_str = if modifiers.contains(KeyModifiers::CONTROL) {
-            format!("C-{}", c.to_ascii_lowercase())
-        } else if modifiers.contains(KeyModifiers::ALT) {
-            format!("M-{}", c.to_ascii_lowercase())
-        } else {
-            c.to_string()
+        // Support both implicit and explicit Shift:
+        // - Implicit: 'T' (without Alt/Ctrl) means Shift+t
+        // - Explicit: 'S-t' also means Shift+t (with modifier prefix)
+        let ctrl = modifiers.contains(KeyModifiers::CONTROL);
+        let alt = modifiers.contains(KeyModifiers::ALT);
+        let shift = modifiers.contains(KeyModifiers::SHIFT);
+        let is_uppercase = c.is_ascii_uppercase();
+        let base_lowercase = c.to_ascii_lowercase();
+
+        let key_str = match (ctrl, alt, shift, is_uppercase) {
+            (true, _, _, _) => format!("C-{}", base_lowercase),
+            (false, true, true, _) => format!("M-S-{}", base_lowercase), // explicit S- prefix
+            (false, true, false, true) => format!("M-{}", base_lowercase), // implicit: M-T
+            (false, true, false, false) => format!("M-{}", base_lowercase),
+            (false, false, true, _) => format!("S-{}", base_lowercase), // explicit S-t
+            (false, false, false, true) => c.to_string(),               // implicit: T
+            (false, false, false, false) => c.to_string(),              // just: t
         };
 
         // Check popup trigger key (only for unmodified keys)
-        if !modifiers.contains(KeyModifiers::CONTROL)
-            && !modifiers.contains(KeyModifiers::ALT)
-            && key_str == config.popup_trigger_key
-        {
+        if !ctrl && !alt && key_str == config.popup_trigger_key {
             return Action::ShowPopupInput {
                 title: "Filter Agents".to_string(),
                 prompt: "Pattern (name/session/window/dir):".to_string(),
@@ -735,6 +781,10 @@ fn map_key_to_action(
                     }
                 }
                 KeyAction::Refresh => Action::Refresh,
+                KeyAction::ExecuteCommand { command, blocking } => Action::ExecuteCommand {
+                    command: command.clone(),
+                    blocking: *blocking,
+                },
             };
         }
     }
@@ -785,4 +835,34 @@ fn map_key_to_action(
 
         _ => Action::None,
     }
+}
+
+/// Expand variables in a command template using agent context
+///
+/// Supported variables:
+/// - `${SESSION_NAME}` - Agent's tmux session name
+/// - `${SESSION_DIR}` - Agent's working directory path
+/// - `${ENV:VAR}` - Environment variable value
+fn expand_command_variables(template: &str, agent: &crate::agents::MonitoredAgent) -> String {
+    use regex::Regex;
+
+    let mut result = template.to_string();
+
+    // Replace ${SESSION_NAME}
+    result = result.replace("${SESSION_NAME}", &agent.session);
+
+    // Replace ${SESSION_DIR}
+    result = result.replace("${SESSION_DIR}", &agent.path);
+
+    // Replace ${ENV:VAR} using regex
+    if let Ok(re) = Regex::new(r"\$\{ENV:([^}]+)\}") {
+        result = re
+            .replace_all(&result, |caps: &regex::Captures| {
+                let var_name = &caps[1];
+                std::env::var(var_name).unwrap_or_default()
+            })
+            .to_string();
+    }
+
+    result
 }

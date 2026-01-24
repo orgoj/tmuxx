@@ -101,6 +101,8 @@ pub enum Action {
     PopupInputCursorHome,
     /// Move popup cursor to end
     PopupInputCursorEnd,
+    /// Execute a shell command with variable expansion
+    ExecuteCommand { command: String, blocking: bool },
     /// No action (used for unbound keys)
     None,
 }
@@ -155,6 +157,7 @@ impl Action {
             Action::PopupInputCursorRight => "Move cursor right (popup)",
             Action::PopupInputCursorHome => "Move cursor home (popup)",
             Action::PopupInputCursorEnd => "Move cursor end (popup)",
+            Action::ExecuteCommand { .. } => "Execute command",
             Action::None => "",
         }
     }

@@ -144,12 +144,22 @@ impl FooterWidget {
                 ));
             }
 
-            if let Some(error) = &state.last_error {
+            if let Some(msg) = &state.last_error {
                 spans.push(Span::styled(" │ ", sep));
-                spans.push(Span::styled(
-                    format!("✗ {}", truncate_error(error, 30)),
-                    Style::default().fg(Color::Red),
-                ));
+                // Check if it's a status message (starts with ✓) or error
+                // Note: ✓ is multi-byte UTF-8, so we strip by chars not bytes
+                if msg.starts_with("✓ ") {
+                    let text = msg.chars().skip(2).collect::<String>();
+                    spans.push(Span::styled(
+                        format!("✓ {}", truncate_error(&text, 30)),
+                        Style::default().fg(Color::Green),
+                    ));
+                } else {
+                    spans.push(Span::styled(
+                        format!("✗ {}", truncate_error(msg, 30)),
+                        Style::default().fg(Color::Red),
+                    ));
+                };
             }
 
             Line::from(spans)

@@ -169,6 +169,17 @@ impl HelpWidget {
             ]));
         }
 
+        // ExecuteCommand actions
+        for (key, action) in &kb.bindings {
+            if let KeyAction::ExecuteCommand { command, .. } = action {
+                let keys_str = format!("  {:9}", key);
+                help_text.push(Line::from(vec![
+                    Span::styled(keys_str, key_style),
+                    Span::styled(format!("Execute: {}", command), desc_style),
+                ]));
+            }
+        }
+
         help_text.push(Line::from(vec![
             Span::styled("  ← / →    ", key_style),
             Span::styled("Switch focus (Sidebar / Input)", desc_style),

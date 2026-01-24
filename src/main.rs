@@ -33,6 +33,10 @@ struct Cli {
     #[arg(long)]
     show_config_path: bool,
 
+    /// Debug: show loaded config and bindings before starting
+    #[arg(long)]
+    debug_config: bool,
+
     /// Generate default config file
     #[arg(long)]
     init_config: bool,
@@ -106,6 +110,27 @@ async fn main() -> Result<()> {
             eprintln!("Error applying config override: {}", e);
             std::process::exit(1);
         }
+    }
+
+    // Debug: show loaded config and bindings
+    if cli.debug_config {
+        println!("=== Loaded Config ===");
+        if let Some(path) = Config::default_path() {
+            if path.exists() {
+                println!("Config file: {}", path.display());
+            } else {
+                println!(
+                    "Config file: {} (not found, using defaults)",
+                    path.display()
+                );
+            }
+        }
+        println!("\nKey bindings:");
+        for (key, action) in &config.key_bindings.bindings {
+            println!("  [{}] -> {:?}", key, action);
+        }
+        println!("\nPress Enter to continue...");
+        let _ = std::io::stdin().read_line(&mut String::new());
     }
 
     // Run the application

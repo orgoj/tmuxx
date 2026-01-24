@@ -16,6 +16,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - .dippy config file comments translated
 
 ### Added
+- **Command Execution in Key Bindings** - Execute shell commands from keybindings with variable expansion
+  - `execute_command = { command = "shell command" }` - Execute shell command (non-blocking by default)
+  - `blocking = true` - Wait for command to finish and show output
+  - Variables: `${SESSION_NAME}` (tmux session), `${SESSION_DIR}` (working directory), `${ENV:VAR}` (environment variable)
+  - Example: `z = { execute_command = { command = "zede ${SESSION_DIR}" } }` opens editor in agent's directory
+  - Example: `"M-t" = { execute_command = { command = "wezterm cli attach ${SESSION_NAME}", blocking = true } }` attaches tmux session
+  - CLI override: `--set kb.z=command:zede\${SESSION_DIR}`
+  - **Config validation** - Invalid TOML format now causes parsing errors with helpful messages
+  - **--debug-config flag** - Shows loaded config and bindings before starting (useful for debugging)
 - **Session Rename** - Rename tmux sessions directly from tmuxcc (default: `r` key)
   - Opens popup dialog with current session name pre-filled
   - Cursor positioned at end of text for easy editing

@@ -21,6 +21,18 @@ pub enum ConfigOverride {
 impl ConfigOverride {
     /// Parse a KEY=VALUE string into a ConfigOverride
     pub fn parse(key: &str, value: &str) -> Result<Self> {
+        // For keybindings, we need to preserve the original key name (case-sensitive)
+        // because key names like "C-l" need to match exactly when looking up bindings
+        if key.starts_with("keybindings.") || key.starts_with("kb.") {
+            let binding_key = if let Some(k) = key.strip_prefix("keybindings.") {
+                k
+            } else {
+                key.strip_prefix("kb.").unwrap()
+            };
+            let action = parse_key_action(value)?;
+            return Ok(ConfigOverride::KeyBinding(binding_key.to_string(), action));
+        }
+
         let normalized_key = normalize_key(key);
 
         match normalized_key.as_str() {
@@ -91,16 +103,6 @@ impl ConfigOverride {
                 })?;
                 Ok(ConfigOverride::IgnoreSelf(val))
             }
-            s if s.starts_with("keybindings.") || s.starts_with("kb.") => {
-                let key = if let Some(k) = normalized_key.strip_prefix("keybindings.") {
-                    k
-                } else {
-                    normalized_key.strip_prefix("kb.").unwrap()
-                };
-
-                let action = parse_key_action(value)?;
-                Ok(ConfigOverride::KeyBinding(key.to_string(), action))
-            }
             _ => Err(anyhow!(
                 "Unknown config key: '{}'. Valid keys: poll_interval_ms, capture_lines, show_detached_sessions, debug_mode, truncate_long_lines, max_line_width, popup_trigger_key, ignore_sessions, ignore_self, keybindings.KEY (or kb.KEY)",
                 key
@@ -133,6 +135,8 @@ fn parse_key_action(value: &str) -> Result<KeyAction> {
         "approve" => Ok(KeyAction::Approve),
         "reject" => Ok(KeyAction::Reject),
         "approve_all" => Ok(KeyAction::ApproveAll),
+        "rename_session" => Ok(KeyAction::RenameSession),
+        "refresh" => Ok(KeyAction::Refresh),
         s if s.starts_with("send_number:") => {
             let num = s
                 .strip_prefix("send_number:")
@@ -164,8 +168,18 @@ fn parse_key_action(value: &str) -> Result<KeyAction> {
             };
             Ok(KeyAction::Navigate(nav))
         }
+        s if s.starts_with("command:") => {
+            // Format: command:CMD or command:CMD:blocking
+            let cmd_part = s.strip_prefix("command:").unwrap();
+            let (command, blocking) = if let Some((cmd, "blocking")) = cmd_part.rsplit_once(':') {
+                (cmd.to_string(), true)
+            } else {
+                (cmd_part.to_string(), false)
+            };
+            Ok(KeyAction::ExecuteCommand { command, blocking })
+        }
         _ => Err(anyhow!(
-            "Invalid key action: '{}'. Valid formats: approve, reject, approve_all, send_number:N, send_keys:KEYS, kill_app:METHOD, navigate:ACTION",
+            "Invalid key action: '{}'. Valid formats: approve, reject, approve_all, rename_session, refresh, send_number:N, send_keys:KEYS, kill_app:METHOD, navigate:ACTION, command:CMD[:blocking]",
             value
         )),
     }
@@ -347,5 +361,66 @@ mod tests {
         let override_val = ConfigOverride::parse("debug_mode", "true").unwrap();
         override_val.apply(&mut config);
         assert!(config.debug_mode);
+    }
+
+    #[test]
+    fn test_parse_command_action() {
+        // Test non-blocking command
+        let override_val = ConfigOverride::parse("kb.z", "command:echo test").unwrap();
+        match override_val {
+            ConfigOverride::KeyBinding(key, KeyAction::ExecuteCommand { command, blocking }) => {
+                assert_eq!(key, "z");
+                assert_eq!(command, "echo test");
+                assert!(!blocking);
+            }
+            _ => panic!("Expected ExecuteCommand action"),
+        }
+
+        // Test blocking command
+        let override_val = ConfigOverride::parse("kb.x", "command:ls -la:blocking").unwrap();
+        match override_val {
+            ConfigOverride::KeyBinding(key, KeyAction::ExecuteCommand { command, blocking }) => {
+                assert_eq!(key, "x");
+                assert_eq!(command, "ls -la");
+                assert!(blocking);
+            }
+            _ => panic!("Expected ExecuteCommand action with blocking=true"),
+        }
+
+        // Test command with colons in the command itself
+        let override_val = ConfigOverride::parse(
+            "kb.y",
+            "command:wezterm cli attach-session ${SESSION_NAME}:blocking",
+        )
+        .unwrap();
+        match override_val {
+            ConfigOverride::KeyBinding(key, KeyAction::ExecuteCommand { command, blocking }) => {
+                assert_eq!(key, "y");
+                assert_eq!(command, "wezterm cli attach-session ${SESSION_NAME}");
+                assert!(blocking);
+            }
+            _ => panic!("Expected ExecuteCommand action"),
+        }
+    }
+
+    #[test]
+    fn test_parse_simple_actions() {
+        // Test rename_session
+        let override_val = ConfigOverride::parse("kb.r", "rename_session").unwrap();
+        match override_val {
+            ConfigOverride::KeyBinding(key, KeyAction::RenameSession) => {
+                assert_eq!(key, "r");
+            }
+            _ => panic!("Expected RenameSession action"),
+        }
+
+        // Test refresh (now preserves original key name)
+        let override_val = ConfigOverride::parse("kb.C-l", "refresh").unwrap();
+        match override_val {
+            ConfigOverride::KeyBinding(key, KeyAction::Refresh) => {
+                assert_eq!(key, "C-l");
+            }
+            _ => panic!("Expected Refresh action"),
+        }
     }
 }

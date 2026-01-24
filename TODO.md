@@ -1,14 +1,7 @@
 # TODO - tmuxcc
 
-- How to define Alt-T? A-T = { send_keys = "S-Tab" }
-- Define command in binding
-  - need
-      z = { command = "zede ${SESSION_DIR}" }
-      v = { command = "code ${SESSION_DIR}" }
-      t = { command = "... wezterm ..... ${SESSION_NAME}" } # aby otevrel okno wezterm a v nem udelal attach session
-      d = { command = "zede ~/.dippy" }
-
-
+-- --debug-log zapisova vsechen debug a co sposusti do ./.tmuxcc.log
+je to
 - Config for left column width: character count or percentage
 
 - Fix unnecessary | in session tree display - check tmux with project skill
@@ -32,7 +25,7 @@
 
 ## Priority Tasks
 
-### 1. CLI --filter argument for session filtering
+### CLI --filter argument for session filtering - NOTE: toto je snad hotovo jen to nema --filter ale standardni --set ...
 **Status:** 💡 Missing CLI option
 **What works:** Runtime `/` filter, config `ignore_sessions`
 **What's missing:** CLI `--filter` argument for startup filtering
@@ -41,7 +34,7 @@
 - [ ] Add `--filter <PATTERN>` argument to CLI (main.rs)
 - [ ] Document in README.md and --help
 
-### 2. Focus key 'f' - Outside Tmux Support
+### Focus key 'f' - Outside Tmux Support
 **Status:** ⚠️ WORKAROUND IMPLEMENTED - Needs proper solution
 
 **Current status:**
