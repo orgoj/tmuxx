@@ -38,3 +38,4 @@ logs/
 tmp/
 
 .claude/settings.mop-diary.json
+.claude/settings.mop-reflect.json

@@ -1,6 +1,13 @@
 # TODO - tmuxcc
 
 - How to define Alt-T? A-T = { send_keys = "S-Tab" }
+- Define command in binding
+  - need
+      z = { command = "zede ${SESSION_DIR}" }
+      v = { command = "code ${SESSION_DIR}" }
+      t = { command = "... wezterm ..... ${SESSION_NAME}" } # aby otevrel okno wezterm a v nem udelal attach session
+      d = { command = "zede ~/.dippy" }
+
 
 - Config for left column width: character count or percentage
 

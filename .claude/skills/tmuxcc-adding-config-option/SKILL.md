@@ -1,5 +1,5 @@
 ---
-name: adding-config-option
+name: tmuxcc-adding-config-option
 description: Use when adding a new config option to tmuxcc (bool, string, number)
 ---
 

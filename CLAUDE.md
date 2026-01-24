@@ -167,13 +167,14 @@ Parsers check ALL detection strings to handle various detection scenarios.
 13. **View/Model Index Mismatch**: When filtering affects display, navigation MUST use filtered indices - otherwise cursor lands on hidden items or skips erratically
 14. **Single Method Fix Tunnel Vision**: When fixing one method, audit entire API for same pattern - often multiple methods have the same issue
 15. **Designing Before Understanding Use Case**: Ask "what will this be used for?" before architecture design - specific use cases beat generic abstractions
+16. **TODO.md Unauthorized Modification**: NEVER modify TODO.md without explicit user approval - when asked to "check" or "verify", report findings and ASK what to do next
 
 ## Development Workflow
 
 ### Skill-First Development
 
 - **Check skills BEFORE starting**: Search `.claude/skills/` for relevant skills before implementing
-- **INVOKE skills matching task type**: Testing? → tmuxcc-testing. Commit? → tmuxcc-commit. Config? → adding-config-option
+- **INVOKE skills matching task type**: Testing? → tmuxcc-testing. Commit? → tmuxcc-commit. Config? → tmuxcc-adding-config-option
 - **Create skills for repetitive workflows**: If explaining same process twice → create skill
 - **Documentation extraction**: Keep CLAUDE.md under 300 lines - extract repetitive workflows into skills
 
@@ -187,7 +188,7 @@ Parsers check ALL detection strings to handle various detection scenarios.
 
 All skills are in `.claude/skills/`:
 
-1. **`adding-config-option`** - Pattern for adding new config options with CLI override support
+1. **`tmuxcc-adding-config-option`** - Pattern for adding new config options with CLI override support
    - Use when adding bool, string, or number config options
    - Files: config.rs, config_override.rs, README.md, CHANGELOG.md
 
@@ -225,27 +226,21 @@ All skills are in `.claude/skills/`:
 - For complex bugs/features: use Task tool Explore → Plan workflow, expect user review phase before implementation begins
 - Before committing features: verify README documents user-facing behavior, CHANGELOG.md has entry, config options are documented
 - Use `git commit --only <file>` for selective commits while keeping other changes staged
+- Before committing: verify `git status` for unexpected staged files (diary hooks, other sessions may stage files)
 
-### Key Principles from tmuxclai-arch
+### Key Principles
 
-- **Unicode Safety**: Use `unicode-width` crate for text truncation, NEVER use byte slicing `&str[..n]`
-- **Unicode text truncation**: Always check `current_width + char_width <= target` BEFORE adding character to avoid wide character off-by-one errors
 - **Temporary files**: Use `./tmp/` in project, never system `/tmp/`
 - **Code duplication**: ZERO TOLERANCE - consolidate duplicate methods/structures
-- **tmux commands**: ALWAYS verify behavior manually before coding assumptions
 - **Debug workflow**: Add visible debug to UI (status bar), not just file writes
 - **Build release for testing**: `cargo build --release` before claiming done
 - **Clean up warnings**: Run `cargo clippy` and fix all warnings
 - **Ratatui dynamic UI**: Prefer dynamic generation from config over hardcoded text - enables runtime customization
 - **User feedback validation**: Runtime testing reveals UX issues code review misses - visual verification is CRITICAL
-
-### Common Pitfalls
-
-1. **tmux command assumptions**: Test manually first, verify actual output
-2. **Implementation from memory**: Research current docs, don't guess (use `tmuxcc-library-research` skill!)
-3. **Testing in wrong environment**: Use ct-multi (5 windows) for multi-window features
-4. **Over-engineering**: Remove complexity instead of fixing it when possible
-5. **NEVER edit config files without explicit user permission** - Only create/modify ~/.config/tmuxcc/* when user explicitly asks for it
+- **Implementation from memory**: Research current docs, don't guess (use `tmuxcc-library-research` skill!)
+- **Testing environment**: Use ct-multi (5 windows) for multi-window features
+- **Over-engineering**: Remove complexity instead of fixing it when possible
+- **Config files**: NEVER edit ~/.config/tmuxcc/* without explicit user permission
 
 ### Code and Documentation Language
 
