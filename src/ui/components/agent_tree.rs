@@ -154,11 +154,11 @@ impl AgentTreeWidget {
                     };
 
                     let select_indicator = if is_selected && is_cursor {
-                        "┃☑" // カーソル+選択: 縦線とチェック
+                        "┃☑" // Cursor+selected: bar and checkmark
                     } else if is_selected {
-                        " ☑" // 選択のみ: チェック
+                        " ☑" // Selected only: checkmark
                     } else if is_cursor {
-                        "┃ " // カーソルのみ: 縦線
+                        "┃ " // Cursor only: bar
                     } else {
                         "  "
                     };
@@ -194,9 +194,9 @@ impl AgentTreeWidget {
                     };
 
                     let item_style = if is_cursor {
-                        Style::default().bg(Color::Rgb(50, 50, 70)) // より濃い紫がかった背景
+                        Style::default().bg(Color::Rgb(50, 50, 70)) // Darker purple-tinted background
                     } else if is_selected {
-                        Style::default().bg(Color::Rgb(35, 35, 50)) // 薄めの選択背景
+                        Style::default().bg(Color::Rgb(35, 35, 50)) // Lighter selection background
                     } else {
                         Style::default()
                     };

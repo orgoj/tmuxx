@@ -491,7 +491,7 @@ mod tests {
         assert!(parser.matches(&["2.1.11", "Claude Code", ""]));
         // Match via ✳ icon in title
         assert!(parser.matches(&["node", "✳ Some Task", ""]));
-        assert!(parser.matches(&["2.1.11", "✳ CLI取得の改善", ""]));
+        assert!(parser.matches(&["2.1.11", "✳ Improve CLI fetch", ""]));
         // Match via version number as command (Claude Code shows version)
         assert!(parser.matches(&["2.1.11", "Some Title", ""]));
         assert!(parser.matches(&["1.0.0", "", ""]));

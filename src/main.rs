@@ -10,30 +10,30 @@ use tmuxcc::ui::run_app;
 #[command(name = "tmuxcc")]
 #[command(author, version, about, long_about = None)]
 #[command(
-    about = "AI Agent Dashboard for tmux - Claude Code, OpenCode, Codex CLI, Gemini CLI を一元管理"
+    about = "AI Agent Dashboard for tmux - manage Claude Code, OpenCode, Codex CLI, Gemini CLI in one place"
 )]
 struct Cli {
-    /// ポーリング間隔（ミリ秒）
+    /// Poll interval in milliseconds
     #[arg(short, long, default_value = "500", value_name = "MS")]
     poll_interval: u64,
 
-    /// ペインからキャプチャする行数
+    /// Number of lines to capture from pane
     #[arg(short, long, default_value = "100", value_name = "LINES")]
     capture_lines: u32,
 
-    /// 設定ファイルのパス
+    /// Path to config file
     #[arg(short = 'f', long, value_name = "FILE")]
     config: Option<PathBuf>,
 
-    /// デバッグログを tmuxcc.log に出力
+    /// Output debug logs to tmuxcc.log
     #[arg(short, long)]
     debug: bool,
 
-    /// 設定ファイルのパスを表示
+    /// Show config file path
     #[arg(long)]
     show_config_path: bool,
 
-    /// デフォルト設定ファイルを生成
+    /// Generate default config file
     #[arg(long)]
     init_config: bool,
 
@@ -52,7 +52,7 @@ async fn main() -> Result<()> {
         if let Some(path) = Config::default_path() {
             println!("{}", path.display());
         } else {
-            println!("設定ディレクトリが見つかりません");
+            println!("Config directory not found");
         }
         return Ok(());
     }
@@ -61,11 +61,11 @@ async fn main() -> Result<()> {
     if cli.init_config {
         let config = Config::default();
         if let Err(e) = config.save() {
-            eprintln!("設定ファイルの作成に失敗: {}", e);
+            eprintln!("Failed to create config file: {}", e);
             std::process::exit(1);
         }
         if let Some(path) = Config::default_path() {
-            println!("設定ファイルを作成しました: {}", path.display());
+            println!("Config file created: {}", path.display());
         }
         return Ok(());
     }
@@ -86,7 +86,7 @@ async fn main() -> Result<()> {
     // Load config (from file or CLI args)
     let mut config = if let Some(config_path) = &cli.config {
         Config::load_from(config_path).unwrap_or_else(|e| {
-            eprintln!("設定ファイルの読み込みに失敗: {}", e);
+            eprintln!("Failed to load config file: {}", e);
             std::process::exit(1);
         })
     } else {

@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+- **Full English Translation** - Translated all Japanese and Czech text to English
+  - CLI help text (--help) now fully in English
+  - Error messages translated to English
+  - Code comments translated to English
+  - TODO.md tasks translated to English
+  - .dippy config file comments translated
+
 ### Added
 - **Session Rename** - Rename tmux sessions directly from tmuxcc (default: `r` key)
   - Opens popup dialog with current session name pre-filled

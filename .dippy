@@ -1,4 +1,4 @@
-deny scripts/cp-bin.sh * "Toto si dela uzivatel, pokud aplikace funguje!"
+deny scripts/cp-bin.sh * "User does this when application works!"
 allow ./scripts/reload-test.sh
 
 allow cargo test *

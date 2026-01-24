@@ -1,18 +1,18 @@
 # TODO - tmuxcc
 
-- jak definovat Alt-T ? A-T = { send_keys = "S-Tab" }
+- How to define Alt-T? A-T = { send_keys = "S-Tab" }
 
-- config pro sirku leveho sloupce: pocet znaku nebo procenta
+- Config for left column width: character count or percentage
 
-- opravit zbytecne | v zobrazeni session tree - podivej se na tmux s pomoci projekt skill
+- Fix unnecessary | in session tree display - check tmux with project skill
 
-- konfigurovatelny jiny rezim pro TODO cast obrazovky, chci tam videt zacatek souboru TODO.md pokud je v projektu nebo jiny konfigurovatelny nace, vice nazvu i glob prvni co najde tam zobrazi
+- Configurable different mode for TODO section of screen, want to see beginning of TODO.md file if in project or other configurable name, multiple names and glob - first found is displayed
 
 
 
-- nedetekuje query tool - pise to idle
+- Does not detect query tool - shows idle
 
-- todo detekce je spatna toto nepoznal
+- TODO detection is broken, did not recognize this
 ```
 ││✢ Processing anthropics/skills… (esc to interrupt · ctrl+t to hide tasks · 1m 17s · ↑ 414 tokens)                  │
 ││  ⎿  ◼ #1 Process anthropics/skills repository                                                                     │
@@ -34,43 +34,7 @@
 - [ ] Add `--filter <PATTERN>` argument to CLI (main.rs)
 - [ ] Document in README.md and --help
 
-### 2. Translate entire project to English
-**Status:** 🌍 i18n - PRIORITY
-**Problem:** Project contains Japanese and Czech text in code (help text, error messages, comments)
-**Reason:** Project is a public fork - must be in English for wider audience
-**Rule:** English EVERYWHERE except files explicitly marked for specific language
-
-**What to translate:**
-- [ ] CLI help text (main.rs) - Japanese texts
-- [ ] Error messages (main.rs) - Japanese texts
-- [ ] Code comments - any non-English comments
-- [ ] Debug messages - any non-English debug output
-- [ ] Variable names - must be English
-- [ ] Function names - must be English
-- [ ] TODO.md tasks - translate to English (this file)
-- [ ] CHANGELOG.md - keep existing entries as-is, new entries in English
-
-**Files to modify:**
-- `src/main.rs` - CLI help, error messages (Japanese → English)
-- `src/**/*.rs` - comments, strings, error messages
-- `.dippy` - translate to English OR rename to `.dippy.cs`
-- Check README.md for non-English content
-- Check all documentation for Czech/Japanese text
-
-**Exceptions (can contain other languages):**
-- Files with language extension: `.cs` (Czech), `.ja` (Japanese)
-  - Example: `.dippy.cs`, `notes.cs`
-- `.claude/diary/` - session notes (user's existing - don't translate old, new in English)
-- User files explicitly marked with language extension
-
-**After translation test:**
-- [ ] `cargo build --release` passes
-- [ ] `./target/release/tmuxcc --help` shows English text only
-- [ ] Error messages are in English
-- [ ] Code comments are in English
-
-
-### 3. Focus key 'f' - Outside Tmux Support
+### 2. Focus key 'f' - Outside Tmux Support
 **Status:** ⚠️ WORKAROUND IMPLEMENTED - Needs proper solution
 
 **Current status:**
@@ -101,7 +65,7 @@
 - `README.md` - documents workaround usage
 
 
-### 4. Modal input dialog with text editor
+### 3. Modal Input Dialog with Text Editor
 **Status:** 💡 Ready to implement - Library selected
 **Actions:**
 - [ ] Add tui-textarea to Cargo.toml
@@ -126,7 +90,7 @@
 tui-textarea = "*"
 ```
 
-### 5. Statusline for session + move input to modal dialog
+### 4. Statusline for Session + Move Input to Modal Dialog
 **Status:** 🎨 UI Enhancement
 **Problem:** Input buffer takes space where statusline for session could be
 **Solution:**
@@ -139,7 +103,7 @@ tui-textarea = "*"
 - [ ] Remove input buffer from main layout
 - [ ] Connect with modal input dialog from task #4
 
-### 6. Notification System for Action-Required Events
+### 5. Notification System for Action-Required Events
 **Status:** 💡 Feature Request
 **Problem:** No alerts when agent needs user action → user must constantly watch tmuxcc
 **Use case:** Agent awaits approval → terminal bell + desktop notification + custom command
@@ -172,7 +136,7 @@ event = "approval_needed"
 script = "/path/to/notify.sh"
 ```
 
-### 7. Enhanced Process Detection (Parent + Tree + Content)
+### 6. Enhanced Process Detection (Parent + Tree + Content)
 **Status:** 💡 Feature Request
 **Problem:** Current detection only checks process command → misses agents in wrappers/shells
 **Use case:** Agent launched via wrapper script → current detection fails
@@ -193,7 +157,7 @@ script = "/path/to/notify.sh"
 - [ ] Test: content-based detection → correct AI type identified
 - [ ] Document detection strategies in README.md
 
-### 8. AI-Specific Control Configuration
+### 7. AI-Specific Control Configuration
 **Status:** 💡 Feature Request
 **Problem:** All AI agents use same key bindings (Y/N) → not flexible for different AI types
 **Use case:** Claude uses Y/N, Gemini uses A/R, custom AI uses different workflow
@@ -226,7 +190,7 @@ approval_keys = { approve = "a", reject = "r" }
 requires_confirmation = true
 ```
 
-### 9. Configurable Action Menus per Session
+### 8. Configurable Action Menus per Session
 **Status:** 💡 Feature Request - COMPLEX SYSTEM (See TODO-MENU.md)
 
 **Problem:** No way to define custom actions/workflows for specific sessions
@@ -244,7 +208,7 @@ requires_confirmation = true
 
 ## Other ideas
 
-- colapse session? - potrebuje select na session a i session menu
+- collapse session? - needs select on session and session menu
 - preview preserver importasnt lines, wrap, must scroll to end after wrap
 - scroll in preview area?
 
