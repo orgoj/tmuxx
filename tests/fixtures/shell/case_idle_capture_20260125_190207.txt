@@ -1,0 +1,8 @@
+direnv: loading ~/work/ansible/.envrc
+### LOCAL BASH HISTORY /home/user/work/ansible/.bash_history ###
+### Activating history reload in PROMPT_COMMAND ###
+!!! PRESS ENTER TO ACTIVATE !!!
+direnv: export +HISTFILE +HISTTIMEFORMAT +VIRTUAL_ENV +_RELOAD_HISTORY ~HISTCONTROL ~HISTFILESIZE ~HISTIGNORE ~HISTSIZE ~PATH ~PROMPT_COMMAND
+
+user@work/ansible git:master [x!] py:v3.12.11:.venv 10GiB/31GiB on gcp: de:L:A
+>

@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.16] - 2026-01-25
+
+### Changed
+- **Immediate Screen Capture**: `Capture Test Case` (`C-s`) now captures the screen content *immediately* upon keypress, ensuring the capture does not include the popup dialog itself.
+- **Capture Directory Structure**: Test case captures are now saved in directories named after the **Agent Name** (e.g., `claude`, `shell`) rather than the volatile Pane ID (e.g., `cc-bin:0.0...`). This makes test fixtures stable across sessions.
+- **Key Binding Architecture**: Removed hardcoded keybinding definitions from Rust source code. All default bindings are now defined in `src/config/defaults.toml`, making the system fully data-driven.
+
+### Fixed
+- **Shell Detection Robustness**: Increased `last_lines` scan limit from 100 to 300 for generic shell detection. This fixes issues where large blocks of empty lines (e.g., from `clear` or infinite loops) prevented detection of the prompt.
+- **Build Warnings**: Fixed unused import warnings (`anyhow::Context`) in test modules.
+
 ## [0.1.15] - 2026-01-25
 
 ### Fixed

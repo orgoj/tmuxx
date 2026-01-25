@@ -118,6 +118,8 @@ pub enum Action {
     HideModalTextarea,
     /// Submit modal textarea (returns text)
     ModalTextareaSubmit,
+    /// Capture current pane content as a test case
+    CaptureTestCase,
     /// No action (used for unbound keys)
     None,
 }
@@ -176,6 +178,7 @@ impl Action {
             Action::ShowModalTextarea { .. } => "Show modal textarea",
             Action::HideModalTextarea => "Hide modal textarea",
             Action::ModalTextareaSubmit => "Submit modal textarea",
+            Action::CaptureTestCase => "Capture test case",
             Action::None => "",
         }
     }

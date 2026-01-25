@@ -40,7 +40,7 @@ priority = 100
   # Refinement: Detect questions in the body to switch to awaiting_approval
   [[agents.state_rules.refinements]]
   group = "body"
-  pattern = "(?i)Do you want to"
+  pattern = "(?i)Do you want to|wants to exit.*?mode|Exit.*?mode\\?|confirm"
   status = "awaiting_approval"
   [[agents.state_rules.refinements]]
   group = "indicator"
@@ -106,6 +106,9 @@ priority = 100
   [agents.keys]
   approve = "y"
   reject = "n"
+
+  # Support standard prompts: $, #, %, >, ❯
+  pattern = '''(?s).*[$#%>❯]\s*\z'''
 
 [[agents]]
 id = "gemini"
@@ -180,9 +183,42 @@ priority = 10
   # Detect common frame characters used in TUIs (mc, dialog, etc.)
   pattern = '''[│┌┐└┘├┤┬┴┼═║╔╗╚╝╠╣╦╩╬]'''
 
+  # Error State: Non-zero exit code in prompt (e.g. "1 x")
+  [[agents.state_rules]]
+  status = "error"
+  last_lines = 300
+  pattern = '''(?s).*\d+\s+x\s*\z'''
+
   # Generic Shell State Rules: ONLY the prompt makes it Idle
   [[agents.state_rules]]
-  status = "awaiting_input"
-  last_lines = 2
+  status = "idle"
+  last_lines = 300
   # Support standard prompts: $, #, %, >, ❯
-  pattern = '''[$#%>❯]\s*\z'''
+  pattern = '''(?s).*[$#%>❯]\s*\z'''
+
+[key_bindings]
+"j" = { navigate = "next_agent" }
+"k" = { navigate = "prev_agent" }
+"y" = "approve"
+"Y" = "approve"
+"n" = "reject"
+"N" = "reject"
+"a" = "approve_all"
+"A" = "approve_all"
+"E" = { send_keys = "Escape" }
+"C" = { send_keys = "C-c" }
+"D" = { send_keys = "C-d" }
+"K" = { kill_app = { method = "sigterm" } }
+"r" = "rename_session"
+"C-l" = "refresh"
+"C-s" = "capture_test_case"
+"0" = { send_number = 0 }
+"1" = { send_number = 1 }
+"2" = { send_number = 2 }
+"3" = { send_number = 3 }
+"4" = { send_number = 4 }
+"5" = { send_number = 5 }
+"6" = { send_number = 6 }
+"7" = { send_number = 7 }
+"8" = { send_number = 8 }
+"9" = { send_number = 9 }

@@ -1,0 +1,67 @@
+BASHRC.D: homebrew init
+BASHRC.D: brew completions
+BASHRC.D: mise
+BASHRC.D: GO init
+BASHRC.D: bun
+BASHRC.D: cargo
+BASHRC.D: chezmoi
+BASHRC.D: cass completions
+BASHRC.D: ntm shell integration
+BASHRC.D: direnv init
+BASHRC.D: fzf init
+BASHRC.D: MOP
+BASHRC.D: pipx
+BASHRC.D: pnpm
+BASHRC.D: z+zi command
+BASHRC.D: starship
+
+michael@~/bin git:master [!?] py:v3.12.1214GiB/31GiB on gcp:
+> false
+
+michael@~/bin git:master [!?] py:v3.12.1214GiB/31GiB on gcp:
+1 x
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

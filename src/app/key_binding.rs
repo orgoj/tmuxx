@@ -40,6 +40,8 @@ pub enum KeyAction {
     KillApp { method: KillMethod },
     /// Rename current session
     RenameSession,
+    /// Capture current pane content as a test case
+    CaptureTestCase,
     /// Refresh/redraw the screen
     Refresh,
     /// Execute a shell command with variable expansion
@@ -61,42 +63,9 @@ pub struct KeyBindings {
 
 impl Default for KeyBindings {
     fn default() -> Self {
-        let mut bindings = HashMap::new();
-
-        // Navigation keys
-        bindings.insert("j".to_string(), KeyAction::Navigate(NavAction::NextAgent));
-        bindings.insert("k".to_string(), KeyAction::Navigate(NavAction::PrevAgent));
-
-        // Approval keys
-        bindings.insert("y".to_string(), KeyAction::Approve);
-        bindings.insert("Y".to_string(), KeyAction::Approve);
-        bindings.insert("n".to_string(), KeyAction::Reject);
-        bindings.insert("N".to_string(), KeyAction::Reject);
-        bindings.insert("a".to_string(), KeyAction::ApproveAll);
-        bindings.insert("A".to_string(), KeyAction::ApproveAll);
-
-        // Number choices (explicit per user request)
-        for i in 0..=9 {
-            bindings.insert(i.to_string(), KeyAction::SendNumber(i));
-        }
-
-        // Special keys
-        bindings.insert("E".to_string(), KeyAction::SendKeys("Escape".to_string()));
-        bindings.insert("C".to_string(), KeyAction::SendKeys("C-c".to_string()));
-        bindings.insert("D".to_string(), KeyAction::SendKeys("C-d".to_string()));
-        bindings.insert(
-            "K".to_string(),
-            KeyAction::KillApp {
-                method: KillMethod::Sigterm,
-            },
-        );
-
-        // Session management
-        bindings.insert("r".to_string(), KeyAction::RenameSession);
-
-        // Screen refresh (Ctrl+L)
-        bindings.insert("C-l".to_string(), KeyAction::Refresh);
-
+        // All default key bindings are now defined in defaults.toml
+        // to check config structure, see src/config/defaults.toml
+        let bindings = HashMap::new();
         Self { bindings }
     }
 }
@@ -154,44 +123,11 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_default_bindings() {
-        let kb = KeyBindings::default();
-
-        // Test navigation
-        assert_eq!(
-            kb.get_action("j"),
-            Some(&KeyAction::Navigate(NavAction::NextAgent))
-        );
-        assert_eq!(
-            kb.get_action("k"),
-            Some(&KeyAction::Navigate(NavAction::PrevAgent))
-        );
-
-        // Test approval
-        assert_eq!(kb.get_action("y"), Some(&KeyAction::Approve));
-        assert_eq!(kb.get_action("Y"), Some(&KeyAction::Approve));
-        assert_eq!(kb.get_action("n"), Some(&KeyAction::Reject));
-        assert_eq!(kb.get_action("a"), Some(&KeyAction::ApproveAll));
-
-        // Test numbers
-        assert_eq!(kb.get_action("0"), Some(&KeyAction::SendNumber(0)));
-        assert_eq!(kb.get_action("5"), Some(&KeyAction::SendNumber(5)));
-        assert_eq!(kb.get_action("9"), Some(&KeyAction::SendNumber(9)));
-
-        // Test special keys
-        assert_eq!(
-            kb.get_action("E"),
-            Some(&KeyAction::SendKeys("Escape".to_string()))
-        );
-        assert_eq!(
-            kb.get_action("C"),
-            Some(&KeyAction::SendKeys("C-c".to_string()))
-        );
-    }
-
-    #[test]
     fn test_keys_for_action() {
-        let kb = KeyBindings::default();
+        let mut bindings = HashMap::new();
+        bindings.insert("y".to_string(), KeyAction::Approve);
+        bindings.insert("Y".to_string(), KeyAction::Approve);
+        let kb = KeyBindings { bindings };
 
         let approve_keys = kb.keys_for_action(&KeyAction::Approve);
         assert!(approve_keys.contains(&"y".to_string()));
@@ -201,7 +137,14 @@ mod tests {
 
     #[test]
     fn test_keys_for_action_sorted() {
-        let kb = KeyBindings::default();
+        let mut bindings = HashMap::new();
+        bindings.insert("y".to_string(), KeyAction::Approve);
+        bindings.insert("Y".to_string(), KeyAction::Approve);
+        bindings.insert("n".to_string(), KeyAction::Reject);
+        bindings.insert("N".to_string(), KeyAction::Reject);
+        bindings.insert("a".to_string(), KeyAction::ApproveAll);
+        bindings.insert("A".to_string(), KeyAction::ApproveAll);
+        let kb = KeyBindings { bindings };
 
         // Test that lowercase comes before uppercase
         let approve_keys = kb.keys_for_action(&KeyAction::Approve);

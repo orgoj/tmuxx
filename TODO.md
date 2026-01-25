@@ -1,9 +1,10 @@
 # TODO - tmuxcc
 
-
-- selected pane rychly filtr - default binding s - prepina mezi zobrazenim selected a normalnim
-
-- jak poznat commandy co bezi v ssh ?
+- TODO na plnou sirku summary
+- [ ] selected pane rychly filtr - default binding s - prepina mezi zobrazenim selected a normalnim
+- [ ] jak poznat commandy co bezi v ssh ?
+- [ ] menu na prompty - user a projekt definice, asi nejaky adresar a v nem soubory, v menu jen nazvy
+- [x] default binding must be in default.toml
 
 ## Priority Tasks
 

@@ -1,0 +1,195 @@
+/home/michael/bin/tmuxcc
+BASHRC.D: homebrew init
+BASHRC.D: brew completions
+BASHRC.D: mise
+BASHRC.D: GO init
+BASHRC.D: bun
+BASHRC.D: cargo
+BASHRC.D: chezmoi
+BASHRC.D: cass completions
+BASHRC.D: ntm shell integration
+BASHRC.D: direnv init
+BASHRC.D: fzf init
+BASHRC.D: MOP
+BASHRC.D: pipx
+BASHRC.D: pnpm
+BASHRC.D: z+zi command
+BASHRC.D: starship
+
+michael@~ via bun:v1.3.6 12GiB/31GiB on gcp:
+> /home/michael/bin/tmuxcc
+
+michael@~ via bun:v1.3.6 12GiB/31GiB on gcp: took 1m58s
+> CX
+Switching to session: tmuxcc
+
+michael@~ via bun:v1.3.6 12GiB/31GiB on gcp:
+> tcc
+Switching to session: tmuxcc
+
+michael@~ via bun:v1.3.6 13GiB/31GiB on gcp:
+> tcc
+
+michael@~ via bun:v1.3.6 17GiB/31GiB on gcp: took 2h22m44s
+> CX
+
+michael@~ via bun:v1.3.6 19GiB/31GiB on gcp: took 1h53m23s
+>
+
+michael@~ via bun:v1.3.6 20GiB/31GiB on gcp: took 1h51m57s
+> ^C
+
+
+
+michael@~ via bun:v1.3.6 16GiB/31GiB on gcp:
+🧱130 x ^C
+
+
+
+michael@~ via bun:v1.3.6 16GiB/31GiB on gcp:
+🧱130 x
+
+michael@~ via bun:v1.3.6 16GiB/31GiB on gcp:
+> CX
+
+michael@~ via bun:v1.3.6 16GiB/31GiB on gcp: took 2h38m45s
+> CX
+
+michael@~ via bun:v1.3.6 14GiB/31GiB on gcp: took 1h34m52s
+>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

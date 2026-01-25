@@ -713,6 +713,19 @@ async fn run_loop(
                                                 Err(e) => state.set_error(e),
                                             }
                                         }
+                                    }
+                                }
+                                Action::CaptureTestCase => {
+                                    use crate::app::{PopupInputState, PopupType};
+                                    if let Some(agent) = state.selected_agent() {
+                                        let content = agent.last_content.clone();
+                                        state.popup_input = Some(PopupInputState {
+                                            title: "Capture Test Case".to_string(),
+                                            prompt: "Expected Status (idle, processing, etc.):".to_string(),
+                                            buffer: String::new(),
+                                            cursor: 0,
+                                            popup_type: PopupType::CaptureStatus { content },
+                                        });
                                     } else {
                                         state.set_error("No agent selected".to_string());
                                     }
@@ -784,6 +797,46 @@ async fn run_loop(
                                                     }
                                                 }
                                                 // If new_name == session, just close dialog silently
+                                            }
+                                            PopupType::CaptureStatus { content } => {
+                                                let status_str = popup.buffer.trim().to_lowercase();
+                                                if status_str.is_empty() {
+                                                    state.set_error("Status cannot be empty".to_string());
+                                                } else if let Some(agent) = state.selected_agent() {
+                                                    // Generate filename: case_<STATUS>_<TIMESTAMP>.txt
+                                                    let timestamp = chrono::Local::now().format("%Y%m%d_%H%M%S");
+                                                    // Clean status string for filename
+                                                    let safe_status = status_str.replace(|c: char| !c.is_alphanumeric(), "_");
+                                                    let filename = format!("case_{}_{}.txt", safe_status, timestamp);
+
+                                                    // Determine directory: tests/fixtures/{agent_name}
+                                                    // Use agent name (from config) so that multiple panes of same agent type go to same folder
+                                                    let safe_name = agent.name.to_lowercase().replace(|c: char| !c.is_alphanumeric(), "_");
+                                                    let dir_name = if safe_name.is_empty() {
+                                                        "unknown"
+                                                    } else {
+                                                        &safe_name
+                                                    };
+
+                                                    let mut path = std::path::PathBuf::from("tests/fixtures");
+                                                    path.push(dir_name);
+
+                                                    // Ensure directory exists
+                                                    if let Err(e) = std::fs::create_dir_all(&path) {
+                                                        state.set_error(format!("Failed to create directory: {}", e));
+                                                    } else {
+                                                        path.push(filename);
+
+                                                        // Write content (from captured snapshot)
+                                                        if let Err(e) = std::fs::write(&path, &content) {
+                                                            state.set_error(format!("Failed to write test case: {}", e));
+                                                        } else {
+                                                            state.set_status(format!("Captured test case: {}", path.display()));
+                                                        }
+                                                    }
+                                                } else {
+                                                    state.set_error("No agent selected".to_string());
+                                                }
                                             }
                                         }
                                     }
@@ -1016,6 +1069,7 @@ fn map_key_to_action(
                     blocking: *blocking,
                     terminal: *terminal,
                 },
+                KeyAction::CaptureTestCase => Action::CaptureTestCase,
             };
         }
     }

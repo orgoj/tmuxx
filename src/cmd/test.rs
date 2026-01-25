@@ -1,4 +1,4 @@
-use anyhow::{Context, Result};
+use anyhow::Result;
 use crossterm::style::Stylize;
 use std::fs;
 use std::path::PathBuf;
@@ -15,27 +15,83 @@ pub struct TestArgs {
 pub async fn run_test(args: TestArgs) -> Result<()> {
     println!("🧪 Running Regression Tests in {}", args.dir.display());
 
-    // 1. Load Configuration
     let config = Config::load_merged();
+    let mut total_success = 0;
+    let mut total_fail = 0;
 
-    // 2. Find Claude Agent
-    let agent_config = config
-        .agents
-        .iter()
-        .find(|a| a.id == "claude")
-        .context("Agent 'claude' not found in config")?
-        .clone();
+    // Check for subdirectories to run recursively
+    let mut subdirs: Vec<PathBuf> = fs::read_dir(&args.dir)?
+        .filter_map(|entry| entry.ok().map(|e| e.path()))
+        .filter(|path| path.is_dir())
+        .collect();
 
-    // 3. Initialize Parser
-    let parser = UniversalParser::new(agent_config.clone());
+    subdirs.sort();
 
-    // 4. Iterate over fixtures
-    let mut files: Vec<PathBuf> = fs::read_dir(&args.dir)?
+    if !subdirs.is_empty() {
+        println!("📂 Found {} test suites (subdirectories)", subdirs.len());
+        for dir in subdirs {
+            let (s, f) = run_suite_for_dir(&dir, &config)?;
+            total_success += s;
+            total_fail += f;
+        }
+    } else {
+        // Run in single directory mode
+        let (s, f) = run_suite_for_dir(&args.dir, &config)?;
+        total_success += s;
+        total_fail += f;
+    }
+
+    println!(
+        "\n📊 Total Results: {} Passed, {} Failed",
+        total_success, total_fail
+    );
+
+    if total_fail > 0 {
+        std::process::exit(1);
+    }
+
+    Ok(())
+}
+
+fn run_suite_for_dir(dir: &std::path::Path, config: &Config) -> Result<(usize, usize)> {
+    let dirname = dir.file_name().unwrap_or_default().to_string_lossy();
+
+    // Determine Agent ID
+    let agent_id = if dirname == "shell" || dirname.ends_with("shell") {
+        "generic_shell"
+    } else {
+        &dirname
+    };
+
+    println!("\n🔍 Test Suite: {} (Agent: {})", dirname, agent_id);
+
+    // Find Agent Config
+    let agent_config = match config.agents.iter().find(|a| a.id == agent_id) {
+        Some(c) => c.clone(),
+        None => {
+            println!(
+                "⚠️ Skipping suite '{}': Agent '{}' not found in config",
+                dirname, agent_id
+            );
+            return Ok((0, 0));
+        }
+    };
+
+    // Initialize Parser
+    let parser = UniversalParser::new(agent_config);
+
+    // Iterate over fixtures
+    let mut files: Vec<PathBuf> = fs::read_dir(dir)?
         .filter_map(|entry| entry.ok().map(|e| e.path()))
         .filter(|path| path.extension().is_some_and(|ext| ext == "txt"))
         .collect();
 
     files.sort();
+
+    if files.is_empty() {
+        println!("   (No test files found)");
+        return Ok((0, 0));
+    }
 
     let mut success_count = 0;
     let mut fail_count = 0;
@@ -44,16 +100,13 @@ pub async fn run_test(args: TestArgs) -> Result<()> {
         let filename = path.file_name().unwrap().to_string_lossy();
         let content = fs::read_to_string(&path)?;
 
-        // Parse expected status from filename: string between first and second underscore
-        // Format: case_<STATUS>_<DESC>.txt
+        // Parse expected status
         let parts: Vec<&str> = filename.split('_').collect();
         if parts.len() < 3 || parts[0] != "case" {
             println!("⚠️ Skipping invalid filename format: {}", filename);
             continue;
         }
 
-        // Handle composite statuses like "awaiting_approval" which contain underscore
-        // Strategy: Try to match known status strings first
         let status_part = if filename.contains("awaiting_approval") {
             "awaiting_approval"
         } else if filename.contains("awaiting_input") {
@@ -80,11 +133,7 @@ pub async fn run_test(args: TestArgs) -> Result<()> {
             }
         };
 
-        println!("\n📄 Checking {}", filename.bold());
-
         let actual_status = parser.parse_status(&content);
-
-        // Compare Enums (Variant matching only, ignoring inner data like uptime/details)
         let is_match =
             std::mem::discriminant(&actual_status) == std::mem::discriminant(&expected_status_enum);
 
@@ -97,26 +146,17 @@ pub async fn run_test(args: TestArgs) -> Result<()> {
         };
 
         println!(
-            "  Expected: {:<20} Got: {:<20} -> {}",
+            "  📄 {:<40} Expected: {:<15} Got: {:<15} -> {}",
+            filename,
             status_part,
             actual_status.short_text(),
             result_str
         );
 
         if !is_match {
-            // Print detail for debugging
-            println!("  Actual Status: {:?}", actual_status);
+            println!("     Actual Status: {:?}", actual_status);
         }
     }
 
-    println!(
-        "\n📊 Results: {} Passed, {} Failed",
-        success_count, fail_count
-    );
-
-    if fail_count > 0 {
-        std::process::exit(1);
-    }
-
-    Ok(())
+    Ok((success_count, fail_count))
 }

@@ -282,16 +282,31 @@ impl Config {
         // 1. Load Defaults
         let default_toml = include_str!("../config/defaults.toml");
         #[derive(Deserialize)]
-        struct AgentsOnly {
+        struct Defaults {
+            #[serde(default)]
             agents: Vec<AgentConfig>,
+            #[serde(default)]
+            key_bindings: Option<KeyBindings>,
         }
-        let defaults: AgentsOnly = toml::from_str(default_toml).unwrap_or_else(|e| {
+        let defaults: Defaults = toml::from_str(default_toml).unwrap_or_else(|e| {
             eprintln!("Internal Error: Failed to parse default config: {}", e);
-            AgentsOnly { agents: Vec::new() }
+            Defaults {
+                agents: Vec::new(),
+                key_bindings: None,
+            }
         });
 
         // 2. Load User Config (if exists)
         let mut config = Self::load();
+
+        // 2a. Merge Key Bindings
+        // Start with default bindings (if any)
+        if let Some(default_bindings) = defaults.key_bindings {
+            let mut final_bindings = default_bindings.bindings;
+            // Override with user bindings
+            final_bindings.extend(config.key_bindings.bindings);
+            config.key_bindings.bindings = final_bindings;
+        }
 
         // 3. Merge Agents
         // Logic: User agents with same 'id' replace default. New ones append.
@@ -324,16 +339,23 @@ impl Config {
     pub fn load_defaults() -> Self {
         let default_toml = include_str!("../config/defaults.toml");
         #[derive(Deserialize)]
-        struct AgentsOnly {
+        struct Defaults {
+            #[serde(default)]
             agents: Vec<AgentConfig>,
+            #[serde(default)]
+            key_bindings: Option<KeyBindings>,
         }
-        let defaults: AgentsOnly = toml::from_str(default_toml).unwrap_or_else(|e| {
+        let defaults: Defaults = toml::from_str(default_toml).unwrap_or_else(|e| {
             eprintln!("Internal Error: Failed to parse default config: {}", e);
-            AgentsOnly { agents: Vec::new() }
+            Defaults {
+                agents: Vec::new(),
+                key_bindings: None,
+            }
         });
 
         Config {
             agents: defaults.agents,
+            key_bindings: defaults.key_bindings.unwrap_or_default(),
             ..Config::default()
         }
     }
@@ -503,7 +525,7 @@ mod tests {
 
     #[test]
     fn test_key_bindings_included() {
-        let config = Config::default();
+        let config = Config::load_defaults();
         // Verify key_bindings field exists and has defaults
         assert!(config.key_bindings.get_action("y").is_some());
         assert!(config.key_bindings.get_action("n").is_some());

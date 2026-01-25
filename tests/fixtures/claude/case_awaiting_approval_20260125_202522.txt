@@ -1,0 +1,245 @@
+      348 -- Verify context awareness (subshells, pipelines)
+      349 -- Confirm no bypass mechanisms
+      587 +# Test with pi-mono
+      588 +pi
+      589 +```
+      590
+      351 -## Rollback Plan
+      591 +### 6. Performance Testing
+      592 +```bash
+      593 +# Measure validation overhead
+      594 +time echo '{"command":"ls -la"}' | python3 src/dippy/pi_api.py
+      595 +# Target: < 100ms
+      596 +```
+      597
+      353 -If integration fails or causes issues:
+      598 +## Advantages of This Approach
+      599
+      355 -1. **Disable dippy instantly:**
+      356 -   ```json
+      357 -   // In config.json
+      358 -   { "dippy": { "enabled": false } }
+      359 -   ```
+      600 +1. **✅ Zero pi-mono modifications** - Pure extension using public API
+      601 +2. **✅ Single codebase** - Dippy and extension in same repo
+      602 +3. **✅ Easy distribution** - Standard npm package
+      603 +4. **✅ Version controlled** - Extension version matches dippy version
+      604 +5. **✅ Independent updates** - Update extension without touching pi-mono
+      605 +6. **✅ Clear separation** - Extension concerns separate from dippy core
+      606 +7. **✅ Multiple installation methods** - npm, local, git
+      607 +8. **✅ Proper TypeScript support** - Types from pi-mono package
+      608 +9. **✅ Testing friendly** - Can test extension independently
+      609 +10. **✅ Documentation friendly** - Extension can have own README
+      610
+      361 -2. **Remove extension:**
+      362 -   ```bash
+      363 -   rm /packages/coding-agent/src/core/extensions/dippy-security.ts
+      364 -   ```
+      611 +## Potential Issues and Solutions
+      612
+      366 -3. **Restore previous agent-session.ts:**
+      367 -   ```bash
+      368 -   git checkout packages/coding-agent/src/core/agent-session.ts
+      369 -   ```
+      613 +### Issue 1: Python Not Found
+      614 +**Problem**: `python3` not available in PATH
+      615 +**Solution:**
+      616 +```typescript
+      617 +// Detect python in extension
+      618 +const pythonExe = process.env.DIPPY_PYTHON || 'python3';
+      619 +```
+      620
+      371 -## Advantages of This Approach
+      621 +### Issue 2: Extension Not Loading
+      622 +**Problem**: Build errors or missing dependencies
+      623 +**Solution:**
+      624 +- Add pre-install check script
+      625 +- Provide clear error messages
+      626 +- Document dependencies in README
+      627
+      373 -1. **Non-invasive**: Extension-based, minimal code changes
+      374 -2. **Maintainable**: Dippy stays single source of truth
+      375 -3. **Flexible**: Easy to enable/disable via config
+      376 -4. **Safe**: Default-deny stance for unknown commands
+      377 -5. **User-friendly**: Clear approval prompts with reasons
+      378 -6. **Auditable**: All decisions logged by dippy
+      379 -7. **Extensible**: Easy to add custom rules in .dippy config
+      380 -8. **Compatible**: Works with existing extension system
+      628 +### Issue 3: Performance Overhead
+      629 +**Problem**: Subprocess spawning adds latency
+      630 +**Solution:**
+      631 +- Consider persistent Python process with IPC
+      632 +- Cache validation results for repeated commands
+      633 +- Profile and optimize hot paths
+      634
+      382 -## Potential Risks and Mitigations
+      635 +### Issue 4: Python Script Path Issues
+      636 +**Problem**: Relative paths break when installed globally
+      637 +**Solution:**
+      638 +```typescript
+      639 +// Use absolute path based on extension location
+      640 +const extensionDir = dirname(fileURLToPath(import.meta.url));
+      641 +const pythonScript = join(extensionDir, "../python/pi_api.py");
+      642 +```
+      643
+      384 -### Risk 1: Python subprocess overhead
+      385 -**Mitigation:** Cache validator instance, reuse Python process, measure performance
+      644 +### Issue 5: pi-mono API Version Mismatch
+      645 +**Problem**: Extension built for incompatible pi-mono version
+      646 +**Solution:**
+      647 +```json
+      648 +// package.json
+      649 +{
+      650 +  "peerDependencies": {
+      651 +    "@mariozechner/pi-coding-agent": "^2.0.0"
+      652 +  }
+      653 +}
+      654 +```
+      655
+      387 -### Risk 2: Dippy not installed/available
+      388 -**Mitigation:** Graceful fallback, log warning, run without security layer
+      656 +## Alternative Approaches Considered
+      657
+      390 -### Risk 3: Command parsing differences
+      391 -**Mitigation:** Use same shell parser, test complex commands thoroughly
+      658 +### Alternative 1: Port Dippy to TypeScript ❌
+      659 +**Pros:** No subprocess overhead, single language
+      660 +**Cons:**
+      661 +- Complex AST parser rewrite
+      662 +- Duplicate codebase
+      663 +- Lose Python dippy features
+      664 +- High maintenance burden
+      665
+      393 -### Risk 4: User approval fatigue
+      394 -**Mitigation:** Learn from approvals, allow "always allow" per command pattern
+      666 +### Alternative 2: Modify pi-mono Core ❌
+      667 +**Pros:** Tighter integration possible
+      668 +**Cons:**
+      669 +- Requires pi-mono PR/merge
+      670 +- Tied to pi-mono release cycle
+      671 +- Distribution pain
+      672 +- Against user requirement
+      673
+      674 +### Alternative 3: HTTP Server Model ❌
+      675 +**Pros:** Persistent process, no spawn overhead
+      676 +**Cons:**
+      677 +- Background process management
+      678 +- Port conflicts
+      679 +- Complex lifecycle
+      680 +- Overkill for this use case
+      681 +
+      682  ## Implementation Priority
+      683
+      398 -1. **Must have:**
+      399 -   - Dippy validator wrapper
+      400 -   - Extension implementation
+      401 -   - Basic approval UI
+      402 -   - Safe/deny command handling
+      684 +### Phase 1: MVP (Must Have)
+      685 +1. ✅ Python JSON API (`pi_api.py`)
+      686 +2. ✅ TypeScript extension skeleton
+      687 +3. ✅ Subprocess wrapper
+      688 +4. ✅ Basic `tool_call` hook
+      689 +5. ✅ Simple allow/deny logic
+      690
+      404 -2. **Should have:**
+      405 -   - Configuration integration
+      406 -   - Approval memory (remember decisions)
+      407 -   - Comprehensive logging
+      408 -   - Test coverage
+      691 +### Phase 2: Functional (Should Have)
+      692 +1. ✅ Approval UI integration
+      693 +2. ✅ Configuration loading (.dippy files)
+      694 +3. ✅ Error handling and fallbacks
+      695 +4. ✅ Logging and diagnostics
+      696 +5. ✅ Package.json and build setup
+      697
+      410 -3. **Could have:**
+      411 -   - Command editing in approval dialog
+      412 -   - Rule editor UI
+      413 -   - Approval statistics dashboard
+      414 -   - Custom rule suggestions based on approvals
+      698 +### Phase 3: Polish (Nice to Have)
+      699 +1. ⭐ Caching for repeated commands
+      700 +2. ⭐ "Always allow" memory
+      701 +3. ⭐ Better UI with syntax highlighting
+      702 +4. ⭐ Statistics dashboard
+      703 +5. ⭐ Rule editor integration
+      704 +6. ⭐ Comprehensive tests
+      705
+      706  ## Success Criteria
+      707
+      418 -- ✅ Safe commands execute automatically (< 50ms overhead)
+      419 -- ✅ Dangerous commands prompt for approval
+      420 -- ✅ Blocked commands are prevented with clear reason
+      421 -- ✅ Configuration is simple and editable
+      422 -- ✅ System can be disabled instantly
+      423 -- ✅ No breaking changes to existing functionality
+      424 -- ✅ Comprehensive test coverage (> 80%)
+      708 +- ✅ Extension loads without pi-mono modifications
+      709 +- ✅ Safe commands execute automatically
+      710 +- ✅ Dangerous commands show approval prompt
+      711 +- ✅ Blocked commands prevent execution
+      712 +- ✅ Configuration via .dippy files works
+      713 +- ✅ Extension installable via `pi install`
+      714 +- ✅ Performance overhead < 100ms per validation
+      715 +- ✅ Clear error messages when something goes wrong
+      716 +- ✅ Documentation for users and developers
+      717 +
+      718 +## Next Steps
+      719 +
+      720 +1. **Create Python JSON API** - Start with `pi_api.py`
+      721 +2. **Create extension skeleton** - Basic `package.json` and `index.ts`
+      722 +3. **Test subprocess communication** - Verify Python↔TypeScript data flow
+      723 +4. **Implement tool_call hook** - Intercept bash commands
+      724 +5. **Add approval UI** - Integrate with pi-mono UI
+      725 +6. **Package and test** - Build, install, verify functionality
+      726 +7. **Document** - README, installation guide, configuration examples
+  ⎿  PostToolUse:Write hook succeeded: Success
+
+∴ Thinking…
+
+  Aktualizoval jsem plán s novým pochopením - extension bude naprosto nezávislé a bude umístěno v dippy-dev repository. Teď bych měl ukončit plan mode pomocí ExitPlanMode.
+
+● Aktualizoval jsem plán na základě nového pochopení. Klíčové změny:
+
+  Nový přístup: External Extension v dippy-dev
+
+  Hlavní princip:
+  - ✅ Žádné modifikace pi-mono - čistě externí extension
+  - ✅ Vývoj v dippy-dev - extension v dippy repository
+  - ✅ Instalace přes pi install - standardní npm package
+  - ✅ Python + TypeScript - subprocess komunikace
+
+  Architektura:
+  1. Python JSON API (pi_api.py) - endpoint pro validaci příkazů
+  2. TypeScript extension - implementuje pi-mono Extension API
+  3. Subprocess wrapper - volá Python z TypeScriptu
+  4. NPM package - distribuce přes npm
+
+  Struktura v dippy-dev:
+  dippy-dev/
+  ├── src/dippy/          # Python core
+  │   └── pi_api.py       # NEW: JSON API
+  └── pi-extension/       # NEW: pi-mono extension
+      ├── src/index.ts    # Extension code
+      ├── python/pi_api.py # Bundled Python
+      ├── package.json
+      └── dist/           # Build output
+
+  Instalace:
+  pi install /path/to/dippy-dev/pi-extension
+  # nebo
+  pi install npm:dippy-extension
+
+  Všechny změny budou v dippy-dev, pi-mono zůstane nedotčené.
+
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+ Exit plan mode?
+
+  Claude wants to exit plan mode
+
+  ❯ 1. Yes
+    2. No
+
+

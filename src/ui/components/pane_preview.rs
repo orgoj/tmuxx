@@ -149,7 +149,10 @@ impl PanePreviewWidget {
                             .add_modifier(Modifier::BOLD),
                     )]));
                     for line in todo.lines() {
-                        todo_lines.push(Line::from(vec![Span::styled(line, Style::default().fg(Color::White))]));
+                        todo_lines.push(Line::from(vec![Span::styled(
+                            line,
+                            Style::default().fg(Color::White),
+                        )]));
                     }
                 } else {
                     todo_lines.push(Line::from(vec![Span::styled(
@@ -182,7 +185,8 @@ impl PanePreviewWidget {
                 )]));
             }
 
-            let todo_paragraph = Paragraph::new(todo_lines).wrap(ratatui::widgets::Wrap { trim: false });
+            let todo_paragraph =
+                Paragraph::new(todo_lines).wrap(ratatui::widgets::Wrap { trim: false });
             frame.render_widget(todo_paragraph, columns[0]);
 
             // Right column: Activity and tools

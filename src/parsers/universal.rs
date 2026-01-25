@@ -402,8 +402,10 @@ mod tests {
         let config = AgentConfig {
             id: "claude".to_string(),
             name: "Claude".to_string(),
-            color: "magenta".to_string(),
+            color: Some("magenta".to_string()),
+            background_color: None,
             priority: 100,
+            default_status: Some("idle".to_string()),
             matchers: vec![],
             state_rules: vec![crate::app::config::StateRule {
                 status: "processing".to_string(),
@@ -415,12 +417,13 @@ mod tests {
                     group: "indicator".to_string(),
                     pattern: "Baked".to_string(),
                     status: "idle".to_string(),
+                    approval_type: None,
                 }],
+                last_lines: Some(0),
             }],
             title_indicators: None,
-            default_status: Some("processing".to_string()),
-            subagent_rules: None,
             keys: AgentKeys::default(),
+            subagent_rules: None,
             layout: Some(crate::app::config::LayoutConfig {
                 // Handle optional │ prefix
                 footer_separator: Some(r"(?m)^[ \t]*[│]?─{10,}.*?$".to_string()),

@@ -389,7 +389,7 @@ mod tests {
         let agent = MonitoredAgent::new(
             "agent-1".to_string(),
             "Claude Code".to_string(),
-            "magenta".to_string(),
+            Some("magenta".to_string()),
             "main:0.1".to_string(),
             "main".to_string(),
             0,

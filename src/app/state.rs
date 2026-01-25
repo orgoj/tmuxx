@@ -30,6 +30,11 @@ pub enum PopupType {
         /// The current session name to rename
         session: String,
     },
+    /// Capture test case with expected status
+    CaptureStatus {
+        /// The content captured at the moment of keypress
+        content: String,
+    },
 }
 
 /// State for popup input dialog
@@ -619,7 +624,7 @@ mod tests {
         state.agents.root_agents.push(MonitoredAgent::new(
             "1".to_string(),
             "Claude".to_string(),
-            "magenta".to_string(),
+            Some("magenta".to_string()),
             "main:0.0".to_string(),
             "main".to_string(),
             0,
@@ -627,12 +632,13 @@ mod tests {
             0,
             "/home/user/project1".to_string(),
             AgentType::ClaudeCode,
+            None,
             1000,
         ));
         state.agents.root_agents.push(MonitoredAgent::new(
             "2".to_string(),
             "OpenCode".to_string(),
-            "blue".to_string(),
+            Some("blue".to_string()),
             "main:0.1".to_string(),
             "main".to_string(),
             0,
@@ -640,6 +646,7 @@ mod tests {
             1,
             "/home/user/project2".to_string(),
             AgentType::OpenCode,
+            None,
             1001,
         ));
 
@@ -657,7 +664,7 @@ mod tests {
         MonitoredAgent::new(
             id.to_string(),
             "Test Agent".to_string(),
-            "cyan".to_string(),
+            Some("cyan".to_string()),
             format!("{}:0.{}", session, pane_index),
             session.to_string(),
             0,
@@ -665,6 +672,7 @@ mod tests {
             pane_index,
             format!("/home/user/{}", session),
             AgentType::ClaudeCode,
+            None,
             1000 + pane_index,
         )
     }

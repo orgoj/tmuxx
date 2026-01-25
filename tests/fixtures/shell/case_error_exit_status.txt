@@ -1,0 +1,13 @@
+> cargo run -- test --dir tests/fixtures/shell
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 0.09s
+     Running `target/debug/tmuxcc test --dir tests/fixtures/shell`
+🧪 Running Regression Tests in tests/fixtures/shell
+
+📄 Checking case_idle_capture_20260125_190207.txt
+  Expected: idle                 Got: Processing           -> FAIL
+  Actual Status: Processing { activity: "Processing" }
+
+📊 Results: 0 Passed, 1 Failed
+
+michael@ai/TOOLS/tmuxcc git:orgoj [!?] is pkg:v0.1.16 via rs:v1.95.0-nightly 14GiB/31GiB on gcp:
+1 x
