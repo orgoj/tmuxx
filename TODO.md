@@ -1,7 +1,6 @@
 # TODO - tmuxcc
 
-- [ ] menu commandy (stromove) definice s moznostmi jako binding, jen to bude organizovane v menu a to user a projekt config primo pro session
-    - musi v tom jit rychle vybirat jen sipkami nahoru/dolu/doprava(rozbali)/doleva a psani pismen okamzity fuzzy filter na vse, klavesa * vse rozbali
+
 
 - [ ] menu na prompty (stromove) - user a projekt definice, asi nejaky adresar a v nem soubory, v menu jen nazvy
 
