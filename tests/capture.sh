@@ -36,15 +36,24 @@ if ! tmux capture-pane -p -t "$TARGET" > "$OUTPATH.tmp"; then
     exit 1
 fi
 
-# Clean up TUI artifacts (borders)
-echo "🧹 Cleaning artifacts..."
-# Remove leading pipe characters and spaces used for borders, but keep content
+# Clean up TUI artifacts and anonymize
+echo "🧹 Cleaning and anonymizing..."
+# Remove leading pipe characters from pane splits
 sed -i 's/^[ \t]*│//' "$OUTPATH.tmp"
-sed -i 's/^[ \t]*//' "$OUTPATH.tmp" # Optional: aggressive trim if needed, but let's be careful.
-# Actually, the regex in defaults.toml handles indentation.
-# But for the fixture to be "pure" content as if printed by CLI, we might want to strip common indentation.
-# For now, let's just strip the explicit border char if present at start of line with safe leading space match.
-sed -i 's/^[ \t]*│//' "$OUTPATH.tmp"
+
+# Anonymization: replace HOME and username to protect privacy
+# Using | as separator for sed to handle paths safely
+sed -i "s|$HOME|/home/user|g" "$OUTPATH.tmp"
+sed -i "s|$(whoami)|user|g" "$OUTPATH.tmp"
+
+# Optional: Add custom strings from .tmuxcc_scrub if it exists
+if [ -f "${SCRIPT_DIR}/.tmuxcc_scrub" ]; then
+    while IFS='=' read -r key value; do
+        if [[ ! $key =~ ^# && -n $key ]]; then
+            sed -i "s|$key|$value|g" "$OUTPATH.tmp"
+        fi
+    done < "${SCRIPT_DIR}/.tmuxcc_scrub"
+fi
 
 mv "$OUTPATH.tmp" "$OUTPATH"
 

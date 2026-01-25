@@ -1,0 +1,145 @@
+
+● Bash(rg -A30 "def classify" src/dippy/cli/script.py | head -50)
+⎿  PreToolUse:Bash hook succeeded: Success
+⎿  def classify(ctx: HandlerContext) -> Classification:
+"""Classify script command."""
+tokens = ctx.tokens
+if len(tokens) < 2:
+return Classification("ask", description="script interactive")
+
+# Parse tokens to find file and command
+i = 1
+while i < len(tokens):
+tok = tokens[i]
+if tok == "--":
+i += 1
+break
+if tok.startswith("-"):
+if tok in FLAGS_WITH_ARG:
+i += 2
+elif tok in FLAGS_NO_ARG or (len(tok) > 1 and tok[1] != "-"):
+i += 1
+else:
+i += 1
+else:
+break
+
+if i >= len(tokens):
+return Classification("ask", description="script interactive")
+
+# tokens[i] is the file, tokens[i+1:] is the command (if any)
+command_tokens = tokens[i + 1 :]
+
+if not command_tokens:
+# Check if it's playback mode (-p flag)
+⎿  PostToolUse:Bash hook succeeded
+
+∴ Thinking…
+
+To je špatný handler - to je script command. Potřebuju sh handler. Zkusím najít správný soubor.
+
+● Bash(ls -1 src/dippy/cli/*.py | grep -E "(sh|shell)" | head -5)
+⎿  PreToolUse:Bash hook succeeded: Success
+⎿  src/dippy/cli/shell.py
+src/dippy/cli/ssh.py
+⎿  PostToolUse:Bash hook succeeded
+
+∴ Thinking…
+
+Aha, shell.py je správný soubor pro sh command. Podívám se tam.
+
+● Bash(rg -A20 "def classify" src/dippy/cli/shell.py)
+⎿  PreToolUse:Bash hook succeeded: Success
+⎿  def classify(ctx: HandlerContext) -> Classification:
+"""Classify shell command."""
+tokens = ctx.tokens
+base = tokens[0] if tokens else "shell"
+if len(tokens) < 2:
+return Classification("ask", description=f"{base} interactive")
+
+# Find -c flag (standalone or combined like -lc, -cl, -xcl, etc.)
+c_idx = None
+for i, tok in enumerate(tokens):
+if tok.startswith("-") and not tok.startswith("--") and "c" in tok:
+c_idx = i
+break
+
+if c_idx is None:
+return Classification("ask", description=f"{base} interactive")
+
+if c_idx + 1 >= len(tokens):
+return Classification("ask", description=f"{base} -c (no command)")
+
+inner_cmd = tokens[c_idx + 1]
+⎿  PostToolUse:Bash hook succeeded
+
+∴ Thinking…
+
+Dobře, teď vidím shell.py handler. Podívám se, jestli předává remote kontext dál. Musím vidět celou funkci:
+
+● Read(/home/user/work/ai/CLAUDE/TOOLS/dippy-dev/src/dippy/cli/shell.py)
+⎿  Read 41 lines
+⎿  PostToolUse:Callback hook succeeded: Success
+
+∴ Thinking…
+
+Aha! Vidím problém. shell.py vrací Classification("delegate", inner_command=inner_cmd), ale NEVRACÍ remote=True.
+
+Když docker exec volá sh -c 'cd /app && ...', tak:
+1. docker.py deleguje na sh s remote=True
+2. Ale shell.py vrací delegaci BEZ remote=True
+3. Takže inner command (cd /app && cat foo.txt) se kontroluje jako by byl na hostu
+
+Musím zkontrolovat, jestli HandlerContext obsahuje informaci o remote a pak ji handler předá dál.
+
+Podívám se na HandlerContext:
+
+● Bash(rg -A10 "class HandlerContext" src/dippy/cli/__init__.py)
+⎿  PreToolUse:Bash hook succeeded: Success
+⎿  class HandlerContext:
+"""Context passed to handlers."""
+
+tokens: list[str]
+
+
+@dataclass(frozen=True)
+class Classification:
+"""Result of classifying a command.
+
+Handlers return this to indicate:
+⎿  PostToolUse:Bash hook succeeded
+
+∴ Thinking…
+
+Problém! HandlerContext obsahuje pouze tokens, ale NEOBSAHUJE remote flag!
+
+Takže když docker.py deleguje na sh -c, handler shell.py neví, že běží v remote kontextu, a nemůže předat remote=True dál do delegace.
+
+Řešení:1. Přidat remote: bool do HandlerContext
+2. Nebo: handler shell.py musí zkopírovat remote flag z incoming kontextu
+
+Ale počkat - jak to funguje u docker.py? Podívám se, jak docker handler vrací delegaci:
+
+● Bash(rg -B5 -A10 'Classification.*delegate.*inner_command' src/dippy/cli/docker.py | head -30)
+⎿  PreToolUse:Bash hook succeeded: Success
+⎿  (No content)
+⎿  PostToolUse:Bash hook succeeded
+
+∴ Thinking…
+
+Zkusím najít docker exec handler:
+
+● Bash(rg -A30 "def classify" src/dippy/cli/docker.py | grep -A30 "exec")
+⎿  PreToolUse:Bash hook succeeded: Success
+⎿  No matches found
+⎿  PostToolUse:Bash hook succeeded
+
+✢ Processing… (Esc to interrupt · running stop hook · 1m 17s · ↑ 2.3k tokens · thinking)
+⎿  Tip: Use /permissions to pre-approve and pre-deny bash, edit, and MCP tools
+
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+❯ 
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+Model: Sonnet 4.5 | Style: default | Ctx: 54.7k | Ctx(u): 34.2% | Session: 1hr 48m                                                                                  55023 tokens
+current: 2.1.19 · latest: 2.1.19
+

@@ -90,7 +90,12 @@ impl AgentTree {
         use crate::agents::AgentStatus;
         self.root_agents
             .iter()
-            .filter(|a| matches!(a.status, AgentStatus::Processing { .. } | AgentStatus::Tui { .. }))
+            .filter(|a| {
+                matches!(
+                    a.status,
+                    AgentStatus::Processing { .. } | AgentStatus::Tui { .. }
+                )
+            })
             .count()
     }
 

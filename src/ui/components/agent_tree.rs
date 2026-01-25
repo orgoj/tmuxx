@@ -176,7 +176,9 @@ impl AgentTreeWidget {
                         AgentStatus::Error { .. } => {
                             ("✗", "Error", Style::default().fg(Color::Red))
                         }
-                        AgentStatus::Tui { name } => ("○", name.as_str(), Style::default().fg(Color::Blue)),
+                        AgentStatus::Tui { name } => {
+                            ("○", name.as_str(), Style::default().fg(Color::Blue))
+                        }
                         AgentStatus::Unknown => {
                             ("○", "Unknown", Style::default().fg(Color::DarkGray))
                         }
@@ -438,7 +440,7 @@ impl AgentTreeWidget {
 
 fn parse_color(name: &str) -> Color {
     let name = name.trim().to_lowercase();
-    
+
     // Hex support (#RRGGBB)
     if name.starts_with('#') && name.len() == 7 {
         if let (Ok(r), Ok(g), Ok(b)) = (
@@ -452,7 +454,10 @@ fn parse_color(name: &str) -> Color {
 
     // RGB support (rgb(r,g,b))
     if name.starts_with("rgb(") && name.ends_with(')') {
-        let parts: Vec<&str> = name[4..name.len()-1].split(',').map(|s| s.trim()).collect();
+        let parts: Vec<&str> = name[4..name.len() - 1]
+            .split(',')
+            .map(|s| s.trim())
+            .collect();
         if parts.len() == 3 {
             if let (Ok(r), Ok(g), Ok(b)) = (
                 parts[0].parse::<u8>(),

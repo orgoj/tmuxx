@@ -124,7 +124,6 @@ fn default_current_item_bg_color() -> String {
     "#4a4a4a".to_string()
 }
 
-
 /// Configurable Agent Definition
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct AgentConfig {
@@ -292,7 +291,7 @@ impl Config {
         final_agents.extend(config.agents);
 
         // Sort by priority (descending)
-        final_agents.sort_by(|a, b| b.priority.cmp(&a.priority));
+        final_agents.sort_by_key(|a| std::cmp::Reverse(a.priority));
 
         config.agents = final_agents;
         config
@@ -310,9 +309,10 @@ impl Config {
             AgentsOnly { agents: Vec::new() }
         });
 
-        let mut config = Config::default();
-        config.agents = defaults.agents;
-        config
+        Config {
+            agents: defaults.agents,
+            ..Config::default()
+        }
     }
 
     /// Returns the default config file path

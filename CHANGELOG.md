@@ -5,6 +5,28 @@ All notable changes to this fork (orgoj/tmuxcc) will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+## [0.1.15] - 2026-01-25
+
+### Fixed
+- **Claude Code Approval Prompt Detection**: Fixed detection of numbered choice prompts when arrow (❯) is on choices other than the first
+  - Arrow can now appear on any choice line (1, 2, 3, etc.) and still be detected correctly
+  - Updated regex pattern to properly match lines with leading spaces: `^\s*(?:❯\s*)?(\d+)\.\s+(.+)$`
+  - Arrow on choice lines is now treated as selection indicator, not prompt boundary
+  - Improved performance by removing duplicate regex compilation
+- **Claude Prompt Selection**: Fixed detection of choice prompts when selection arrow (❯) is on choices other than the first one.
+- **Claude Processing Detection**: Improved robustness of processing detection by anchoring to the end of the block and allowing minor TUI artifacts (tips, empty lines).
+- **tmuxcc-wrapper.sh Session Creation**: Fixed wrapper script to properly create tmuxcc session
+  - Now creates bash session and sends tmuxcc command via send-keys (instead of direct execution)
+  - Uses full path to tmuxcc binary to avoid PATH issues inside tmux
+  - Session remains alive even if tmuxcc exits, allowing error inspection
+- **Clippy Warnings**: Fixed various clippy warnings (sorting, field initialization, `is_some_and`).
+
+### Added
+- **Test Anonymization**: Added basic path and username anonymization to `tests/capture.sh`.
+- **Improved TUI Indicators**: Refined visual styles for agents and activity markers.
+
 ## [0.1.14] - 2026-01-25
 
 ### Added
@@ -25,19 +47,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Added support for multiple pipe (`│`) prefixes from tmux split panes
   - Non-greedy indicator matching to prevent over-consumption of structural lines
 - **Config Conflict**: Removed redundant `layout.footer_separator` for Claude agent that interfered with full structural matching
-
-## [Unreleased]
-
-### Fixed
-- **Claude Code Approval Prompt Detection**: Fixed detection of numbered choice prompts when arrow (❯) is on choices other than the first
-  - Arrow can now appear on any choice line (1, 2, 3, etc.) and still be detected correctly
-  - Updated regex pattern to properly match lines with leading spaces: `^\s*(?:❯\s*)?(\d+)\.\s+(.+)$`
-  - Arrow on choice lines is now treated as selection indicator, not prompt boundary
-  - Improved performance by removing duplicate regex compilation
-- **tmuxcc-wrapper.sh Session Creation**: Fixed wrapper script to properly create tmuxcc session
-  - Now creates bash session and sends tmuxcc command via send-keys (instead of direct execution)
-  - Uses full path to tmuxcc binary to avoid PATH issues inside tmux
-  - Session remains alive even if tmuxcc exits, allowing error inspection
 
 ## [0.1.12] - 2026-01-24
 

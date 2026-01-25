@@ -107,11 +107,15 @@ impl UniversalParser {
             }
         });
 
-        let layout_rules = config.layout.as_ref().map(|rules| {
-            CompiledLayoutRules {
-                footer_separator: rules.footer_separator.as_ref().and_then(|p| Regex::new(p).ok()),
-                header_separator: rules.header_separator.as_ref().and_then(|p| Regex::new(p).ok()),
-            }
+        let layout_rules = config.layout.as_ref().map(|rules| CompiledLayoutRules {
+            footer_separator: rules
+                .footer_separator
+                .as_ref()
+                .and_then(|p| Regex::new(p).ok()),
+            header_separator: rules
+                .header_separator
+                .as_ref()
+                .and_then(|p| Regex::new(p).ok()),
         });
 
         Self {
@@ -159,7 +163,7 @@ impl AgentParser for UniversalParser {
     fn agent_color(&self) -> Option<&str> {
         self.config.color.as_deref()
     }
-    
+
     fn agent_background_color(&self) -> Option<&str> {
         self.config.background_color.as_deref()
     }
@@ -275,7 +279,9 @@ impl AgentParser for UniversalParser {
                         };
                     }
                     "awaiting_approval" => {
-                        let final_approval_type = approval_type_override.as_deref().or(rule.approval_type.as_deref());
+                        let final_approval_type = approval_type_override
+                            .as_deref()
+                            .or(rule.approval_type.as_deref());
                         let approval_type = match final_approval_type {
                             Some("edit") => ApprovalType::FileEdit,
                             Some("create") => ApprovalType::FileCreate,
@@ -323,8 +329,6 @@ impl AgentParser for UniversalParser {
             }
         }
     }
-
-
 
     fn parse_subagents(&self, content: &str) -> Vec<Subagent> {
         let rules = match &self.subagent_rules {
@@ -390,8 +394,8 @@ impl AgentParser for UniversalParser {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::app::config::{AgentConfig, AgentKeys};
     use crate::agents::AgentStatus;
+    use crate::app::config::{AgentConfig, AgentKeys};
 
     #[test]
     fn test_parse_status_with_footer_stripping() {
@@ -404,7 +408,8 @@ mod tests {
             state_rules: vec![crate::app::config::StateRule {
                 status: "processing".to_string(),
                 // Updated regex to handle boxed input and multi-line capture
-                pattern: r"(?ms)(?P<indicator>.*)\n[ \t]*[│]?─{10,}.*?\n[ \t]*[│]?.*❯[^\n]*\s*$".to_string(),
+                pattern: r"(?ms)(?P<indicator>.*)\n[ \t]*[│]?─{10,}.*?\n[ \t]*[│]?.*❯[^\n]*\s*$"
+                    .to_string(),
                 approval_type: None,
                 refinements: vec![crate::app::config::Refinement {
                     group: "indicator".to_string(),
@@ -441,12 +446,12 @@ Some previous content...
 
         // Verify the status detection
         let status = parser.parse_status(content);
-        
+
         // Should catch 'Baked' in the indicator group
         match status {
             AgentStatus::Idle => {
                 // Success!
-            },
+            }
             status => panic!("Expected Idle status, got {:?}", status),
         }
     }

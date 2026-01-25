@@ -84,7 +84,7 @@ Spustím yarn install pro aktualizaci dependencies:
 
 ● Bash(yarn install > /tmp/yarn-install.log 2>&1; echo "Exit: $?")
 ⎿  Running PreToolUse hook…
-· PreToolUse:Bash: /home/michael/work/ai/CLAUDE/TOOLS/dippy/bin/dippy-hook
+· PreToolUse:Bash: /home/user/work/ai/CLAUDE/TOOLS/dippy/bin/dippy-hook
 ⎿  Running…
 
 ─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────

@@ -30,6 +30,7 @@ priority = 100
   # Use non-greedy indicator (.*?) to start from the top of the block.
   # Use [^\n]*❯ for prompt to prevent swallowing body lines.
   # Use [│]* instead of [│]? to handle multiple pipe characters (e.g. from tmux split panes).
+  # Use non-greedy (?P<body>.*?) before the footer to correctly isolate the current active block.
   pattern = '''(?ms)(?P<indicator>.*?)(?:^|\n)[ \t]*[│]*[─╌]{10,}.*?(?:$|\n)(?P<body>.*?)(?:^|\n)[ \t]*[│]*[^\n]*❯(?P<suffix>.*)$'''
   
   # Refinement: Detect questions in the body to switch to awaiting_approval
@@ -39,7 +40,7 @@ priority = 100
   status = "awaiting_approval"
   [[agents.state_rules.refinements]]
   group = "indicator"
-  pattern = '''(?is)(?:Mulling|Thinking)[^\n]*\s*\z'''
+  pattern = '''(?is)(?:Mulling|Thinking|Esc to interrupt|✢|∴)[^\n]*(?:\n[^\n]*){0,3}\s*\z'''
   status = "processing"
 
 

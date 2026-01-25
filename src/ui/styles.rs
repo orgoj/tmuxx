@@ -61,8 +61,6 @@ impl Styles {
         Style::default().fg(Color::Cyan)
     }
 
-
-
     // Subagent styles
     pub fn subagent_running() -> Style {
         Style::default().fg(Color::Cyan)

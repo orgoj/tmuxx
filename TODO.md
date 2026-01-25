@@ -1,12 +1,9 @@
 # TODO - tmuxcc
 
 
-- [x] generic shell poznat ze bezi tuio aplikace a neni to procesing (mc, htop, vim)
-- [x] oprava detekce stavu claude - implementován nativní regression testing a robustní regexy <!-- id: 100 -->
-
 - Configurable different mode for TODO section of screen, want to see beginning of TODO.md file if in project or other configurable name, multiple names and glob - first found is displayed
 
-- slected pane rychly filtr - defailt binding s - prepina mezi zobrazenim selected a normalnim
+- selected pane rychly filtr - default binding s - prepina mezi zobrazenim selected a normalnim
 
 - jak poznat commandy co bezi v ssh ?
 
