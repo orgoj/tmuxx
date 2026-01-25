@@ -144,8 +144,31 @@ priority = 10
   type = "command"
   pattern = ".*"
 
+  # Generic Shell State Rules: TUI Apps (mc, htop, etc.)
+  [[agents.state_rules]]
+  status = "tui:mc"
+  last_lines = 3
+  pattern = '''(?m)^ 1Help\s+2Menu\s+3View\s+4Edit\s+5Copy\s+6RenMov'''
+
+  [[agents.state_rules]]
+  status = "tui:htop"
+  last_lines = 3
+  pattern = '''(?m)^(?:F1| 1)Help\s+F?2Setup\s+F?3Search\s+F?4Filter\s+F?5'''
+
+  [[agents.state_rules]]
+  status = "tui:vim"
+  last_lines = 3
+  pattern = '''(?m)^-- (?:INSERT|VISUAL|REPLACE) --|\[[0-9]+\]\s+[0-9]+%\s+L:[0-9]+\s+C:[0-9]+'''
+
+  [[agents.state_rules]]
+  status = "tui:generic"
+  last_lines = 3
+  # Detect common frame characters used in TUIs (mc, dialog, etc.)
+  pattern = '''[│┌┐└┘├┤┬┴┼═║╔╗╚╝╠╣╦╩╬]'''
+
   # Generic Shell State Rules: ONLY the prompt makes it Idle
   [[agents.state_rules]]
   status = "awaiting_input"
+  last_lines = 2
   # Support standard prompts: $, #, %, >, ❯
-  pattern = '''(?s:.*)[$#%>❯]\s*\z'''
+  pattern = '''[$#%>❯]\s*\z'''

@@ -1,7 +1,7 @@
 # TODO - tmuxcc
 
-- generic shell poznat ze bezi tuio aplikace a neni to procesing, asi podle ramecku a nebo u mc je dole help lista (to by mohla byt primo detekce mc) umime udelat jakoukoliv detekci a to jmeno se pak objevi jako stav u panleu?
 
+- [x] generic shell poznat ze bezi tuio aplikace a neni to procesing (mc, htop, vim)
 - oprava detekce stavu claude - spatne to detekuje nektrere stavy musime projit priklady co nastanou
 
 - Configurable different mode for TODO section of screen, want to see beginning of TODO.md file if in project or other configurable name, multiple names and glob - first found is displayed

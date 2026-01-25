@@ -176,6 +176,7 @@ impl AgentTreeWidget {
                         AgentStatus::Error { .. } => {
                             ("✗", "Error", Style::default().fg(Color::Red))
                         }
+                        AgentStatus::Tui { name } => ("○", name.as_str(), Style::default().fg(Color::Blue)),
                         AgentStatus::Unknown => {
                             ("○", "Unknown", Style::default().fg(Color::DarkGray))
                         }

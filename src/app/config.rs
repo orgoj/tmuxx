@@ -208,6 +208,8 @@ pub struct StateRule {
     pub pattern: String,
     /// Explicit approval type if status is 'awaiting_approval'
     pub approval_type: Option<String>,
+    /// If set, only search within the last N lines
+    pub last_lines: Option<usize>,
     /// Refine the status based on capture groups in the pattern
     #[serde(default)]
     pub refinements: Vec<Refinement>,

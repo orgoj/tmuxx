@@ -22,6 +22,7 @@ struct CompiledStateRule {
     status: String,
     re: Regex,
     approval_type: Option<String>,
+    last_lines: Option<usize>,
     refinements: Vec<CompiledRefinement>,
 }
 
@@ -82,6 +83,7 @@ impl UniversalParser {
                     status: rule.status.clone(),
                     re,
                     approval_type: rule.approval_type.clone(),
+                    last_lines: rule.last_lines,
                     refinements,
                 });
             }
@@ -222,7 +224,31 @@ impl AgentParser for UniversalParser {
         let body_content = self.extract_body(raw_content);
 
         for rule in &self.state_rules {
-            if let Some(caps) = rule.re.captures(body_content) {
+            let search_content = if let Some(n) = rule.last_lines {
+                // Efficiency: Only look at the last N lines
+                let lines: Vec<&str> = body_content.lines().collect();
+                if lines.len() > n {
+                    let start_idx = lines.len() - n;
+                    // Note: This is an approximation as it reconstructs the string,
+                    // but for state rules it's usually exactly what's needed.
+                    let suffix = lines[start_idx..].join("\n");
+                    // Important: if the original body_content ended with a newline,
+                    // join("\n") might lose it, so we peek back.
+                    if body_content.ends_with('\n') && !suffix.ends_with('\n') {
+                        let mut s = suffix;
+                        s.push('\n');
+                        s
+                    } else {
+                        suffix
+                    }
+                } else {
+                    body_content.to_string()
+                }
+            } else {
+                body_content.to_string()
+            };
+
+            if let Some(caps) = rule.re.captures(&search_content) {
                 let mut status_str = rule.status.clone();
                 let details = caps.name("details").map(|m| m.as_str().to_string());
 
@@ -263,6 +289,11 @@ impl AgentParser for UniversalParser {
                     }
                     "awaiting_input" | "idle" => {
                         return AgentStatus::Idle;
+                    }
+                    s if s.starts_with("tui:") => {
+                        return AgentStatus::Tui {
+                            name: s[4..].to_string(),
+                        };
                     }
                     _ => {
                         return AgentStatus::Processing {

@@ -98,6 +98,7 @@ pub async fn run_learn(args: LearnArgs) -> Result<()> {
             status: state.to_string(),
             pattern: final_pattern,
             approval_type: None,
+            last_lines: None,
             refinements: Vec::new(),
         }],
         subagent_rules: None,

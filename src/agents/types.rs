@@ -135,6 +135,8 @@ pub enum AgentStatus {
     },
     /// Agent encountered an error
     Error { message: String },
+    /// Agent is running a TUI application (mc, htop, etc.)
+    Tui { name: String },
     /// Unable to determine agent status
     Unknown,
 }
@@ -155,6 +157,7 @@ impl AgentStatus {
             AgentStatus::Processing { .. } => "◐",
             AgentStatus::AwaitingApproval { .. } => "⚠",
             AgentStatus::Error { .. } => "✗",
+            AgentStatus::Tui { .. } => "○",
             AgentStatus::Unknown => "?",
         }
     }
@@ -174,6 +177,7 @@ impl AgentStatus {
                 format!("APPROVAL NEEDED [{}]", approval_type.short_desc())
             }
             AgentStatus::Error { message } => format!("Error: {}", message),
+            AgentStatus::Tui { name } => name.clone(),
             AgentStatus::Unknown => "Unknown".to_string(),
         }
     }

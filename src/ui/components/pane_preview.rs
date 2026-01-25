@@ -217,6 +217,7 @@ impl PanePreviewWidget {
                         ""
                     }
                     AgentStatus::Error { message } => message.as_str(),
+                    AgentStatus::Tui { name } => name.as_str(),
                     AgentStatus::Unknown => "...",
                 };
                 if !status_text.is_empty() && activity_lines.is_empty() {
