@@ -5,7 +5,205 @@ use std::path::PathBuf;
 
 use super::config_override::ConfigOverride;
 use super::key_binding::KeyBindings;
+use super::menu_config::MenuConfig;
 use super::session_pattern::SessionPattern;
+
+/// Application configuration
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct Config {
+    /// Polling interval in milliseconds
+    #[serde(default)]
+    pub poll_interval_ms: u64,
+
+    /// Number of lines to capture from pane
+    #[serde(default)]
+    pub capture_lines: u32,
+
+    /// Whether to show detached tmux sessions
+    #[serde(default)]
+    pub show_detached_sessions: bool,
+
+    /// Enable extra logging in the TUI
+    #[serde(default)]
+    pub debug_mode: bool,
+
+    /// Whether to truncate long lines in preview (default: true)
+    #[serde(default)]
+    pub truncate_long_lines: bool,
+
+    /// Max line width for truncation (None = use terminal width)
+    #[serde(default)]
+    pub max_line_width: Option<u16>,
+
+    /// Key bindings configuration
+    #[serde(default)]
+    pub key_bindings: KeyBindings,
+
+    /// Trigger key for popup input dialog (default: "/")
+    #[serde(default)]
+    pub popup_trigger_key: String,
+
+    /// Sessions to ignore (supports fixed, glob, regex patterns)
+    #[serde(default)]
+    pub ignore_sessions: Vec<String>,
+
+    /// Auto-ignore the session where tmuxcc itself runs (default: true)
+    #[serde(default)]
+    pub ignore_self: bool,
+
+    /// Hide bottom input buffer (use modal textarea instead)
+    #[serde(default)]
+    pub hide_bottom_input: bool,
+
+    /// Whether to log all actions to the status bar (default: true)
+    #[serde(default)]
+    pub log_actions: bool,
+
+    /// Generic agent definitions (Merged from defaults + user config)
+    #[serde(default)]
+    pub agents: Vec<AgentConfig>,
+
+    /// Default color for agent names in the tree
+    #[serde(default)]
+    pub agent_name_color: String,
+
+    /// Color for selected item background (cursor)
+    #[serde(default)]
+    pub current_item_bg_color: String,
+
+    /// Color for multi-selected items background (checked). None = no background change.
+    #[serde(default)]
+    pub multi_selection_bg_color: Option<String>,
+
+    /// Whether to display TODO from a file instead of parsing pane output
+    #[serde(default)]
+    pub todo_from_file: bool,
+
+    /// List of file names/patterns to look for TODO content (first found wins)
+    #[serde(default)]
+    pub todo_files: Vec<String>,
+
+    /// Width of the sidebar (fixed number of characters or percentage like "25%")
+    #[serde(default)]
+    pub sidebar_width: SidebarWidth,
+
+    /// Tree menu configuration
+    #[serde(default)]
+    pub menu: MenuConfig,
+}
+
+#[derive(Deserialize, Default)]
+#[serde(default)]
+struct PartialConfig {
+    poll_interval_ms: Option<u64>,
+    capture_lines: Option<u32>,
+    show_detached_sessions: Option<bool>,
+    debug_mode: Option<bool>,
+    truncate_long_lines: Option<bool>,
+    max_line_width: Option<u16>,
+    key_bindings: Option<KeyBindings>,
+    popup_trigger_key: Option<String>,
+    ignore_sessions: Option<Vec<String>>,
+    ignore_self: Option<bool>,
+    hide_bottom_input: Option<bool>,
+    log_actions: Option<bool>,
+    agents: Vec<AgentConfig>,
+    agent_name_color: Option<String>,
+    current_item_bg_color: Option<String>,
+    multi_selection_bg_color: Option<String>,
+    todo_from_file: Option<bool>,
+    todo_files: Option<Vec<String>>,
+    sidebar_width: Option<SidebarWidth>,
+    menu: Option<MenuConfig>,
+}
+
+impl PartialConfig {
+    fn apply(self, config: &mut Config) {
+        if let Some(v) = self.poll_interval_ms {
+            config.poll_interval_ms = v;
+        }
+        if let Some(v) = self.capture_lines {
+            config.capture_lines = v;
+        }
+        if let Some(v) = self.show_detached_sessions {
+            config.show_detached_sessions = v;
+        }
+        if let Some(v) = self.debug_mode {
+            config.debug_mode = v;
+        }
+        if let Some(v) = self.truncate_long_lines {
+            config.truncate_long_lines = v;
+        }
+        if let Some(v) = self.max_line_width {
+            config.max_line_width = Some(v);
+        }
+        if let Some(v) = self.popup_trigger_key {
+            config.popup_trigger_key = v;
+        }
+        if let Some(v) = self.ignore_sessions {
+            config.ignore_sessions = v;
+        }
+        if let Some(v) = self.ignore_self {
+            config.ignore_self = v;
+        }
+        if let Some(v) = self.hide_bottom_input {
+            config.hide_bottom_input = v;
+        }
+        if let Some(v) = self.log_actions {
+            config.log_actions = v;
+        }
+        if let Some(v) = self.agent_name_color {
+            config.agent_name_color = v;
+        }
+        if let Some(v) = self.current_item_bg_color {
+            config.current_item_bg_color = v;
+        }
+        if let Some(v) = self.multi_selection_bg_color {
+            config.multi_selection_bg_color = Some(v);
+        }
+        if let Some(v) = self.todo_from_file {
+            config.todo_from_file = v;
+        }
+        if let Some(v) = self.todo_files {
+            config.todo_files = v;
+        }
+        if let Some(v) = self.sidebar_width {
+            config.sidebar_width = v;
+        }
+        if let Some(v) = self.menu {
+            config.menu = v;
+        }
+
+        if !self.agents.is_empty() {
+            // Logic: User agents with same 'id' replace default. New ones append.
+            let mut final_agents = Vec::new();
+            let mut user_ids: std::collections::HashSet<String> = HashSet::new();
+
+            for agent in &self.agents {
+                user_ids.insert(agent.id.clone());
+            }
+
+            // Add existing that are NOT overridden
+            for agent in config.agents.drain(..) {
+                if !user_ids.contains(&agent.id) {
+                    final_agents.push(agent);
+                }
+            }
+
+            // Add user agents (overrides + new)
+            final_agents.extend(self.agents);
+
+            // Sort by priority (descending)
+            final_agents.sort_by_key(|a| std::cmp::Reverse(a.priority));
+            config.agents = final_agents;
+        }
+
+        if let Some(user_bindings) = self.key_bindings {
+            config.key_bindings.bindings.extend(user_bindings.bindings);
+        }
+    }
+}
 use ratatui::layout::Constraint;
 
 /// Represents the width of the sidebar (either fixed length or percentage)
@@ -56,154 +254,15 @@ impl SidebarWidth {
     }
 }
 
-/// Application configuration
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct Config {
-    /// Polling interval in milliseconds
-    #[serde(default = "default_poll_interval")]
-    pub poll_interval_ms: u64,
-
-    /// Number of lines to capture from pane
-    #[serde(default = "default_capture_lines")]
-    pub capture_lines: u32,
-
-    /// Whether to show detached tmux sessions
-    #[serde(default = "default_show_detached_sessions")]
-    pub show_detached_sessions: bool,
-
-    /// Enable extra logging in the TUI
-    #[serde(default = "default_debug_mode")]
-    pub debug_mode: bool,
-
-    /// Whether to truncate long lines in preview (default: true)
-    #[serde(default = "default_truncate_long_lines")]
-    pub truncate_long_lines: bool,
-
-    /// Max line width for truncation (None = use terminal width)
-    #[serde(default)]
-    pub max_line_width: Option<u16>,
-
-    /// Custom agent patterns (command -> agent type mapping)
-    #[serde(default)]
-
-    /// Key bindings configuration
-    pub key_bindings: KeyBindings,
-
-    /// Trigger key for popup input dialog (default: "/")
-    #[serde(default = "default_popup_trigger_key")]
-    pub popup_trigger_key: String,
-
-    /// Sessions to ignore (supports fixed, glob, regex patterns)
-    /// - Fixed: "session-name" (exact match)
-    /// - Glob: "test-*" (shell wildcards)
-    /// - Regex: "/^ssh-\\d+$/" (wrapped in slashes)
-    #[serde(default)]
-    pub ignore_sessions: Vec<String>,
-
-    /// Auto-ignore the session where tmuxcc itself runs (default: true)
-    #[serde(default = "default_ignore_self")]
-    pub ignore_self: bool,
-
-    /// Hide bottom input buffer (use modal textarea instead)
-    #[serde(default = "default_hide_bottom_input")]
-    pub hide_bottom_input: bool,
-
-    /// Whether to log all actions to the status bar (default: true)
-    #[serde(default = "default_log_actions")]
-    pub log_actions: bool,
-
-    /// Generic agent definitions (Merged from defaults + user config)
-    #[serde(default)]
-    pub agents: Vec<AgentConfig>,
-
-    /// Default color for agent names in the tree
-    #[serde(default = "default_agent_name_color")]
-    pub agent_name_color: String,
-
-    /// Color for selected item background (cursor)
-    #[serde(default = "default_current_item_bg_color")]
-    pub current_item_bg_color: String,
-
-    /// Color for multi-selected items background (checked). None = no background change.
-    #[serde(default)]
-    pub multi_selection_bg_color: Option<String>,
-
-    /// Whether to display TODO from a file instead of parsing pane output
-    #[serde(default = "default_todo_from_file")]
-    pub todo_from_file: bool,
-
-    /// List of file names/patterns to look for TODO content (first found wins)
-    #[serde(default = "default_todo_files")]
-    pub todo_files: Vec<String>,
-
-    /// Width of the sidebar (fixed number of characters or percentage like "25%")
-    #[serde(default = "default_sidebar_width")]
-    pub sidebar_width: SidebarWidth,
-}
-
-fn default_todo_from_file() -> bool {
-    true
-}
-
-fn default_todo_files() -> Vec<String> {
-    vec![
-        "TODO.md".to_string(),
-        "NOTES.md".to_string(),
-        "TASKS.md".to_string(),
-        "README.md".to_string(),
-    ]
-}
-
-fn default_poll_interval() -> u64 {
-    500
-}
-
-fn default_capture_lines() -> u32 {
-    200
-}
-
-fn default_show_detached_sessions() -> bool {
-    true
-}
-
-fn default_debug_mode() -> bool {
-    false
-}
-
-fn default_truncate_long_lines() -> bool {
-    true
-}
-
-fn default_popup_trigger_key() -> String {
-    "/".to_string()
-}
-
-fn default_ignore_self() -> bool {
-    true
-}
-
-fn default_hide_bottom_input() -> bool {
-    true
-}
-
-fn default_log_actions() -> bool {
-    true
-}
-
-fn default_agent_name_color() -> String {
-    "#000000".to_string()
-}
-
-fn default_current_item_bg_color() -> String {
-    "#4a4a4a".to_string()
-}
-
-fn default_sidebar_width() -> SidebarWidth {
-    SidebarWidth::Fixed(24)
+impl Default for SidebarWidth {
+    fn default() -> Self {
+        SidebarWidth::Fixed(24)
+    }
 }
 
 /// Configurable Agent Definition
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct AgentConfig {
     /// Unique ID for merging/overriding (e.g., "claude")
     pub id: String,
@@ -309,368 +368,77 @@ pub struct SubagentRules {
 
 impl Default for Config {
     fn default() -> Self {
-        Self {
-            poll_interval_ms: default_poll_interval(),
-            capture_lines: default_capture_lines(),
-            show_detached_sessions: default_show_detached_sessions(),
-            debug_mode: default_debug_mode(),
-            truncate_long_lines: default_truncate_long_lines(),
-            max_line_width: None,
-
-            key_bindings: KeyBindings::default(),
-            popup_trigger_key: default_popup_trigger_key(),
-            ignore_sessions: Vec::new(),
-            ignore_self: default_ignore_self(),
-            hide_bottom_input: default_hide_bottom_input(),
-            log_actions: default_log_actions(),
-            agents: Vec::new(),
-            agent_name_color: default_agent_name_color(),
-            current_item_bg_color: default_current_item_bg_color(),
-            multi_selection_bg_color: None,
-            todo_from_file: default_todo_from_file(),
-            todo_files: default_todo_files(),
-            sidebar_width: default_sidebar_width(),
-        }
+        Self::load_defaults()
     }
 }
 
 impl Config {
     /// Loads configuration, merging embedded defaults with user settings
     pub fn load_merged() -> Self {
-        // 1. Load Defaults
-        let default_toml = include_str!("../config/defaults.toml");
-        #[derive(Deserialize)]
-        struct Defaults {
-            #[serde(default)]
-            agents: Vec<AgentConfig>,
-            #[serde(default)]
-            key_bindings: Option<KeyBindings>,
-            poll_interval_ms: Option<u64>,
-            capture_lines: Option<u32>,
-            show_detached_sessions: Option<bool>,
-            debug_mode: Option<bool>,
-            truncate_long_lines: Option<bool>,
-            max_line_width: Option<Option<u16>>,
-            popup_trigger_key: Option<String>,
-            ignore_sessions: Option<Vec<String>>,
-            ignore_self: Option<bool>,
-            hide_bottom_input: Option<bool>,
-            log_actions: Option<bool>,
-            agent_name_color: Option<String>,
-            current_item_bg_color: Option<String>,
-            multi_selection_bg_color: Option<Option<String>>,
-            todo_from_file: Option<bool>,
-            todo_files: Option<Vec<String>>,
-            sidebar_width: Option<SidebarWidth>,
-        }
-        let defaults: Defaults = toml::from_str(default_toml).unwrap_or_else(|e| {
-            eprintln!("Internal Error: Failed to parse default config: {}", e);
-            Defaults {
-                agents: Vec::new(),
-                key_bindings: None,
-                poll_interval_ms: None,
-                capture_lines: None,
-                show_detached_sessions: None,
-                debug_mode: None,
-                truncate_long_lines: None,
-                max_line_width: None,
-                popup_trigger_key: None,
-                ignore_sessions: None,
-                ignore_self: None,
-                hide_bottom_input: None,
-                log_actions: None,
-                agent_name_color: None,
-                current_item_bg_color: None,
-                multi_selection_bg_color: None,
-                todo_from_file: None,
-                todo_files: None,
-                sidebar_width: None,
-            }
-        });
-
-        // Start with hardcoded defaults, then apply values from embedded defaults.toml
-        let mut base_config = Config::default();
-        if let Some(v) = defaults.poll_interval_ms {
-            base_config.poll_interval_ms = v;
-        }
-        if let Some(v) = defaults.capture_lines {
-            base_config.capture_lines = v;
-        }
-        if let Some(v) = defaults.show_detached_sessions {
-            base_config.show_detached_sessions = v;
-        }
-        if let Some(v) = defaults.debug_mode {
-            base_config.debug_mode = v;
-        }
-        if let Some(v) = defaults.truncate_long_lines {
-            base_config.truncate_long_lines = v;
-        }
-        if let Some(v) = defaults.max_line_width {
-            base_config.max_line_width = v;
-        }
-        if let Some(v) = defaults.popup_trigger_key {
-            base_config.popup_trigger_key = v;
-        }
-        if let Some(v) = defaults.ignore_sessions {
-            base_config.ignore_sessions = v;
-        }
-        if let Some(v) = defaults.ignore_self {
-            base_config.ignore_self = v;
-        }
-        if let Some(v) = defaults.hide_bottom_input {
-            base_config.hide_bottom_input = v;
-        }
-        if let Some(v) = defaults.log_actions {
-            base_config.log_actions = v;
-        }
-        if let Some(v) = defaults.agent_name_color {
-            base_config.agent_name_color = v;
-        }
-        if let Some(v) = defaults.current_item_bg_color {
-            base_config.current_item_bg_color = v;
-        }
-        if let Some(v) = defaults.multi_selection_bg_color {
-            base_config.multi_selection_bg_color = v;
-        }
-        if let Some(v) = defaults.todo_from_file {
-            base_config.todo_from_file = v;
-        }
-        if let Some(v) = defaults.todo_files {
-            base_config.todo_files = v;
-        }
-        if let Some(v) = defaults.sidebar_width {
-            base_config.sidebar_width = v;
-        }
+        let mut config = Self::load_defaults();
 
         // 2. Load User Config (if exists)
-        // We load into PartialConfig first to identify which fields are actually present
-        // in the user config file. This prevents missing fields from overwriting
-        // defaults.toml values with hardcoded defaults.
-        let mut user_config_agents = Vec::new();
-        let mut user_config_bindings = None;
-
-        let mut config = base_config.clone();
-
         if let Some(path) = Self::default_path() {
             if path.exists() {
                 if let Ok(content) = std::fs::read_to_string(&path) {
-                    if let Ok(user_partial) = toml::from_str::<Defaults>(&content) {
-                        // Merge scalar fields
-                        if let Some(v) = user_partial.poll_interval_ms {
-                            config.poll_interval_ms = v;
+                    match toml::from_str::<PartialConfig>(&content) {
+                        Ok(user_partial) => {
+                            user_partial.apply(&mut config);
                         }
-                        if let Some(v) = user_partial.capture_lines {
-                            config.capture_lines = v;
+                        Err(e) => {
+                            eprintln!("Error parsing config file {}: {}", path.display(), e);
+                            std::process::exit(1);
                         }
-                        if let Some(v) = user_partial.show_detached_sessions {
-                            config.show_detached_sessions = v;
-                        }
-                        if let Some(v) = user_partial.debug_mode {
-                            config.debug_mode = v;
-                        }
-                        if let Some(v) = user_partial.truncate_long_lines {
-                            config.truncate_long_lines = v;
-                        }
-                        if let Some(v) = user_partial.max_line_width {
-                            config.max_line_width = v;
-                        }
-                        if let Some(v) = user_partial.popup_trigger_key {
-                            config.popup_trigger_key = v;
-                        }
-                        if let Some(v) = user_partial.ignore_sessions {
-                            config.ignore_sessions = v;
-                        }
-                        if let Some(v) = user_partial.ignore_self {
-                            config.ignore_self = v;
-                        }
-                        if let Some(v) = user_partial.hide_bottom_input {
-                            config.hide_bottom_input = v;
-                        }
-                        if let Some(v) = user_partial.log_actions {
-                            config.log_actions = v;
-                        }
-                        if let Some(v) = user_partial.agent_name_color {
-                            config.agent_name_color = v;
-                        }
-                        if let Some(v) = user_partial.current_item_bg_color {
-                            config.current_item_bg_color = v;
-                        }
-                        if let Some(v) = user_partial.multi_selection_bg_color {
-                            config.multi_selection_bg_color = v;
-                        }
-                        if let Some(v) = user_partial.todo_from_file {
-                            config.todo_from_file = v;
-                        }
-                        if let Some(v) = user_partial.todo_files {
-                            config.todo_files = v;
-                        }
-                        if let Some(v) = user_partial.sidebar_width {
-                            config.sidebar_width = v;
-                        }
-
-                        // Save complex fields for merging logic below
-                        user_config_agents = user_partial.agents;
-                        user_config_bindings = user_partial.key_bindings;
-                    } else {
-                        eprintln!("Warning: Failed to parse user config file. Using defaults.");
                     }
                 }
             }
         }
 
-        // 2a. Merge Key Bindings
-        // Start with default bindings (from defaults.toml)
-        let mut final_bindings = if let Some(default_bindings) = defaults.key_bindings {
-            default_bindings.bindings
-        } else {
-            KeyBindings::default().bindings
-        };
-
-        // Override with user bindings
-        if let Some(user_bindings) = user_config_bindings {
-            final_bindings.extend(user_bindings.bindings);
-        }
-        config.key_bindings.bindings = final_bindings;
-
-        // 3. Merge Agents
-        // Logic: User agents with same 'id' replace default. New ones append.
-        let mut final_agents = Vec::new();
-        let mut user_ids: std::collections::HashSet<String> = HashSet::new();
-
-        // Index user agents
-        for agent in &user_config_agents {
-            user_ids.insert(agent.id.clone());
+        // 3. Merge Project Config (if exists)
+        if let Some(project_menu) = Self::load_project_menu_config() {
+            config.menu.items.extend(project_menu.items);
         }
 
-        // Add defaults that are NOT overridden
-        for agent in defaults.agents {
-            if !user_ids.contains(&agent.id) {
-                final_agents.push(agent);
+        config
+    }
+
+    /// Attempts to load project-specific configuration (.tmuxcc.toml)
+    fn load_project_menu_config() -> Option<MenuConfig> {
+        // Look for .tmuxcc.toml in current directory (where tmuxcc is running)
+        // Ideally this should be the session root, but for now current dir is a good proxy if run from root.
+        // We can also check specific paths if needed.
+        let project_config_path = PathBuf::from(".tmuxcc.toml");
+        if project_config_path.exists() {
+            if let Ok(content) = std::fs::read_to_string(&project_config_path) {
+                #[derive(Deserialize)]
+                struct ProjectConfig {
+                    menu: Option<MenuConfig>,
+                    menu_items: Option<Vec<super::menu_config::MenuItem>>,
+                }
+
+                if let Ok(proj) = toml::from_str::<ProjectConfig>(&content) {
+                    if let Some(menu) = proj.menu {
+                        return Some(menu);
+                    }
+                    if let Some(items) = proj.menu_items {
+                        return Some(MenuConfig { items });
+                    }
+                } else {
+                    eprintln!("Warning: Failed to parse .tmuxcc.toml");
+                }
             }
         }
-
-        // Add user agents (overrides + new)
-        final_agents.extend(user_config_agents);
-
-        // Sort by priority (descending)
-        final_agents.sort_by_key(|a| std::cmp::Reverse(a.priority));
-
-        config.agents = final_agents;
-        config
+        None
     }
 
     /// Loads only the embedded default configuration (ignores user config)
     pub fn load_defaults() -> Self {
         let default_toml = include_str!("../config/defaults.toml");
-        #[derive(Deserialize)]
-        struct Defaults {
-            #[serde(default)]
-            agents: Vec<AgentConfig>,
-            #[serde(default)]
-            key_bindings: Option<KeyBindings>,
-            poll_interval_ms: Option<u64>,
-            capture_lines: Option<u32>,
-            show_detached_sessions: Option<bool>,
-            debug_mode: Option<bool>,
-            truncate_long_lines: Option<bool>,
-            max_line_width: Option<Option<u16>>,
-            popup_trigger_key: Option<String>,
-            ignore_sessions: Option<Vec<String>>,
-            ignore_self: Option<bool>,
-            hide_bottom_input: Option<bool>,
-            log_actions: Option<bool>,
-            agent_name_color: Option<String>,
-            current_item_bg_color: Option<String>,
-            multi_selection_bg_color: Option<Option<String>>,
-            todo_from_file: Option<bool>,
-            todo_files: Option<Vec<String>>,
-            sidebar_width: Option<SidebarWidth>,
-        }
-        let defaults: Defaults = toml::from_str(default_toml).unwrap_or_else(|e| {
+        toml::from_str(default_toml).unwrap_or_else(|e| {
             eprintln!("Internal Error: Failed to parse default config: {}", e);
-            Defaults {
-                agents: Vec::new(),
-                key_bindings: None,
-                poll_interval_ms: None,
-                capture_lines: None,
-                show_detached_sessions: None,
-                debug_mode: None,
-                truncate_long_lines: None,
-                max_line_width: None,
-                popup_trigger_key: None,
-                ignore_sessions: None,
-                ignore_self: None,
-                hide_bottom_input: None,
-                log_actions: None,
-                agent_name_color: None,
-                current_item_bg_color: None,
-                multi_selection_bg_color: None,
-                todo_from_file: None,
-                todo_files: None,
-                sidebar_width: None,
-            }
-        });
-
-        let mut config = Config {
-            agents: defaults.agents,
-            ..Default::default()
-        };
-        if let Some(kb) = defaults.key_bindings {
-            config.key_bindings = kb;
-        }
-        if let Some(v) = defaults.poll_interval_ms {
-            config.poll_interval_ms = v;
-        }
-        if let Some(v) = defaults.capture_lines {
-            config.capture_lines = v;
-        }
-        if let Some(v) = defaults.show_detached_sessions {
-            config.show_detached_sessions = v;
-        }
-        if let Some(v) = defaults.debug_mode {
-            config.debug_mode = v;
-        }
-        if let Some(v) = defaults.truncate_long_lines {
-            config.truncate_long_lines = v;
-        }
-        if let Some(v) = defaults.max_line_width {
-            config.max_line_width = v;
-        }
-        if let Some(v) = defaults.popup_trigger_key {
-            config.popup_trigger_key = v;
-        }
-        if let Some(v) = defaults.ignore_sessions {
-            config.ignore_sessions = v;
-        }
-        if let Some(v) = defaults.ignore_self {
-            config.ignore_self = v;
-        }
-        if let Some(v) = defaults.hide_bottom_input {
-            config.hide_bottom_input = v;
-        }
-        if let Some(v) = defaults.log_actions {
-            config.log_actions = v;
-        }
-        if let Some(v) = defaults.agent_name_color {
-            config.agent_name_color = v;
-        }
-        if let Some(v) = defaults.current_item_bg_color {
-            config.current_item_bg_color = v;
-        }
-        if let Some(v) = defaults.multi_selection_bg_color {
-            config.multi_selection_bg_color = v;
-        }
-        if let Some(v) = defaults.todo_from_file {
-            config.todo_from_file = v;
-        }
-        if let Some(v) = defaults.todo_files {
-            config.todo_files = v;
-        }
-        if let Some(v) = defaults.sidebar_width {
-            config.sidebar_width = v;
-        }
-
-        config
+            // Absolute fallback if parsing fails completely
+            std::process::exit(1);
+        })
     }
 
     /// Returns the default config file path

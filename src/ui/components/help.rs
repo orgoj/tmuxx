@@ -110,8 +110,8 @@ impl HelpWidget {
 
         // ExecuteCommand actions
         for (key, action) in &kb.bindings {
-            if let KeyAction::ExecuteCommand { command, .. } = action {
-                lines.push(format!("  {:9}Execute: {}", key, command));
+            if let KeyAction::ExecuteCommand(cmd_config) = action {
+                lines.push(format!("  {:9}Execute: {}", key, cmd_config.command));
             }
         }
 
@@ -127,6 +127,15 @@ impl HelpWidget {
         // View (hardcoded)
         lines.push(String::from("View"));
         lines.push(String::from(""));
+
+        let subagent_keys = kb.keys_for_action(&KeyAction::ToggleSubagentLog);
+        if !subagent_keys.is_empty() {
+            lines.push(format!(
+                "  {:9}Toggle subagent log",
+                subagent_keys.join(" / ")
+            ));
+        }
+
         lines.push(String::from("  ?        Show/hide help"));
         lines.push(String::from(""));
 
@@ -137,6 +146,11 @@ impl HelpWidget {
                 "  {:9}Redraw screen / clear error",
                 refresh_keys.join(" / ")
             ));
+        }
+
+        let menu_keys = kb.keys_for_action(&KeyAction::ToggleMenu);
+        if !menu_keys.is_empty() {
+            lines.push(format!("  {:9}Toggle command menu", menu_keys.join(" / ")));
         }
         lines.push(String::from(""));
 

@@ -1,6 +1,6 @@
 use crate::agents::MonitoredAgent;
 use crate::monitor::SystemStats;
-use crate::ui::components::ModalTextareaState;
+use crate::ui::components::{MenuTreeState, ModalTextareaState};
 // use ratatui::style::{Color, Style};
 use std::collections::HashSet;
 use std::time::Instant;
@@ -164,6 +164,10 @@ pub struct AppState {
     pub truecolor_supported: bool,
     /// Content of the project TODO file for the currently selected agent
     pub current_todo: Option<String>,
+    /// Whether the command menu is shown
+    pub show_menu: bool,
+    /// State for the command menu widget
+    pub menu_tree: MenuTreeState,
 }
 
 impl AppState {
@@ -203,6 +207,8 @@ impl AppState {
             system_stats: SystemStats::new(),
             truecolor_supported,
             current_todo: None,
+            show_menu: false,
+            menu_tree: MenuTreeState::new(),
         }
     }
 
@@ -461,6 +467,18 @@ impl AppState {
     /// Toggles summary detail (TODOs and Tools) display
     pub fn toggle_summary_detail(&mut self) {
         self.show_summary_detail = !self.show_summary_detail;
+    }
+
+    /// Toggles command menu display
+    pub fn toggle_menu(&mut self) {
+        self.show_menu = !self.show_menu;
+        if self.show_menu {
+            // Re-open all items for better UX? Or keep state?
+            // Let's keep state for now.
+        } else {
+            // Clear filter when closing?
+            self.menu_tree.filter.clear();
+        }
     }
 
     /// Sets an error message

@@ -15,13 +15,14 @@ use ratatui::{backend::CrosstermBackend, Terminal};
 use tokio::sync::mpsc;
 use tui_textarea::Input;
 
+use crate::app::key_binding::CommandConfig;
 use crate::app::{Action, AppState, Config, KeyAction, NavAction};
 use crate::monitor::{MonitorTask, SystemStatsCollector};
 use crate::parsers::ParserRegistry;
 use crate::tmux::TmuxClient;
 
 use super::components::{
-    AgentTreeWidget, FooterWidget, HeaderWidget, InputWidget, ModalTextareaWidget,
+    AgentTreeWidget, FooterWidget, HeaderWidget, InputWidget, MenuTreeWidget, ModalTextareaWidget,
     PanePreviewWidget, PopupInputWidget, SubagentLogWidget,
 };
 use super::Layout;
@@ -182,6 +183,17 @@ async fn run_loop(
             // Modal textarea (before help)
             if let Some(modal_state) = &state.modal_textarea {
                 ModalTextareaWidget::render(frame, size, modal_state);
+            }
+
+            // Menu Tree (before help)
+            if state.show_menu {
+                MenuTreeWidget::render(
+                    frame,
+                    size,
+                    &mut state.menu_tree,
+                    &state.config.menu,
+                    &state.config,
+                );
             }
 
             // Help overlay (highest priority - render last)
@@ -362,6 +374,209 @@ async fn run_loop(
                                     }
                                 }
                             }
+                        } else if state.show_menu {
+                            use crate::ui::components::menu_tree::{find_flat_menu_item_by_index, get_current_items_count};
+
+                            match key.code {
+                                KeyCode::Esc => {
+                                    state.toggle_menu();
+                                }
+                                 KeyCode::Down | KeyCode::Char('j') if state.menu_tree.filter.is_empty() => {
+                                     let count = get_current_items_count(&state.config.menu, &state.menu_tree);
+                                     state.menu_tree.key_down(count);
+                                 }
+                                 KeyCode::Up | KeyCode::Char('k') if state.menu_tree.filter.is_empty() => {
+                                     let count = get_current_items_count(&state.config.menu, &state.menu_tree);
+                                     state.menu_tree.key_up(count);
+                                 }
+                                 KeyCode::Down => {
+                                     let count = get_current_items_count(&state.config.menu, &state.menu_tree);
+                                     state.menu_tree.key_down(count);
+                                 }
+                                 KeyCode::Up => {
+                                     let count = get_current_items_count(&state.config.menu, &state.menu_tree);
+                                     state.menu_tree.key_up(count);
+                                 }
+                                 KeyCode::Right | KeyCode::Char('l') if state.menu_tree.filter.is_empty() => {
+                                      if let Some(index) = state.menu_tree.list_state.selected() {
+                                          let path = find_flat_menu_item_by_index(&state.config.menu, &state.menu_tree, index)
+                                              .filter(|f| !f.item.items.is_empty())
+                                              .map(|f| f.path);
+                                          if let Some(p) = path {
+                                              state.menu_tree.toggle_expansion(p);
+                                          }
+                                      }
+                                 }
+                                 KeyCode::Char('*') => {
+                                      state.menu_tree.expand_all = !state.menu_tree.expand_all;
+                                 }
+                                 KeyCode::Left | KeyCode::Char('h') if state.menu_tree.filter.is_empty() => {
+                                      if let Some(index) = state.menu_tree.list_state.selected() {
+                                          let res = find_flat_menu_item_by_index(&state.config.menu, &state.menu_tree, index)
+                                              .map(|f| (f.path.clone(), state.menu_tree.expanded_paths.contains(&f.path)));
+
+                                          if let Some((path, is_expanded)) = res {
+                                              if is_expanded {
+                                                  state.menu_tree.expanded_paths.remove(&path);
+                                              } else if path.len() > 1 {
+                                                  let parent_path = path[..path.len()-1].to_vec();
+                                                  state.menu_tree.expanded_paths.remove(&parent_path);
+                                              }
+                                          }
+                                      }
+                                 }
+                                 KeyCode::Right => {
+                                      if let Some(index) = state.menu_tree.list_state.selected() {
+                                          let path = find_flat_menu_item_by_index(&state.config.menu, &state.menu_tree, index)
+                                              .filter(|f| !f.item.items.is_empty())
+                                              .map(|f| f.path);
+                                          if let Some(p) = path {
+                                              state.menu_tree.expanded_paths.insert(p);
+                                          }
+                                      }
+                                 }
+                                 KeyCode::Left => {
+                                      if let Some(index) = state.menu_tree.list_state.selected() {
+                                          let path = find_flat_menu_item_by_index(&state.config.menu, &state.menu_tree, index)
+                                              .map(|f| f.path);
+                                          if let Some(p) = path {
+                                              state.menu_tree.expanded_paths.remove(&p);
+                                          }
+                                      }
+                                 }
+                                 KeyCode::PageDown => {
+                                    let count = get_current_items_count(&state.config.menu, &state.menu_tree);
+                                    for _ in 0..10 { state.menu_tree.key_down(count); }
+                                }
+                                KeyCode::PageUp => {
+                                    let count = get_current_items_count(&state.config.menu, &state.menu_tree);
+                                    for _ in 0..10 { state.menu_tree.key_up(count); }
+                                }
+                                 KeyCode::Backspace => {
+                                     if !state.menu_tree.filter.is_empty() {
+                                         state.menu_tree.filter.pop();
+                                         state.menu_tree.list_state.select(Some(0));
+                                     }
+                                 }
+
+                                 KeyCode::Enter => {
+                                     if let Some(index) = state.menu_tree.list_state.selected() {
+                                         let (cmd, is_submenu, p) = if let Some(flat) = find_flat_menu_item_by_index(&state.config.menu, &state.menu_tree, index) {
+                                              (flat.item.execute_command.clone(), !flat.item.items.is_empty(), flat.path)
+                                         } else {
+                                              (None, false, Vec::new())
+                                         };
+
+                                         if let Some(execute_command) = cmd {
+                                              state.toggle_menu();
+
+                                              // Expand variables
+                                              let expanded = if let Some(agent) = state.selected_agent() {
+                                                  expand_command_variables(&execute_command.command, agent)
+                                              } else {
+                                                  execute_command.command.clone()
+                                              };
+
+                                              let path = if let Some(agent) = state.selected_agent() {
+                                                  agent.path.clone()
+                                              } else {
+                                                  String::new()
+                                              };
+
+                                              let action = Action::ExecuteCommand {
+                                                  command: execute_command.command.clone(),
+                                                  blocking: execute_command.blocking,
+                                                  terminal: execute_command.terminal,
+                                              };
+                                              state.log_action(&action);
+
+                                              if execute_command.terminal {
+                                                     // Suspend TUI
+                                                     if let Err(e) = crossterm::terminal::disable_raw_mode() {
+                                                         state.set_error(format!("Failed to disable raw mode: {}", e));
+                                                     }
+                                                     if let Err(e) = crossterm::execute!(
+                                                         terminal.backend_mut(),
+                                                         crossterm::terminal::LeaveAlternateScreen,
+                                                         crossterm::event::DisableMouseCapture
+                                                     ) {
+                                                         state.set_error(format!("Failed to leave alternate screen: {}", e));
+                                                     }
+                                                     if let Err(e) = terminal.show_cursor() {
+                                                         state.set_error(format!("Failed to show cursor: {}", e));
+                                                     }
+
+                                                     // Run command synchronously
+                                                     let mut command = std::process::Command::new("bash");
+                                                     command.args(["-c", &expanded])
+                                                         .stdin(std::process::Stdio::inherit())
+                                                         .stdout(std::process::Stdio::inherit())
+                                                         .stderr(std::process::Stdio::inherit());
+
+                                                     if !path.is_empty() {
+                                                         command.current_dir(&path);
+                                                     }
+
+                                                     let _ = command.status();
+
+                                                     // Restore TUI
+                                                     if let Err(e) = crossterm::terminal::enable_raw_mode() {
+                                                         state.set_error(format!("Failed to enable raw mode: {}", e));
+                                                     }
+                                                     if let Err(e) = crossterm::execute!(
+                                                         terminal.backend_mut(),
+                                                         crossterm::terminal::EnterAlternateScreen,
+                                                         crossterm::event::EnableMouseCapture
+                                                     ) {
+                                                         state.set_error(format!("Failed to enter alternate screen: {}", e));
+                                                     }
+                                                     if let Err(e) = terminal.hide_cursor() {
+                                                         state.set_error(format!("Failed to hide cursor: {}", e));
+                                                     }
+                                                     if let Err(e) = terminal.clear() {
+                                                         state.set_error(format!("Failed to clear terminal: {}", e));
+                                                     }
+                                              } else if execute_command.blocking {
+                                                     let mut cmd = tokio::process::Command::new("bash");
+                                                     cmd.args(["-c", &expanded]);
+                                                     if !path.is_empty() {
+                                                         cmd.current_dir(&path);
+                                                     }
+                                                     match cmd.output().await {
+                                                         Ok(output) => {
+                                                              if output.status.success() {
+                                                                   state.set_status(format!("Executed: {}", expanded));
+                                                              } else {
+                                                                   state.set_error(format!("Failed: {}", expanded));
+                                                              }
+                                                         }
+                                                         Err(e) => state.set_error(format!("Failed to execute: {}", e)),
+                                                     }
+                                              } else {
+                                                   // Background spawn
+                                                   let mut cmd = tokio::process::Command::new("bash");
+                                                   cmd.args(["-c", &expanded])
+                                                      .stdin(std::process::Stdio::null())
+                                                      .stdout(std::process::Stdio::null())
+                                                      .stderr(std::process::Stdio::null());
+                                                   if !path.is_empty() {
+                                                       cmd.current_dir(&path);
+                                                   }
+                                                   let _ = cmd.spawn();
+                                                   state.set_status(format!("Started: {}", expanded));
+                                              }
+                                         } else if is_submenu {
+                                              state.menu_tree.toggle_expansion(p);
+                                         }
+                                     }
+                                 }
+
+                                KeyCode::Char(c) => {
+                                    state.menu_tree.filter.push(c);
+                                    state.menu_tree.list_state.select(Some(0)); // Reset to top
+                                }
+                                _ => {}
+                            }
                         } else {
                             // Normal key handling when modal is not active
                             let action = map_key_to_action(key.code, key.modifiers, state, &state.config);
@@ -453,6 +668,9 @@ async fn run_loop(
                                 }
                                 Action::ToggleSummaryDetail => {
                                     state.toggle_summary_detail();
+                                }
+                                Action::ToggleMenu => {
+                                    state.toggle_menu();
                                 }
                                 Action::Refresh => {
                                     state.clear_error();
@@ -1076,15 +1294,17 @@ fn map_key_to_action(
                     }
                 }
                 KeyAction::Refresh => Action::Refresh,
-                KeyAction::ExecuteCommand {
+                KeyAction::ExecuteCommand(CommandConfig {
                     command,
                     blocking,
                     terminal,
-                } => Action::ExecuteCommand {
+                }) => Action::ExecuteCommand {
                     command: command.clone(),
                     blocking: *blocking,
                     terminal: *terminal,
                 },
+                KeyAction::ToggleMenu => Action::ToggleMenu,
+                KeyAction::ToggleSubagentLog => Action::ToggleSubagentLog,
                 KeyAction::CaptureTestCase => Action::CaptureTestCase,
             };
         }
@@ -1122,7 +1342,6 @@ fn map_key_to_action(
         // Focus pane with 'f'
         KeyCode::Char('f') | KeyCode::Char('F') => Action::FocusPane,
 
-        KeyCode::Char('s') | KeyCode::Char('S') => Action::ToggleSubagentLog,
         KeyCode::Char('t') | KeyCode::Char('T') => Action::ToggleSummaryDetail,
 
         // Sidebar resize (only < and >)

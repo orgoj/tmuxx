@@ -45,13 +45,21 @@ pub enum KeyAction {
     /// Refresh/redraw the screen
     Refresh,
     /// Execute a shell command with variable expansion
-    ExecuteCommand {
-        command: String,
-        #[serde(default)]
-        blocking: bool,
-        #[serde(default)]
-        terminal: bool,
-    },
+    ExecuteCommand(CommandConfig),
+    /// Toggle command menu
+    ToggleMenu,
+    /// Toggle subagent log display
+    ToggleSubagentLog,
+}
+
+/// Configuration for command execution
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct CommandConfig {
+    pub command: String,
+    #[serde(default)]
+    pub blocking: bool,
+    #[serde(default)]
+    pub terminal: bool,
 }
 
 /// Holds all key binding configuration
@@ -197,19 +205,19 @@ mod tests {
         let mut bindings = HashMap::new();
         bindings.insert(
             "z".to_string(),
-            KeyAction::ExecuteCommand {
+            KeyAction::ExecuteCommand(CommandConfig {
                 command: "zede ${SESSION_DIR}".to_string(),
                 blocking: false,
                 terminal: false,
-            },
+            }),
         );
         bindings.insert(
             "M-t".to_string(),
-            KeyAction::ExecuteCommand {
+            KeyAction::ExecuteCommand(CommandConfig {
                 command: "wezterm cli attach ${SESSION_NAME}".to_string(),
                 blocking: true,
                 terminal: false,
-            },
+            }),
         );
 
         let kb = KeyBindings { bindings };
@@ -224,11 +232,11 @@ mod tests {
         // Verify round-trip
         assert_eq!(kb.bindings.len(), parsed.bindings.len());
         match parsed.get_action("z") {
-            Some(KeyAction::ExecuteCommand {
+            Some(KeyAction::ExecuteCommand(CommandConfig {
                 command,
                 blocking,
                 terminal,
-            }) => {
+            })) => {
                 assert_eq!(command, "zede ${SESSION_DIR}");
                 assert!(!blocking);
                 assert!(!terminal);
@@ -236,11 +244,11 @@ mod tests {
             _ => panic!("Expected ExecuteCommand action"),
         }
         match parsed.get_action("M-t") {
-            Some(KeyAction::ExecuteCommand {
+            Some(KeyAction::ExecuteCommand(CommandConfig {
                 command,
                 blocking,
                 terminal,
-            }) => {
+            })) => {
                 assert_eq!(command, "wezterm cli attach ${SESSION_NAME}");
                 assert!(blocking);
                 assert!(!terminal);

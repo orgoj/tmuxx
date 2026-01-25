@@ -1,6 +1,6 @@
 [package]
 name = "tmuxcc"
-version = "0.1.19"
+version = "0.1.22"
 edition = "2021"
 description = "AI Agent Dashboard for tmux - Monitor Claude Code, OpenCode, Codex CLI, and Gemini CLI"
 authors = ["TmuxCC Contributors"]
@@ -30,6 +30,7 @@ sysinfo = "0.32"
 libc = "0.2"
 glob = "0.3"
 tui-textarea = "0.7"
+fuzzy-matcher = "0.3"
 
 [dev-dependencies]
 tempfile = "3"

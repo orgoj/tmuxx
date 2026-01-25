@@ -1,11 +1,19 @@
 # These are loaded first, then overridden by user config.
+poll_interval_ms = 500
+capture_lines = 200
+show_detached_sessions = true
+debug_mode = false
+truncate_long_lines = true
+popup_trigger_key = "/"
+ignore_self = true
+log_actions = true
+hide_bottom_input = true
 agent_name_color = "#000000"
 current_item_bg_color = "#4a4a4a"
 sidebar_width = 60
 
 # Display TODO from project files (TODO.md, etc.)
 todo_from_file = true
-#todo_full_width = true
 todo_files = ["TODO.md", "NOTES.md", "TASKS.md", "README.md"]
 
 [[agents]]
@@ -224,3 +232,5 @@ priority = 10
 "7" = { send_number = 7 }
 "8" = { send_number = 8 }
 "9" = { send_number = 9 }
+"m" = "toggle_menu"
+"s" = "toggle_subagent_log"

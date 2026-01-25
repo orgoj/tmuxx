@@ -44,6 +44,10 @@ TmuxCC is a TUI (Terminal User Interface) application that provides centralized 
 - **Pane Preview**: See live content from selected agent's tmux pane
 - **Popup Input Dialog**: Quick text input with configurable trigger key (default `/`)
 - **Focus Integration**: Jump directly to any agent's pane in tmux (cross-session support)
+- **Command Menu**: Persistent, hierarchical tree view for running commands (default `m`).
+  - **In-place Expansion**: Expand submenus without losing context.
+  - **Recursive Filtering**: Finds matches across the entire tree while showing paths.
+  - **Expand All**: Toggle full tree visibility with a single key.
 - **Custom Agent Patterns**: Define regex patterns to detect any process as an agent
 - **Wildcard Detection**: Use `pattern = "*"` to monitor ALL tmux panes
 - **Customizable**: Configure polling interval, capture lines, and detection patterns
@@ -247,6 +251,10 @@ tcc
 | Key | Action |
 |-----|--------|
 | `s` / `S` | Toggle subagent log |
+| `m` / `M` | Toggle command menu (Persistent Tree) |
+| `Right` / `l` | Expand submenu in command menu |
+| `Left` / `h` | Collapse submenu or jump to parent in command menu |
+| `*` | Toggle "Expand All" in command menu |
 | `Ctrl+L` | Refresh / clear error |
 | `h` / `?` | Show help |
 | `q` | Quit |
@@ -460,6 +468,7 @@ key = { action_type = { ... } }
 ```toml
 j = "next_agent"           # Next agent (down)
 k = "prev_agent"           # Previous agent (up)
+m = "toggle_menu"          # Toggle command menu
 ```
 
 **Approval Actions:**
@@ -577,6 +586,40 @@ t = { execute_command = { command = "wezterm start -- tmux attach -t ${PANE_TARG
 **Priority:**
 - Built-in parsers (Claude Code, OpenCode, etc.) match first
 - Custom patterns are checked in order of definition
+
+### Command Menu Configuration
+
+You can define a hierarchical menu of commands in your configuration file. This is useful for project-specific tasks or common scripts.
+
+```toml
+[menu]
+[[menu.items]]
+name = "Git"
+[[menu.items.items]]
+name = "Status"
+execute_command = { command = "git status", blocking = true }
+[[menu.items.items]]
+name = "Log"
+execute_command = { command = "git log -n 20", terminal = true }
+
+[[menu.items]]
+name = "Project"
+[[menu.items.items]]
+name = "Build"
+execute_command = { command = "cargo build", blocking = true }
+[[menu.items.items]]
+name = "Run"
+execute_command = { command = "cargo run", terminal = true }
+```
+
+**Menu Item Fields:**
+- `name`: The label displayed in the menu.
+- `description`: (Optional) Additional info.
+- `execute_command`: (For terminal/background tasks)
+  - `command`: The shell command to run (supports variable expansion like `${SESSION_DIR}`).
+  - `blocking`: If true, shows output in a subshell and waits for Enter.
+  - `terminal`: If true, suspends tmuxcc and gives full control to the command (useful for `top`, `vim`, etc.).
+- `items`: (For submenus) A list of nested menu items.
 
 ### CLI Config Overrides
 

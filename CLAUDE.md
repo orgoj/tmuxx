@@ -244,8 +244,12 @@ All skills are in `.claude/skills/`:
 - **User feedback validation**: Runtime testing reveals UX issues code review misses - visual verification is CRITICAL
 - **Implementation from memory**: Research current docs, don't guess (use `tmuxcc-library-research` skill!)
 - **Testing environment**: Use ct-multi (5 windows) for multi-window features
-- **Over-engineering**: Remove complexity instead of fixing it when possible
-- **Config files**: NEVER edit ~/.config/tmuxcc/* without explicit user permission
+- **### CRITICAL SAFETY (NON-NEGOTIABLE)
+
+1.  **NEVER kill test sessions!** (`ct-test`, `ct-multi`, etc.)
+2.  **NEVER kill user-started processes** (even if triggered by testing) unless EXPLICITLY ordered.
+3.  **NEVER close the test tmux session!** It must run continuously for the user to see state.
+4.  **DESTRUCTIVE ACTIONS**: Always ask before `kill`, `rm`, or `tmux kill-session`.
 
 ### Code and Documentation Language
 

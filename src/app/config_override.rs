@@ -1,6 +1,7 @@
 use anyhow::{anyhow, Result};
 
-use super::key_binding::{KeyAction, KillMethod, NavAction};
+use super::key_binding::{CommandConfig, KeyAction, KillMethod, NavAction};
+
 use super::Config;
 
 /// Represents a configuration override from CLI
@@ -203,11 +204,11 @@ fn parse_key_action(value: &str) -> Result<KeyAction> {
             } else {
                 (cmd_part.to_string(), false)
             };
-            Ok(KeyAction::ExecuteCommand {
+            Ok(KeyAction::ExecuteCommand(CommandConfig {
                 command,
                 blocking,
                 terminal: false, // Default to false for overrides for now, or would need to parse
-            })
+            }))
         }
         _ => Err(anyhow!(
             "Invalid key action: '{}'. Valid formats: approve, reject, approve_all, rename_session, refresh, send_number:N, send_keys:KEYS, kill_app:METHOD, navigate:ACTION, command:CMD[:blocking]",
@@ -401,11 +402,11 @@ mod tests {
         match override_val {
             ConfigOverride::KeyBinding(
                 key,
-                KeyAction::ExecuteCommand {
+                KeyAction::ExecuteCommand(CommandConfig {
                     command,
                     blocking,
                     terminal,
-                },
+                }),
             ) => {
                 assert_eq!(key, "z");
                 assert_eq!(command, "echo test");
@@ -420,11 +421,11 @@ mod tests {
         match override_val {
             ConfigOverride::KeyBinding(
                 key,
-                KeyAction::ExecuteCommand {
+                KeyAction::ExecuteCommand(CommandConfig {
                     command,
                     blocking,
                     terminal,
-                },
+                }),
             ) => {
                 assert_eq!(key, "x");
                 assert_eq!(command, "ls -la");
@@ -443,11 +444,11 @@ mod tests {
         match override_val {
             ConfigOverride::KeyBinding(
                 key,
-                KeyAction::ExecuteCommand {
+                KeyAction::ExecuteCommand(CommandConfig {
                     command,
                     blocking,
                     terminal,
-                },
+                }),
             ) => {
                 assert_eq!(key, "y");
                 assert_eq!(command, "wezterm cli attach-session ${SESSION_NAME}");

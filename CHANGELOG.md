@@ -7,6 +7,35 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.22] - 2026-01-25
+
+### Added
+- **Persistent Tree Menu**: Refactored the Command Menu into a true persistent tree view.
+  - Submenus expand/collapse in-place instead of replacing the list.
+  - Support for multiple simultaneously expanded submenus.
+  - **Expand/Collapse All**: Press `*` to toggle visibility of the entire tree.
+  - **Smart Navigation**: `Right`/`l` expands, `Left`/`h` collapses (or jumps to parent).
+  - **Context-Aware Filtering**: Searching automatically expands matching branches and shows ancestors for context.
+  - Visual indentation and state indicators (`▶`/`▼`) for clear hierarchy.
+
+### Fixed
+- **Menu Merging**: Fixed issue where custom menu items from `config.toml` were not correctly merged with `defaults.toml`.
+- **Borrow Checker**: Resolved multiple immutable/mutable borrow conflicts in `app.rs` during state mutation.
+
+
+## [0.1.20] - 2026-01-25
+
+### Added
+- **Command Menu Support**: Introduced a hierarchical, fuzzy-searchable command menu accessible via the `m` key.
+  - Supports recursive submenus and breadcrumb navigation.
+  - Instant fuzzy filtering by typing within the menu.
+  - Execution of shell commands (blocking, terminal-suspending, or background) with variable expansion.
+- **Ratatui Upgrade**: Standardized the whole project on `ratatui` 0.29.0 and `tui-textarea` 0.7.0.
+
+### Changed
+- **Key Binding Architecture**: Relocated `m` (Toggle Menu) binding from hardcoded logic to `src/config/defaults.toml`.
+- **Menu System**: Switched from `tui-tree-widget` to a more stable custom `List`-based menu to avoid versioning conflicts.
+
 ## [0.1.17] - 2026-01-25
 
 ### Added
