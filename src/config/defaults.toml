@@ -1,0 +1,140 @@
+# Default Agent Definitions
+# These are loaded first, then overridden by user config.
+
+[[agents]]
+id = "claude"
+name = "Claude Code"
+priority = 100
+  default_status = "processing"
+  
+  [[agents.matchers]]
+  type = "command"
+  pattern = "(?i)claude|anthropic|claude-code"
+  
+  [[agents.matchers]]
+  type = "ancestor"
+  pattern = "(?i)claude|anthropic|claude-code"
+
+  # STATE RULES (First match wins)
+
+  # 1. Structural Prompt Block (Synthesis/Contextual)
+  # Recognizes the two lines with the prompt between them.
+  # Determines state based on the indicator line ABOVE the block.
+  [[agents.state_rules]]
+  status = "processing" # Fallback if block matches but indicator is unknown
+  pattern = '''(?m)^[ \t]*(?P<indicator>[^\n]*)\n─{10,}.*?\n❯[^\n]*\n─{10,}.*?$'''
+  
+  [[agents.state_rules.refinements]]
+  group = "indicator"
+  pattern = "Baked"
+  status = "idle"
+
+  # 2. Specialized Approvals
+  [[agents.state_rules]]
+  status = "awaiting_approval"
+  approval_type = "edit"
+  pattern = '''(?i)(?:Edit|Write|Modify)\s+.*?\?|Do you want to (?:edit|write|modify)|Allow.*?edit'''
+
+  [[agents.state_rules]]
+  status = "awaiting_approval"
+  approval_type = "create"
+  pattern = '''(?i)Create\s+.*?\?|Do you want to create|Allow.*?create'''
+
+  [[agents.state_rules]]
+  status = "awaiting_approval"
+  approval_type = "delete"
+  pattern = '''(?i)Delete\s+.*?\?|Do you want to delete|Allow.*?delete'''
+
+  [[agents.state_rules]]
+  status = "awaiting_approval"
+  approval_type = "shell"
+  pattern = '''(?i)(?:Run|Execute)\s+(?:command|bash|shell)|Do you want to run|Allow.*?(?:command|bash)|run this command'''
+
+  [[agents.state_rules]]
+  status = "awaiting_approval"
+  approval_type = "mcp"
+  pattern = '''(?i)MCP\s+tool|Do you want to use.*?MCP|Allow.*?MCP'''
+
+  [[agents.state_rules]]
+  status = "awaiting_approval"
+  pattern = '''(?ms)(?<details>Let me ask you.*?)(\n\s*Enter to select\s*[\n\r]*\z)'''
+
+  # 3. Legacy Input Detection (Fallback)
+  [[agents.state_rules]]
+  status = "awaiting_input"
+  pattern = '''(?s).*[❯]\s*\z'''
+  
+  # 4. Processing Indicators (Manual)
+  [[agents.state_rules]]
+  status = "processing"
+  pattern = '''(?mx)
+    (?:
+      ^[ \t]*[✽⎿✻]\s+.*   # Spinner or continuation
+      |
+      ^[ \t]*●\s+.*      # Tool use bullet
+      |
+      \(Esc\s+to\s+interrupt # Generic footer
+    )
+  '''
+
+  [agents.subagent_rules]
+  start = '''(?m)[⏺⠿⠇⠋⠙⠸⠴⠦⠧⠖⠏]\s*Task\s*\([^)]*subagent_type\s*[:=]\s*["']?(\w[\w-]*)["']?[^)]*description\s*[:=]\s*["']([^"']+)["']'''
+  running = '''(?m)^[^│]*[▶►⠿⠇⠋⠙⠸⠴⠦⠧⠖⠏]\s*(\w+)(?:\s*agent)?:?\s*(.*)$'''
+  complete = '''(?m)[✓✔]\s*(\w+).*?(?:completed|finished|done|returned)'''
+
+  [agents.keys]
+  approve = "y"
+  reject = "n"
+
+[[agents]]
+id = "gemini"
+name = "Gemini CLI"
+priority = 90
+  [[agents.matchers]]
+  type = "command"
+  pattern = "(?i)gemini|google"
+
+  [[agents.state_rules]]
+  status = "awaiting_input"
+  pattern = '''(?s).*[>]\s*\z'''
+
+[[agents]]
+id = "opencode"
+name = "OpenCode"
+priority = 85
+  [[agents.matchers]]
+  type = "command"
+  pattern = "(?i)opencode|open-code"
+
+  [[agents.state_rules]]
+  status = "awaiting_input"
+  pattern = '''(?s).*[>]\s*\z'''
+
+[[agents]]
+id = "codex_cli"
+name = "Codex CLI"
+priority = 80
+  [[agents.matchers]]
+  type = "command"
+  pattern = "(?i)codex|openai"
+
+  [[agents.state_rules]]
+  status = "awaiting_input"
+  pattern = '''(?s).*[>]\s*\z'''
+
+[[agents]]
+id = "generic_shell"
+name = "shell"
+priority = 0
+  # Default for Terminal: if no prompt is seen, it's busy (processing)
+  default_status = "processing"
+
+  [[agents.matchers]]
+  type = "command"
+  pattern = ".*"
+
+  # Generic Shell State Rules: ONLY the prompt makes it Idle
+  [[agents.state_rules]]
+  status = "awaiting_input"
+  # Support standard prompts: $, #, %, >, ❯
+  pattern = '''(?s:.*)[$#%>❯]\s*\z'''

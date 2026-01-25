@@ -151,17 +151,17 @@ impl AgentTreeWidget {
                     };
 
                     let select_indicator = if is_selected && is_cursor {
-                        "┃☑" // Cursor+selected: bar and checkmark
+                        "▶☑" // Cursor + multi-selected
                     } else if is_selected {
-                        " ☑" // Selected only: checkmark
+                        "  ☑"
                     } else if is_cursor {
-                        "┃ " // Cursor only: bar
+                        "▶ " // Cursor indicator
                     } else {
-                        "  "
+                        "   "
                     };
 
                     // Status indicator and text
-                    let (status_char, status_text, status_style) = match &agent.status {
+                    let (status_char, status_text, mut status_style) = match &agent.status {
                         AgentStatus::Idle => ("●", "Idle", Style::default().fg(Color::Green)),
                         AgentStatus::Processing { .. } => (
                             state.spinner_frame(),
@@ -181,7 +181,7 @@ impl AgentTreeWidget {
                         }
                     };
 
-                    let type_style = match &agent.agent_type {
+                    let mut type_style = match &agent.agent_type {
                         AgentType::ClaudeCode => Style::default().fg(Color::Magenta),
                         AgentType::OpenCode => Style::default().fg(Color::Blue),
                         AgentType::CodexCli => Style::default().fg(Color::Green),
@@ -190,10 +190,29 @@ impl AgentTreeWidget {
                         AgentType::Unknown => Style::default().fg(Color::DarkGray),
                     };
 
+                    let mut path_style = Style::default().fg(Color::Cyan);
+                    let mut divider_style = Style::default().fg(Color::DarkGray);
+
                     let item_style = if is_cursor {
-                        Style::default().bg(Color::Rgb(50, 50, 70)) // Darker purple-tinted background
+                        // High contrast for light background
+                        status_style = status_style.fg(match &agent.status {
+                            AgentStatus::Idle => Color::Rgb(0, 100, 0), // Dark green
+                            AgentStatus::Processing { .. } => Color::Rgb(100, 100, 0), // Dark yellow/olive
+                            _ => Color::Red,
+                        });
+                        type_style = Style::default()
+                            .fg(Color::Rgb(0, 0, 150))
+                            .add_modifier(Modifier::BOLD);
+                        path_style = Style::default()
+                            .fg(Color::Rgb(0, 50, 100))
+                            .add_modifier(Modifier::BOLD);
+                        divider_style = Style::default().fg(Color::DarkGray);
+
+                        Style::default()
+                            .fg(Color::Black)
+                            .bg(Color::Rgb(230, 230, 230))
                     } else if is_selected {
-                        Style::default().bg(Color::Rgb(35, 35, 50)) // Lighter selection background
+                        Style::default().bg(Color::Rgb(35, 35, 50))
                     } else {
                         Style::default()
                     };
@@ -202,36 +221,34 @@ impl AgentTreeWidget {
                     let line = Line::from(vec![
                         Span::styled(
                             select_indicator,
-                            if is_selected {
+                            if is_cursor {
+                                Style::default()
+                                    .fg(Color::Rgb(0, 100, 200))
+                                    .add_modifier(Modifier::BOLD)
+                            } else if is_selected {
                                 Style::default().fg(Color::Cyan)
                             } else {
                                 Style::default().fg(Color::White)
                             },
                         ),
-                        Span::styled(tree_prefix, Style::default().fg(Color::DarkGray)),
+                        Span::styled(tree_prefix, divider_style),
                         Span::styled(status_char, status_style),
                         Span::raw(" "),
-                        Span::styled(agent.abbreviated_path(), Style::default().fg(Color::Cyan)),
+                        Span::styled(agent.abbreviated_path(), path_style),
                     ]);
                     items.push(ListItem::new(line).style(item_style));
 
                     // Info line: type | status | pid | uptime | context
                     let mut info_parts = vec![
                         Span::raw("  "),
-                        Span::styled(
-                            format!("{}│  ", cont_prefix),
-                            Style::default().fg(Color::DarkGray),
-                        ),
+                        Span::styled(format!("{}│  ", cont_prefix), divider_style),
                         Span::styled(agent.agent_type.short_name(), type_style),
-                        Span::styled(" │ ", Style::default().fg(Color::DarkGray)),
+                        Span::styled(" │ ", divider_style),
                         Span::styled(status_text, status_style),
-                        Span::styled(" │ ", Style::default().fg(Color::DarkGray)),
-                        Span::styled(
-                            format!("pid:{}", agent.pid),
-                            Style::default().fg(Color::DarkGray),
-                        ),
-                        Span::styled(" │ ", Style::default().fg(Color::DarkGray)),
-                        Span::styled(agent.uptime_str(), Style::default().fg(Color::DarkGray)),
+                        Span::styled(" │ ", divider_style),
+                        Span::styled(format!("pid:{}", agent.pid), divider_style),
+                        Span::styled(" │ ", divider_style),
+                        Span::styled(agent.uptime_str(), divider_style),
                     ];
 
                     // Context bar if available

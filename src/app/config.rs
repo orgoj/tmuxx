@@ -1,5 +1,6 @@
 use anyhow::Result;
 use serde::{Deserialize, Serialize};
+use std::collections::HashSet;
 use std::path::PathBuf;
 
 use super::config_override::ConfigOverride;
@@ -35,10 +36,8 @@ pub struct Config {
 
     /// Custom agent patterns (command -> agent type mapping)
     #[serde(default)]
-    pub agent_patterns: Vec<AgentPattern>,
 
     /// Key bindings configuration
-    #[serde(default)]
     pub key_bindings: KeyBindings,
 
     /// Trigger key for popup input dialog (default: "/")
@@ -64,9 +63,9 @@ pub struct Config {
     #[serde(default = "default_log_actions")]
     pub log_actions: bool,
 
-    /// Generic agent definitions
+    /// Generic agent definitions (Merged from defaults + user config)
     #[serde(default)]
-    pub agent_definitions: Vec<AgentDefinition>,
+    pub agents: Vec<AgentConfig>,
 }
 
 fn default_poll_interval() -> u64 {
@@ -105,69 +104,86 @@ fn default_log_actions() -> bool {
     true
 }
 
-
-
-/// Legacy pattern for detecting agent types (deprecated in favor of AgentDefinition)
+/// Configurable Agent Definition
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct AgentPattern {
-    /// Command pattern to match (regex)
-    pub pattern: String,
-    /// Name of the agent type
-    pub agent_type: String,
-}
+pub struct AgentConfig {
+    /// Unique ID for merging/overriding (e.g., "claude")
+    pub id: String,
 
-/// Generic agent definition for flexible configuration
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct AgentDefinition {
-    /// Name of the agent (e.g. "Claude Code")
+    /// Display Name
     pub name: String,
-    
-    /// Regex patterns to match command/process lines
-    pub match_patterns: Vec<String>,
-    
+
     /// Priority (higher wins)
     #[serde(default)]
     pub priority: u32,
-    
-    /// State detection rules
+
+    /// How to detect this agent
+    #[serde(default)]
+    pub matchers: Vec<MatcherConfig>,
+
+    /// How to detect state
     #[serde(default)]
     pub state_rules: Vec<StateRule>,
 
-    /// Approval keys
+    /// Specific patterns in title that indicate 'Processing'
     #[serde(default)]
-    pub approval_keys: Option<String>, 
+    pub title_indicators: Option<Vec<String>>,
 
-     /// Rejection keys 
+    /// Status to return if no rules match (default: "processing")
     #[serde(default)]
-    pub rejection_keys: Option<String>,
+    pub default_status: Option<String>,
+
+    /// How to detect subagents
+    #[serde(default)]
+    pub subagent_rules: Option<SubagentRules>,
+
+    /// Key bindings
+    #[serde(default)]
+    pub keys: AgentKeys,
 }
 
-/// Rule for detecting agent state from output
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(tag = "type")]
+pub enum MatcherConfig {
+    #[serde(rename = "command")]
+    Command { pattern: String },
+
+    #[serde(rename = "ancestor")]
+    Ancestor { pattern: String },
+
+    #[serde(rename = "title")]
+    Title { pattern: String },
+}
+
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+pub struct AgentKeys {
+    pub approve: Option<String>,
+    pub reject: Option<String>,
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct StateRule {
-    /// The target state (e.g., "processing", "awaiting_input", "error")
-    pub state: String,
-    
-    /// Pattern to match in the output
+    pub status: String,
     pub pattern: String,
-    
-    /// Search mode: "contains", "regex", "ends_with"
+    /// Explicit approval type if status is 'awaiting_approval'
+    pub approval_type: Option<String>,
+    /// Refine the status based on capture groups in the pattern
     #[serde(default)]
-    pub mode: MatchMode,
+    pub refinements: Vec<Refinement>,
 }
 
-#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq)]
-#[serde(rename_all = "snake_case")]
-pub enum MatchMode {
-    Regex,
-    Contains,
-    EndsWith,
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct Refinement {
+    pub group: String,
+    pub pattern: String,
+    pub status: String,
 }
 
-impl Default for MatchMode {
-    fn default() -> Self {
-        MatchMode::Contains
-    }
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct SubagentRules {
+    pub start: String,
+    pub running: String,
+    pub complete: String,
 }
 
 impl Default for Config {
@@ -179,44 +195,62 @@ impl Default for Config {
             debug_mode: default_debug_mode(),
             truncate_long_lines: default_truncate_long_lines(),
             max_line_width: None,
-            agent_patterns: Vec::new(),
+
             key_bindings: KeyBindings::default(),
             popup_trigger_key: default_popup_trigger_key(),
             ignore_sessions: Vec::new(),
             ignore_self: default_ignore_self(),
             hide_bottom_input: default_hide_bottom_input(),
             log_actions: default_log_actions(),
-            agent_definitions: vec![
-                AgentDefinition {
-                    name: "Generic Shell".to_string(),
-                    match_patterns: vec![
-                        // Match common shells (exact match or ending with shell name)
-                        r"^(?:.*/)?(bash|zsh|fish|sh|ksh)$".to_string(),
-                    ],
-                    priority: 0, // Low priority, fallback
-                    state_rules: vec![
-                        StateRule {
-                            state: "awaiting_input".to_string(),
-                            // Matches typical prompts: "user@host:path$ ", "sh-5.1$ ", "> "
-                            // Regex breakdown:
-                            // ^ - start of line (optional, implicit in some modes but good to be explicit if using regex mode)
-                            // .* - any characters (user, host, path)
-                            // [>$#%] - common prompt characters
-                            // \s* - optional trailing whitespace
-                            // $ - end of string
-                            pattern: r".*[>$#%]\s*$".to_string(),
-                            mode: MatchMode::Regex,
-                        },
-                    ],
-                    approval_keys: None,
-                    rejection_keys: None,
-                }
-            ],
+            agents: Vec::new(),
         }
     }
 }
 
 impl Config {
+    /// Loads configuration, merging embedded defaults with user settings
+    pub fn load_merged() -> Self {
+        // 1. Load Defaults
+        let default_toml = include_str!("../config/defaults.toml");
+        #[derive(Deserialize)]
+        struct AgentsOnly {
+            agents: Vec<AgentConfig>,
+        }
+        let defaults: AgentsOnly = toml::from_str(default_toml).unwrap_or_else(|e| {
+            eprintln!("Internal Error: Failed to parse default config: {}", e);
+            AgentsOnly { agents: Vec::new() }
+        });
+
+        // 2. Load User Config (if exists)
+        let mut config = Self::load();
+
+        // 3. Merge Agents
+        // Logic: User agents with same 'id' replace default. New ones append.
+        let mut final_agents = Vec::new();
+        let mut user_ids: std::collections::HashSet<String> = HashSet::new();
+
+        // Index user agents
+        for agent in &config.agents {
+            user_ids.insert(agent.id.clone());
+        }
+
+        // Add defaults that are NOT overridden
+        for agent in defaults.agents {
+            if !user_ids.contains(&agent.id) {
+                final_agents.push(agent);
+            }
+        }
+
+        // Add user agents (overrides + new)
+        final_agents.extend(config.agents);
+
+        // Sort by priority (descending)
+        final_agents.sort_by(|a, b| b.priority.cmp(&a.priority));
+
+        config.agents = final_agents;
+        config
+    }
+
     /// Returns the default config file path
     pub fn default_path() -> Option<PathBuf> {
         dirs::config_dir().map(|p| p.join("tmuxcc").join("config.toml"))

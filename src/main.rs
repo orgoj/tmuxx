@@ -59,7 +59,7 @@ enum Commands {
         /// Target pane ID or title (optional, defaults to interactive selection)
         #[arg(short, long)]
         pane: Option<String>,
-        
+
         /// Name for the new agent
         #[arg(short, long)]
         name: Option<String>,
@@ -75,7 +75,8 @@ async fn main() -> Result<()> {
         return tmuxcc::cmd::learn::run_learn(tmuxcc::cmd::learn::LearnArgs {
             target_pane: pane,
             agent_name: name,
-        }).await;
+        })
+        .await;
     }
 
     // Show config path and exit
@@ -121,7 +122,7 @@ async fn main() -> Result<()> {
             std::process::exit(1);
         })
     } else {
-        Config::load()
+        Config::load_merged()
     };
 
     // CLI args override config file

@@ -1,16 +1,6 @@
-mod claude_code;
-mod codex_cli;
-mod custom;
-mod gemini_cli;
-mod generic;
-mod opencode;
+mod universal;
 
-pub use claude_code::ClaudeCodeParser;
-pub use codex_cli::CodexCliParser;
-pub use custom::CustomAgentParser;
-pub use gemini_cli::GeminiCliParser;
-pub use generic::GenericAgentParser;
-pub use opencode::OpenCodeParser;
+pub use universal::UniversalParser;
 
 use crate::agents::{AgentStatus, AgentType, Subagent};
 use crate::app::Config;
@@ -27,6 +17,13 @@ pub(crate) fn safe_tail(s: &str, max_chars: usize) -> &str {
     &s[byte_idx..]
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+pub enum MatchStrength {
+    None = 0,
+    Weak = 1,   // Title-based match
+    Strong = 2, // Command/Ancestor/Process-tree match
+}
+
 /// Trait for parsing agent output
 pub trait AgentParser: Send + Sync {
     /// Returns the name of the agent
@@ -35,8 +32,13 @@ pub trait AgentParser: Send + Sync {
     /// Returns the AgentType for this parser
     fn agent_type(&self) -> AgentType;
 
-    /// Checks if any of the detection strings match this agent
-    fn matches(&self, detection_strings: &[&str]) -> bool;
+    /// Checks if any of the detection strings match this agent and with what strength
+    fn match_strength(&self, detection_strings: &[&str]) -> MatchStrength;
+
+    /// Legacy method for compatibility (calls match_strength)
+    fn matches(&self, detection_strings: &[&str]) -> bool {
+        self.match_strength(detection_strings) > MatchStrength::None
+    }
 
     /// Parses the pane content and returns the agent status
     fn parse_status(&self, content: &str) -> AgentStatus;
@@ -80,27 +82,10 @@ impl ParserRegistry {
     /// Built-in parsers (ClaudeCode, OpenCode, etc.) are registered first,
     /// so they take priority over custom patterns when multiple patterns match.
     pub fn with_config(config: &Config) -> Self {
-        let mut parsers: Vec<Box<dyn AgentParser>> = vec![
-            Box::new(ClaudeCodeParser::new()),
-            Box::new(OpenCodeParser::new()),
-            Box::new(CodexCliParser::new()),
-            Box::new(GeminiCliParser::new()),
-        ];
-
-        // Add generic parsers from config (agent_definitions)
-        for agent_def in &config.agent_definitions {
-            if let Some(parser) = GenericAgentParser::new(agent_def.clone()) {
-                parsers.push(Box::new(parser));
-            }
-        }
-
-        // Add legacy custom parsers from config (agent_patterns)
-        for pattern_config in &config.agent_patterns {
-            if let Some(custom_parser) =
-                CustomAgentParser::new(&pattern_config.pattern, &pattern_config.agent_type)
-            {
-                parsers.push(Box::new(custom_parser));
-            }
+        let mut parsers: Vec<Box<dyn AgentParser>> = Vec::new();
+        // Initialize parsers from config agents
+        for agent_config in &config.agents {
+            parsers.push(Box::new(UniversalParser::new(agent_config.clone())));
         }
 
         Self { parsers }
@@ -109,10 +94,28 @@ impl ParserRegistry {
     /// Finds a parser that matches the given pane info
     pub fn find_parser_for_pane(&self, pane: &PaneInfo) -> Option<&dyn AgentParser> {
         let detection_strings = pane.detection_strings();
-        self.parsers
-            .iter()
-            .find(|p| p.matches(&detection_strings))
-            .map(|p| p.as_ref())
+
+        // We want the HIGHEST MatchStrength, and within those, the HIGHEST priority (index in parsers list)
+        // Note: self.parsers is already sorted by priority DESC.
+
+        let mut best_parser: Option<&dyn AgentParser> = None;
+        let mut best_strength = MatchStrength::None;
+
+        for parser in &self.parsers {
+            let strength = parser.match_strength(&detection_strings);
+            if strength > best_strength {
+                best_strength = strength;
+                best_parser = Some(parser.as_ref());
+
+                // Shortcut: if we have a Strong match and we are sorted by priority,
+                // the first Strong match is the best.
+                if strength == MatchStrength::Strong {
+                    return best_parser;
+                }
+            }
+        }
+
+        best_parser
     }
 
     /// Returns all registered parsers

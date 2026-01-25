@@ -46,19 +46,26 @@ impl ProcessTreeCache {
         let stdout = String::from_utf8_lossy(&output.stdout);
 
         for line in stdout.lines() {
-            let parts: Vec<&str> = line.trim().splitn(3, char::is_whitespace).collect();
-            if parts.len() >= 3 {
-                if let (Ok(pid), Ok(ppid)) = (parts[0].parse::<u32>(), parts[1].parse::<u32>()) {
-                    let cmd = parts[2].trim().to_string();
-                    let parent = if ppid == 0 { None } else { Some(ppid) };
-                    self.processes.insert(
-                        pid,
-                        ProcessInfo {
-                            command: cmd,
-                            parent_pid: parent,
-                        },
-                    );
-                }
+            let mut parts = line.split_whitespace();
+            let pid_str = match parts.next() {
+                Some(p) => p,
+                None => continue,
+            };
+            let ppid_str = match parts.next() {
+                Some(p) => p,
+                None => continue,
+            };
+
+            if let (Ok(pid), Ok(ppid)) = (pid_str.parse::<u32>(), ppid_str.parse::<u32>()) {
+                let cmd = parts.collect::<Vec<_>>().join(" ");
+                let parent = if ppid == 0 { None } else { Some(ppid) };
+                self.processes.insert(
+                    pid,
+                    ProcessInfo {
+                        command: cmd,
+                        parent_pid: parent,
+                    },
+                );
             }
         }
 
@@ -194,7 +201,7 @@ impl PaneInfo {
         let cache = get_process_cache().lock();
         let cmdline = cache.get_cmdline(pid).unwrap_or_default();
 
-        let child_commands = cache.get_child_commands(pid, 2); // Reduced depth to 2
+        let child_commands = cache.get_child_commands(pid, 4); // Increased depth to 4 for nested agents
         let ancestor_commands = cache.get_ancestor_commands(pid, 3); // Look up 3 levels
 
         Some(Self {

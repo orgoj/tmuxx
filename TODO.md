@@ -58,8 +58,10 @@ script = "/path/to/notify.sh"
 - [x] Implement content-based AI type detection (regex patterns per AI)
 - [x] Update ParserRegistry to use enhanced detection
 - [x] Add detection strategy config (enable/disable strategies)
-- [ ] Test: agent in wrapper → detected correctly
-- [ ] Test: content-based detection → correct AI type identified
+- [x] Recover all deleted hardcoded agent definitions into defaults.toml
+- [x] Enhance UniversalParser to support subagents and approval types
+- [x] Restore catch-all behavior to ensure no sessions are lost
+- [x] Migrate user config to new format-based detection → correct AI type identified
 - [ ] Document detection strategies in README.md
 
 ### AI-Specific Control Configuration

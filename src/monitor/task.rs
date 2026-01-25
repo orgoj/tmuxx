@@ -109,41 +109,7 @@ impl MonitorTask {
                 // Parse status from content
                 let mut status = parser.parse_status(&content);
 
-                // Check pane title for spinner (Claude Code specific)
-                // Spinners like ⠐⠇⠋⠙⠸ in title indicate processing
-                let title_has_spinner = pane.title.chars().any(|c| {
-                    matches!(
-                        c,
-                        '⠿' | '⠇'
-                            | '⠋'
-                            | '⠙'
-                            | '⠸'
-                            | '⠴'
-                            | '⠦'
-                            | '⠧'
-                            | '⠖'
-                            | '⠏'
-                            | '⠹'
-                            | '⠼'
-                            | '⠷'
-                            | '⠾'
-                            | '⠽'
-                            | '⠻'
-                            | '⠐'
-                            | '⠑'
-                            | '⠒'
-                            | '⠓'
-                    )
-                });
-
-                // If title has spinner, override to Processing
-                if title_has_spinner && matches!(status, AgentStatus::Idle | AgentStatus::Unknown) {
-                    status = AgentStatus::Processing {
-                        activity: "Working...".to_string(),
-                    };
-                }
-
-                // Apply hysteresis: if status is now Idle but was recently active, keep as Processing
+                // apply hysteresis: if status is now Idle but was recently active, keep as Processing
                 let now = Instant::now();
                 let is_active = matches!(
                     status,
