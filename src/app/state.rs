@@ -156,6 +156,13 @@ pub struct AppState {
 impl AppState {
     /// Creates a new AppState with the given config
     pub fn new(config: Config) -> Self {
+        let truecolor_supported = std::env::var("COLORTERM")
+            .map(|v| v.to_lowercase().contains("truecolor") || v.contains("24bit"))
+            .unwrap_or(false)
+            || std::env::var("TERM")
+                .map(|v| v.contains("truecolor"))
+                .unwrap_or(false);
+
         Self {
             config,
             agents: AgentTree::new(),
@@ -172,19 +179,15 @@ impl AppState {
             show_summary_detail: true,
             should_quit: false,
             last_error: Some(format!(
-                "tmuxcc v{} - Press ? for help",
-                env!("CARGO_PKG_VERSION")
+                "tmuxcc v{} [{}] - Press ? for help",
+                env!("CARGO_PKG_VERSION"),
+                if truecolor_supported { "tc" } else { "256" }
             )),
             sidebar_width: 35,
             tick: 0,
             last_tick: Instant::now(),
             system_stats: SystemStats::new(),
-            truecolor_supported: std::env::var("COLORTERM")
-                .map(|v| v.to_lowercase().contains("truecolor") || v.contains("24bit"))
-                .unwrap_or(false)
-                || std::env::var("TERM")
-                    .map(|v| v.contains("truecolor"))
-                    .unwrap_or(false),
+            truecolor_supported,
         }
     }
 

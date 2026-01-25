@@ -1,0 +1,104 @@
+⎿  (No content)
+⎿  PostToolUse:Bash hook succeeded
+
+∴ Thinking…
+
+Hotovo! Vytvořil jsem unified skript ~/bin/ai-maestro s těmito příkazy:
+- start - spustí v produkci přes PM2
+- stop - zastaví
+- restart - restartuje
+- logs - zobrazí logy
+- status - ukáže status
+- dev - spustí dev mode bez PM2
+- bez parametru nebo --help zobrazí nápovědu
+
+Zkusím to otestovat.
+
+● Bash(~/bin/ai-maestro)
+⎿  PreToolUse:Bash hook succeeded: Success
+⎿  AI Maestro - Management Script
+
+Usage: ai-maestro [command]
+
+Commands:
+start       Start AI Maestro in production mode (PM2)
+stop        Stop AI Maestro
+restart     Restart AI Maestro
+logs        View logs (real-time)
+status      Show current status
+dev         Start in development mode (no PM2)
+
+Examples:
+ai-maestro start     # Start production server
+ai-maestro dev       # Start dev server with hot reload
+ai-maestro logs      # Follow logs
+⎿  PostToolUse:Bash hook succeeded
+
+∴ Thinking…
+
+Perfektní! Skript funguje. Ukážu mu ještě status.
+
+● Bash(~/bin/ai-maestro status)
+⎿  PreToolUse:Bash hook succeeded: Success
+⎿  ❌ AI Maestro is NOT running
+
+Use 'ai-maestro start' to start it
+⎿  PostToolUse:Bash hook succeeded
+
+∴ Thinking…
+
+Super! Skript je hotový a funguje. Shrnu co jsem vytvořil.
+
+● Hotovo! ✅ Vytvořil jsem unified skript ~/bin/ai-maestro s těmito příkazy:
+
+Použití:
+ai-maestro              # Zobrazí help
+ai-maestro start        # Spustí produkci (PM2)
+ai-maestro stop         # Zastaví
+ai-maestro restart      # Restartuje
+ai-maestro logs         # Zobrazí logy
+ai-maestro status       # Stav serveru
+ai-maestro dev          # Dev mode (bez PM2)
+
+Momentální stav:
+- ❌ AI Maestro není spuštěný
+- ✅ Skript je nainstalovaný v ~/bin/ai-maestro
+- ✅ Není nastavený autostart při spuštění stroje (jak jsi chtěl)
+
+Pro spuštění:
+ai-maestro start     # Produkce na http://localhost:23000
+
+Pro development:
+ai-maestro dev       # Hot reload
+
+Skript automaticky detekuje jestli už běží, takže můžeš klidně volat start vícekrát.
+
+✻ Churned for 50s
+
+❯ stahni git aktalizace, napis mi co tam je a update
+⎿  UserPromptSubmit hook succeeded: Success
+
+∴ Thinking…
+
+Uživatel chce:
+1. Stáhnout git aktualizace (git fetch/pull)
+2. Říct co tam je (changelog/co se změnilo)
+3. Udělat update (pravděpodobně yarn install pokud se změnily dependencies)
+
+Měl bych:
+1. Zkontrolovat git status
+2. Git fetch/pull
+3. Zobrazit changelog (git log nebo něco podobného)
+4. Zkontrolovat jestli se změnily dependencies
+5. Pokud ano, spustit yarn install
+6. Případně rebuild pokud je potřeba
+
+● Podívám se na git aktualizace a updatuji projekt.
+
+* Mulling… (Esc to interrupt · 8s · ↓ 297 tokens · thought for 3s)
+
+─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+❯ 
+─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+Fake status
+

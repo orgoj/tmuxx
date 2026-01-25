@@ -30,6 +30,7 @@ struct CompiledRefinement {
     group: String,
     re: Regex,
     status: String,
+    approval_type: Option<String>,
 }
 
 struct CompiledSubagentRules {
@@ -76,6 +77,7 @@ impl UniversalParser {
                             group: r.group.clone(),
                             re: ref_re,
                             status: r.status.clone(),
+                            approval_type: r.approval_type.clone(),
                         });
                     }
                 }
@@ -250,6 +252,7 @@ impl AgentParser for UniversalParser {
 
             if let Some(caps) = rule.re.captures(&search_content) {
                 let mut status_str = rule.status.clone();
+                let mut approval_type_override = None;
                 let details = caps.name("details").map(|m| m.as_str().to_string());
 
                 // Process refinements
@@ -257,6 +260,9 @@ impl AgentParser for UniversalParser {
                     if let Some(group_match) = caps.name(&refinement.group) {
                         if refinement.re.is_match(group_match.as_str()) {
                             status_str = refinement.status.clone();
+                            if refinement.approval_type.is_some() {
+                                approval_type_override = refinement.approval_type.clone();
+                            }
                             break;
                         }
                     }
@@ -269,7 +275,8 @@ impl AgentParser for UniversalParser {
                         };
                     }
                     "awaiting_approval" => {
-                        let approval_type = match rule.approval_type.as_deref() {
+                        let final_approval_type = approval_type_override.as_deref().or(rule.approval_type.as_deref());
+                        let approval_type = match final_approval_type {
                             Some("edit") => ApprovalType::FileEdit,
                             Some("create") => ApprovalType::FileCreate,
                             Some("delete") => ApprovalType::FileDelete,

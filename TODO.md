@@ -2,7 +2,7 @@
 
 
 - [x] generic shell poznat ze bezi tuio aplikace a neni to procesing (mc, htop, vim)
-- oprava detekce stavu claude - spatne to detekuje nektrere stavy musime projit priklady co nastanou
+- [x] oprava detekce stavu claude - implementován nativní regression testing a robustní regexy <!-- id: 100 -->
 
 - Configurable different mode for TODO section of screen, want to see beginning of TODO.md file if in project or other configurable name, multiple names and glob - first found is displayed
 

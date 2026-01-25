@@ -1,0 +1,105 @@
+
+Commands:
+start       Start AI Maestro in production mode (PM2)
+stop        Stop AI Maestro
+restart     Restart AI Maestro
+logs        View logs (real-time)
+status      Show current status
+dev         Start in development mode (no PM2)
+
+Examples:
+ai-maestro start     # Start production server
+ai-maestro dev       # Start dev server with hot reload
+ai-maestro logs      # Follow logs
+⎿  PostToolUse:Bash hook succeeded
+
+∴ Thinking…
+
+Perfektní! Skript funguje. Ukážu mu ještě status.
+
+● Bash(~/bin/ai-maestro status)
+⎿  PreToolUse:Bash hook succeeded: Success
+⎿  ❌ AI Maestro is NOT running
+
+Use 'ai-maestro start' to start it
+⎿  PostToolUse:Bash hook succeeded
+
+∴ Thinking…
+
+Super! Skript je hotový a funguje. Shrnu co jsem vytvořil.
+
+● Hotovo! ✅ Vytvořil jsem unified skript ~/bin/ai-maestro s těmito příkazy:
+
+Použití:
+ai-maestro              # Zobrazí help
+ai-maestro start        # Spustí produkci (PM2)
+ai-maestro stop         # Zastaví
+ai-maestro restart      # Restartuje
+ai-maestro logs         # Zobrazí logy
+ai-maestro status       # Stav serveru
+ai-maestro dev          # Dev mode (bez PM2)
+
+Momentální stav:
+- ❌ AI Maestro není spuštěný
+- ✅ Skript je nainstalovaný v ~/bin/ai-maestro
+- ✅ Není nastavený autostart při spuštění stroje (jak jsi chtěl)
+
+Pro spuštění:
+ai-maestro start     # Produkce na http://localhost:23000
+
+Pro development:
+ai-maestro dev       # Hot reload
+
+Skript automaticky detekuje jestli už běží, takže můžeš klidně volat start vícekrát.
+
+✻ Churned for 50s
+
+❯ stahni git aktalizace, napis mi co tam je a update
+⎿  UserPromptSubmit hook succeeded: Success
+
+∴ Thinking…
+
+Uživatel chce:
+1. Stáhnout git aktualizace (git fetch/pull)
+2. Říct co tam je (changelog/co se změnilo)
+3. Udělat update (pravděpodobně yarn install pokud se změnily dependencies)
+
+Měl bych:
+1. Zkontrolovat git status
+2. Git fetch/pull
+3. Zobrazit changelog (git log nebo něco podobného)
+4. Zkontrolovat jestli se změnily dependencies
+5. Pokud ano, spustit yarn install
+6. Případně rebuild pokud je potřeba
+
+● Podívám se na git aktualizace a updatuji projekt.
+
+● Bash(git fetch origin && git status)
+⎿  PreToolUse:Bash hook succeeded: Success
+⎿  On branch main
+Your branch is up to date with 'origin/main'.
+
+Changes not staged for commit:
+(use "git add <file>..." to update what will be committed)
+(use "git restore <file>..." to discard changes in working directory)
+modified:   package.json
+modified:   yarn.lock
+
+Untracked files:
+(use "git add <file>..." to include in what will be committed)
+.claude/diary/
+.yarn/
+.yarnrc.yml
+mise.toml
+
+no changes added to commit (use "git add" and/or "git commit -a")
+⎿  PostToolUse:Bash hook succeeded
+
+✻ Mulling… (Esc to interrupt · 12s · ↑ 335 tokens · thought for 3s)
+
+─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+❯ 
+─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+Model: Sonnet 4.5 | Style: default | Ctx: 62.8k | Ctx(u): 39.3% | Session: 1hr 58m                                                                                                                   62815 tokens
+6 files +7793 -5297                                                                                                                                                              current: 2.1.19 · latest: 2.1.19
+

@@ -84,14 +84,6 @@ impl HeaderWidget {
             Style::default().fg(mem_color),
         ));
 
-        // Color Mode
-        spans.push(Span::styled("│", Style::default().fg(Color::DarkGray)));
-        if state.truecolor_supported {
-            spans.push(Span::styled(" tc ", Style::default().fg(Color::Green)));
-        } else {
-            spans.push(Span::styled(" 256 ", Style::default().fg(Color::Yellow)));
-        }
-
         // Time
         spans.push(Span::styled("│", Style::default().fg(Color::DarkGray)));
         spans.push(Span::styled(

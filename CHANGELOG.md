@@ -5,6 +5,27 @@ All notable changes to this fork (orgoj/tmuxcc) will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.1.14] - 2026-01-25
+
+### Added
+- **Native Regression Testing**: Added `tmuxcc test` command to verify agent detection logic
+  - Supports loading fixtures from directories with `case_<STATUS>_<DESC>.txt` naming convention
+  - Compares detected status against expected status parsed from filename
+- **Test Capture Script**: Added `tests/capture.sh` to easily capture tmux pane content as test fixtures
+  - Automatically cleans TUI artifacts (borders) and enforces naming conventions
+- **Enhanced Claude Detection**: Added or updated patterns for several processing and idle states
+  - Added support for `∵ Thinking…`, `✻ Mulling…`, `✻ Brewed...`, `∴ Thinking...`, etc.
+  - Anchored processing refinements to the end of buffer to prevent historical false positives
+- **Dynamic Approval Types**: Added `approval_type` support to `Refinement` in `UniversalParser`
+  - Allows overriding approval type (e.g., `create`, `edit`) within structural blocks based on body content
+
+### Fixed
+- **Structural Regex Robustness**: Improved structural prompt block regex for Claude Code
+  - Better newline handling with `(?:^|\n)`
+  - Added support for multiple pipe (`│`) prefixes from tmux split panes
+  - Non-greedy indicator matching to prevent over-consumption of structural lines
+- **Config Conflict**: Removed redundant `layout.footer_separator` for Claude agent that interfered with full structural matching
+
 ## [Unreleased]
 
 ### Fixed

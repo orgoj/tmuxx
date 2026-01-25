@@ -220,6 +220,7 @@ pub struct Refinement {
     pub group: String,
     pub pattern: String,
     pub status: String,
+    pub approval_type: Option<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

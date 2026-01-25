@@ -1,0 +1,105 @@
+∴ Thinking…
+
+Super! Skript je hotový a funguje. Shrnu co jsem vytvořil.
+
+● Hotovo! ✅ Vytvořil jsem unified skript ~/bin/ai-maestro s těmito příkazy:
+
+Použití:
+ai-maestro              # Zobrazí help
+ai-maestro start        # Spustí produkci (PM2)
+ai-maestro stop         # Zastaví
+ai-maestro restart      # Restartuje
+ai-maestro logs         # Zobrazí logy
+ai-maestro status       # Stav serveru
+ai-maestro dev          # Dev mode (bez PM2)
+
+Momentální stav:
+- ❌ AI Maestro není spuštěný
+- ✅ Skript je nainstalovaný v ~/bin/ai-maestro
+- ✅ Není nastavený autostart při spuštění stroje (jak jsi chtěl)
+
+Pro spuštění:
+ai-maestro start     # Produkce na http://localhost:23000
+
+Pro development:
+ai-maestro dev       # Hot reload
+
+Skript automaticky detekuje jestli už běží, takže můžeš klidně volat start vícekrát.
+
+✻ Churned for 50s
+
+❯ stahni git aktalizace, napis mi co tam je a update
+⎿  UserPromptSubmit hook succeeded: Success
+
+∴ Thinking…
+
+Uživatel chce:
+1. Stáhnout git aktualizace (git fetch/pull)
+2. Říct co tam je (changelog/co se změnilo)
+3. Udělat update (pravděpodobně yarn install pokud se změnily dependencies)
+
+Měl bych:
+1. Zkontrolovat git status
+2. Git fetch/pull
+3. Zobrazit changelog (git log nebo něco podobného)
+4. Zkontrolovat jestli se změnily dependencies
+5. Pokud ano, spustit yarn install
+6. Případně rebuild pokud je potřeba
+
+● Podívám se na git aktualizace a updatuji projekt.
+
+● Bash(git fetch origin && git status)
+⎿  PreToolUse:Bash hook succeeded: Success
+⎿  On branch main
+Your branch is up to date with 'origin/main'.
+
+Changes not staged for commit:
+(use "git add <file>..." to update what will be committed)
+(use "git restore <file>..." to discard changes in working directory)
+modified:   package.json
+modified:   yarn.lock
+
+Untracked files:
+(use "git add <file>..." to include in what will be committed)
+.claude/diary/
+.yarn/
+.yarnrc.yml
+mise.toml
+
+no changes added to commit (use "git add" and/or "git commit -a")
+⎿  PostToolUse:Bash hook succeeded
+
+∴ Thinking…
+
+Hm, git fetch říká že jsme up to date s origin/main. Takže vlastně není co stahovat. Ale máme lokální změny v package.json a yarn.lock.
+
+Uživatel možná myslel že tam jsou nějaké vzdálené změny. Podívám se jestli jsou nějaké nové commity na remote které bychom měli pullnout.
+
+● Bash(git log HEAD..origin/main --oneline)
+⎿  PreToolUse:Bash hook succeeded: Success
+⎿  (No content)
+⎿  PostToolUse:Bash hook succeeded
+
+∴ Thinking…
+
+Prázdný output - nejsou žádné nové commity na origin/main. Takže repository je aktuální.
+
+Ale máme lokální změny v package.json a yarn.lock. Možná se uživatel ptal obecně "co tam je" - měl bych ukázat co se změnilo v posledních commitech a co jsou ty lokální změny.
+
+● Bash(git log -5 --oneline --decorate)
+⎿  PreToolUse:Bash hook succeeded: Success
+⎿  b4caa48 (HEAD -> main, origin/main, origin/HEAD) fix: Strip .local suffix from hostname for cross-platform consistency (#103)
+ed933aa docs: Add Slack Bridge vs Claude for Slack comparison table (#99)
+dc790e5 fix: Cross-host notifications now work (v0.19.4) (#101)
+45562ef fix: Mobile empty state duplicate messages (v0.19.3) (#100)
+6a2eef0 (tag: v0.19.2) Merge pull request #98 from 23blocks-OS/fix/peer-mesh-propagation
+⎿  PostToolUse:Bash hook succeeded
+
+✻ Mulling… (Esc to interrupt · 26s · ↓ 847 tokens · thinking)
+
+─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+❯ 
+─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+Model: Sonnet 4.5 | Style: default | Ctx: 63.5k | Ctx(u): 39.7% | Session: 1hr 58m                                                                                                                   63552 tokens
+6 files +7793 -5297                                                                                                                                                              current: 2.1.19 · latest: 2.1.19
+

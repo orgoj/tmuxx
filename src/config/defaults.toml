@@ -22,19 +22,26 @@ priority = 100
   # Determines state based on the indicator block ABOVE the separator.
   # NOTE: Layout stripping removes the footer region, so we match up to the prompt.
   [[agents.state_rules]]
-  status = "processing" # Fallback if block matches but indicator is unknown
+  status = "idle" # Fallback is now IDLE because if we match the structure, we see a prompt.
   # Capture everything up to the separator as indicator. Handle optional │ in separators.
-  pattern = '''(?ms)(?P<indicator>.*)\n[ \t]*[│]?─{10,}.*?\n[ \t]*[│]?.*❯[^\n]*\s*$'''
+  # Support both solid (─) and dashed (╌) lines.
+  # Support body capture and suffix (content after prompt, e.g. help text).
+  # Use (?:^|\n) to robustly match line boundaries.
+  # Use non-greedy indicator (.*?) to start from the top of the block.
+  # Use [^\n]*❯ for prompt to prevent swallowing body lines.
+  # Use [│]* instead of [│]? to handle multiple pipe characters (e.g. from tmux split panes).
+  pattern = '''(?ms)(?P<indicator>.*?)(?:^|\n)[ \t]*[│]*[─╌]{10,}.*?(?:$|\n)(?P<body>.*?)(?:^|\n)[ \t]*[│]*[^\n]*❯(?P<suffix>.*)$'''
   
+  # Refinement: Detect questions in the body to switch to awaiting_approval
+  [[agents.state_rules.refinements]]
+  group = "body"
+  pattern = "(?i)Do you want to"
+  status = "awaiting_approval"
   [[agents.state_rules.refinements]]
   group = "indicator"
-  pattern = "Baked"
-  status = "idle"
+  pattern = '''(?is)(?:Mulling|Thinking)[^\n]*\s*\z'''
+  status = "processing"
 
-  [agents.layout]
-  # Defines the separator line above the footer.
-  # Everything below the LAST match of this line is treated as the "Footer" and ignored.
-  footer_separator = '''(?m)^[ \t]*[│]?─{10,}.*?$'''
 
   # 2. Specialized Approvals
   [[agents.state_rules]]
@@ -76,7 +83,9 @@ priority = 100
   status = "processing"
   pattern = '''(?mx)
     (?:
-      ^[ \t]*[✽⎿✻]\s+.*   # Spinner or continuation
+      ^[ \t]*[✽⎿✻✢*∴]\s+.*   # Spinner or continuation (Added ✢, *, ∴)
+      |
+      (?:Mulling|Thinking)…
       |
       ^[ \t]*●\s+.*      # Tool use bullet
       |

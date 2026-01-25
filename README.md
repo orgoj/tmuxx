@@ -151,7 +151,24 @@ tmuxcc --set debug_mode=true
 
 # Initialize default config file
 tmuxcc --init-config
+
+# Run regression tests (see tests/README.md for details)
+tmuxcc test --dir tests/fixtures/claude
 ```
+
+### Regression Testing
+
+TmuxCC includes a built-in regression testing suite to verify agent state detection logic against captured pane content.
+
+```bash
+# Run tests for a specific agent
+tmuxcc test --dir tests/fixtures/claude
+
+# Capture a new test fixture from a running tmux pane
+./tests/capture.sh claude cc-ai-maestro idle "my_description"
+```
+
+See [tests/README.md](tests/README.md) for more details.
 
 ### Wrapper Script for Reliable Focus (Recommended)
 

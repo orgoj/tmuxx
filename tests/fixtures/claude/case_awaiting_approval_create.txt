@@ -1,0 +1,10 @@
+  43 echo "  ai-maestro-restart   - Restart the server"
+  44 echo "  ai-maestro-logs      - View logs"
+  45 echo "  pm2 monit            - Monitor all PM2 processes"
+╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌…
+ Do you want to create ai-maestro-start?
+ ❯ 1. Yes
+   2. Yes, allow all edits in bin/ during this session (shift+Tab)
+   3. No
+
+ Esc to cancel · Tab to add additional instructions

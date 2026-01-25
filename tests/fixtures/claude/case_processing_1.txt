@@ -1,0 +1,105 @@
+149     dev)
+150         cmd_dev
+151         ;;
+152     -h|--help|help|"")
+153         show_help
+154         ;;
+155     *)
+156         echo "❌ Unknown command: $1"
+157         echo ""
+158         show_help
+159         exit 1
+160         ;;
+161 esac
+⎿  PostToolUse:Write hook succeeded: Success
+
+● Bash(chmod +x ~/bin/ai-maestro)
+⎿  PreToolUse:Bash hook succeeded: Success
+⎿  (No content)
+⎿  PostToolUse:Bash hook succeeded
+
+∴ Thinking…
+
+Hotovo! Vytvořil jsem unified skript ~/bin/ai-maestro s těmito příkazy:
+- start - spustí v produkci přes PM2
+- stop - zastaví
+- restart - restartuje
+- logs - zobrazí logy
+- status - ukáže status
+- dev - spustí dev mode bez PM2
+- bez parametru nebo --help zobrazí nápovědu
+
+Zkusím to otestovat.
+
+● Bash(~/bin/ai-maestro)
+⎿  PreToolUse:Bash hook succeeded: Success
+⎿  AI Maestro - Management Script
+
+Usage: ai-maestro [command]
+
+Commands:
+start       Start AI Maestro in production mode (PM2)
+stop        Stop AI Maestro
+restart     Restart AI Maestro
+logs        View logs (real-time)
+status      Show current status
+dev         Start in development mode (no PM2)
+
+Examples:
+ai-maestro start     # Start production server
+ai-maestro dev       # Start dev server with hot reload
+ai-maestro logs      # Follow logs
+⎿  PostToolUse:Bash hook succeeded
+
+∴ Thinking…
+
+Perfektní! Skript funguje. Ukážu mu ještě status.
+
+● Bash(~/bin/ai-maestro status)
+⎿  PreToolUse:Bash hook succeeded: Success
+⎿  ❌ AI Maestro is NOT running
+
+Use 'ai-maestro start' to start it
+⎿  PostToolUse:Bash hook succeeded
+
+∴ Thinking…
+
+Super! Skript je hotový a funguje. Shrnu co jsem vytvořil.
+
+● Hotovo! ✅ Vytvořil jsem unified skript ~/bin/ai-maestro s těmito příkazy:
+
+Použití:
+ai-maestro              # Zobrazí help
+ai-maestro start        # Spustí produkci (PM2)
+ai-maestro stop         # Zastaví
+ai-maestro restart      # Restartuje
+ai-maestro logs         # Zobrazí logy
+ai-maestro status       # Stav serveru
+ai-maestro dev          # Dev mode (bez PM2)
+
+Momentální stav:
+- ❌ AI Maestro není spuštěný
+- ✅ Skript je nainstalovaný v ~/bin/ai-maestro
+- ✅ Není nastavený autostart při spuštění stroje (jak jsi chtěl)
+
+Pro spuštění:
+ai-maestro start     # Produkce na http://localhost:23000
+
+Pro development:
+ai-maestro dev       # Hot reload
+
+Skript automaticky detekuje jestli už běží, takže můžeš klidně volat start vícekrát.
+
+✻ Churned for 50s
+
+❯ stahni git aktalizace, napis mi co tam je a update
+⎿  UserPromptSubmit hook succeeded: Success
+
+* Mulling… (Esc to interrupt · 2s · ↑ 0 tokens)
+
+─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+❯ 
+─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+Model: Sonnet 4.5 | Style: default | Ctx: 62.7k | Ctx(u): 39.2% | Session: 1hr 33m                                                                                                                   62652 tokens
+6 files +7793 -5297                                                                                                                                                              current: 2.1.19 · latest: 2.1.19
+

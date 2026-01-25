@@ -64,6 +64,12 @@ enum Commands {
         #[arg(short, long)]
         name: Option<String>,
     },
+    /// Run regression tests against fixture files
+    Test {
+        /// Directory containing test fixtures
+        #[arg(long, default_value = "tests/fixtures")]
+        dir: PathBuf,
+    },
 }
 
 #[tokio::main]
@@ -77,6 +83,10 @@ async fn main() -> Result<()> {
             agent_name: name,
         })
         .await;
+    }
+
+    if let Some(Commands::Test { dir }) = cli.command {
+        return tmuxcc::cmd::test::run_test(tmuxcc::cmd::test::TestArgs { dir }).await;
     }
 
     // Show config path and exit
