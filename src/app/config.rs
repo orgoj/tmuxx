@@ -66,6 +66,18 @@ pub struct Config {
     /// Generic agent definitions (Merged from defaults + user config)
     #[serde(default)]
     pub agents: Vec<AgentConfig>,
+
+    /// Default color for agent names in the tree
+    #[serde(default = "default_agent_name_color")]
+    pub agent_name_color: String,
+
+    /// Color for selected item background (cursor)
+    #[serde(default = "default_current_item_bg_color")]
+    pub current_item_bg_color: String,
+
+    /// Color for multi-selected items background (checked). None = no background change.
+    #[serde(default)]
+    pub multi_selection_bg_color: Option<String>,
 }
 
 fn default_poll_interval() -> u64 {
@@ -104,9 +116,14 @@ fn default_log_actions() -> bool {
     true
 }
 
-fn default_agent_color() -> String {
-    "cyan".to_string()
+fn default_agent_name_color() -> String {
+    "#000000".to_string()
 }
+
+fn default_current_item_bg_color() -> String {
+    "#4a4a4a".to_string()
+}
+
 
 /// Configurable Agent Definition
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -118,8 +135,12 @@ pub struct AgentConfig {
     pub name: String,
 
     /// Agent color theme (e.g. "magenta", "blue", "green")
-    #[serde(default = "default_agent_color")]
-    pub color: String,
+    #[serde(default)]
+    pub color: Option<String>,
+
+    /// Agent background color (e.g. "black", "red")
+    #[serde(default)]
+    pub background_color: Option<String>,
 
     /// Priority (higher wins)
     #[serde(default)]
@@ -223,6 +244,9 @@ impl Default for Config {
             hide_bottom_input: default_hide_bottom_input(),
             log_actions: default_log_actions(),
             agents: Vec::new(),
+            agent_name_color: default_agent_name_color(),
+            current_item_bg_color: default_current_item_bg_color(),
+            multi_selection_bg_color: None,
         }
     }
 }

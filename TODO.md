@@ -1,11 +1,12 @@
 # TODO - tmuxcc
 
-- definice barvy pozadi pro typ agenta
-
 - generic shell poznat ze bezi tuio aplikace a neni to procesing, asi podle ramecku a nebo u mc je dole help lista (to by mohla byt primo detekce mc) umime udelat jakoukoliv detekci a to jmeno se pak objevi jako stav u panleu?
+
+- oprava detekce stavu claude - spatne to detekuje nektrere stavy musime projit priklady co nastanou
 
 - Configurable different mode for TODO section of screen, want to see beginning of TODO.md file if in project or other configurable name, multiple names and glob - first found is displayed
 
+- slected pane rychly filtr - defailt binding s - prepina mezi zobrazenim selected a normalnim
 
 - jak poznat commandy co bezi v ssh ?
 

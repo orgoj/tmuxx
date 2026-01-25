@@ -88,7 +88,8 @@ pub async fn run_learn(args: LearnArgs) -> Result<()> {
     let definition = AgentConfig {
         id: name.to_lowercase().replace(' ', "-"),
         name: name.clone(),
-        color: "cyan".to_string(),
+        color: Some("cyan".to_string()),
+        background_color: None,
         priority: 10,
         matchers: vec![MatcherConfig::Command {
             pattern: regex::escape(&target.command),

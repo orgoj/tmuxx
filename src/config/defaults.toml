@@ -1,10 +1,11 @@
-# Default Agent Definitions
 # These are loaded first, then overridden by user config.
+agent_name_color = "#000000"
+current_item_bg_color = "#4a4a4a"
 
 [[agents]]
 id = "claude"
 name = "Claude"
-color = "magenta"
+background_color = "#fce4fc"
 priority = 100
   default_status = "processing"
   
@@ -95,7 +96,7 @@ priority = 100
 [[agents]]
 id = "gemini"
 name = "Gemini"
-color = "yellow"
+background_color = "#fcfce0"
 priority = 90
   [[agents.matchers]]
   type = "command"
@@ -108,7 +109,7 @@ priority = 90
 [[agents]]
 id = "opencode"
 name = "OpenCode"
-color = "blue"
+background_color = "#e6f3ff"
 priority = 85
   [[agents.matchers]]
   type = "command"
@@ -121,7 +122,7 @@ priority = 85
 [[agents]]
 id = "codex_cli"
 name = "Codex"
-color = "green"
+background_color = "#eaffea"
 priority = 80
   [[agents.matchers]]
   type = "command"
@@ -134,6 +135,7 @@ priority = 80
 [[agents]]
 id = "generic_shell"
 name = "shell"
+background_color = "#eaffe3"
 priority = 10
   # Default for Terminal: if no prompt is seen, it's busy (processing)
   default_status = "processing"

@@ -152,8 +152,12 @@ impl AgentParser for UniversalParser {
         &self.config.name
     }
 
-    fn agent_color(&self) -> &str {
-        &self.config.color
+    fn agent_color(&self) -> Option<&str> {
+        self.config.color.as_deref()
+    }
+    
+    fn agent_background_color(&self) -> Option<&str> {
+        self.config.background_color.as_deref()
     }
 
     fn agent_type(&self) -> AgentType {

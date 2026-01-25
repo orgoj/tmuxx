@@ -141,7 +141,7 @@ impl MonitorTask {
                 let mut agent = MonitoredAgent::new(
                     format!("{}-{}", target, pane.pid),
                     parser.agent_name().to_string(),
-                    parser.agent_color().to_string(),
+                    parser.agent_color().map(|s| s.to_string()),
                     target,
                     pane.session.clone(),
                     pane.window,
@@ -149,6 +149,7 @@ impl MonitorTask {
                     pane.pane,
                     pane.path.clone(),
                     parser.agent_type(),
+                    parser.agent_background_color().map(|s| s.to_string()),
                     pane.pid,
                 );
                 agent.status = status;

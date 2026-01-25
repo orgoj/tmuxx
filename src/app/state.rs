@@ -149,6 +149,8 @@ pub struct AppState {
     last_tick: Instant,
     /// System resource statistics
     pub system_stats: SystemStats,
+    /// Whether the terminal likely supports TrueColor
+    pub truecolor_supported: bool,
 }
 
 impl AppState {
@@ -177,6 +179,12 @@ impl AppState {
             tick: 0,
             last_tick: Instant::now(),
             system_stats: SystemStats::new(),
+            truecolor_supported: std::env::var("COLORTERM")
+                .map(|v| v.to_lowercase().contains("truecolor") || v.contains("24bit"))
+                .unwrap_or(false)
+                || std::env::var("TERM")
+                    .map(|v| v.contains("truecolor"))
+                    .unwrap_or(false),
         }
     }
 

@@ -193,7 +193,9 @@ pub struct MonitoredAgent {
     /// Human-readable name (from config or command)
     pub name: String,
     /// Agent color theme (from config, e.g. "magenta")
-    pub color: String,
+    pub color: Option<String>,
+    /// Background color theme (from config, e.g. "black")
+    pub background_color: Option<String>,
     /// Tmux target (e.g., "main:0.1")
     pub target: String,
     /// Session name
@@ -230,7 +232,7 @@ impl MonitoredAgent {
     pub fn new(
         id: String,
         name: String,
-        color: String,
+        color: Option<String>,
         target: String,
         session: String,
         window: u32,
@@ -238,6 +240,7 @@ impl MonitoredAgent {
         pane: u32,
         path: String,
         agent_type: AgentType,
+        background_color: Option<String>,
         pid: u32,
     ) -> Self {
         let now = Instant::now();
@@ -245,6 +248,7 @@ impl MonitoredAgent {
             id,
             name,
             color,
+            background_color,
             target,
             session,
             window,
@@ -389,6 +393,7 @@ mod tests {
             1,
             "/home/user/project".to_string(),
             AgentType::ClaudeCode,
+            None,
             12345,
         );
         assert_eq!(agent.target, "main:0.1");
