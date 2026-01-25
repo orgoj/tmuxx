@@ -61,7 +61,7 @@ impl ClaudeCodeParser {
                 r"(?i)MCP\s+tool|Do you want to use.*?MCP|Allow.*?MCP"
             ).unwrap(),
             general_approval_pattern: Regex::new(
-                r"(?i)\[y/n\]|\[Y/n\]|\[yes/no\]|\(Y\)es\s*/\s*\(N\)o|Yes\s*/\s*No|y/n|Allow\?|Do you want to (allow|proceed|continue|run|execute)"
+                r"(?i)\[y/n\]|\[Y/n\]|\[yes/no\]|\(Y\)es\s*/\s*\(N\)o|Yes\s*/\s*No|y/n|Allow\?|Do you want to (allow|proceed|continue|run|execute|make|edit|write|create|delete)"
             ).unwrap(),
 
             // Subagent patterns for Claude Code's Task tool
@@ -215,10 +215,25 @@ impl ClaudeCodeParser {
             return None;
         }
 
-        // Find the last prompt marker (❯ or >) - anything after this is user input area
+        // Find the last prompt marker (❯ or >)
+        // BUT: If the arrow is on a numbered choice line (e.g., "❯ 1. Option"),
+        // it's a selection indicator, not a prompt boundary
+        let choice_pattern = Regex::new(r"^\s*(?:❯\s*)?(\d+)\.\s+(.+)$").ok()?;
+
         let last_prompt_idx = lines.iter().rposition(|line| {
             let trimmed = line.trim();
-            trimmed.starts_with('❯') || (trimmed.starts_with('>') && trimmed.len() < 3)
+            // Check if this is a bare prompt (❯ with very short text) OR
+            // an arrow that's NOT part of a numbered choice
+            if trimmed.starts_with('❯') {
+                // If it's an arrow on a numbered choice, it's NOT a boundary
+                if choice_pattern.is_match(line) {
+                    return false;
+                }
+                // Otherwise it's a prompt boundary (bare "❯" prompt)
+                return true;
+            }
+            // Short > is also a prompt marker
+            trimmed.starts_with('>') && trimmed.len() < 3
         });
 
         // If there's a prompt marker, only look BEFORE it for choices
@@ -237,9 +252,6 @@ impl ClaudeCodeParser {
         let mut question = String::new();
         let mut first_choice_idx = None;
         let mut last_choice_idx = None;
-
-        // Pattern for numbered choices: "1. Option text" or "  1. Option text"
-        let choice_pattern = Regex::new(r"^\s*(\d+)\.\s+(.+)$").ok()?;
 
         for (i, line) in check_lines.iter().enumerate() {
             let trimmed = line.trim();
@@ -597,6 +609,171 @@ This is just normal text.
             matches!(status, AgentStatus::Idle),
             "Expected Idle (no false positive), got {:?}",
             status
+        );
+    }
+}
+
+// Data-driven test cases for approval detection
+// Easy to extend with new cases - just add to the array
+#[test]
+fn test_approval_detection_cases() {
+    struct TestCase {
+        name: &'static str,
+        content: &'static str,
+        expected_status: ExpectedStatus,
+    }
+
+    #[derive(Debug, PartialEq)]
+    enum ExpectedStatus {
+        Idle,
+        AwaitingApproval,
+        Unknown,
+    }
+
+    let cases: &[TestCase] = &[
+        // Arrow on choice 1
+        TestCase {
+            name: "arrow on choice 1",
+            content: r#"Do you want to make this edit to CLAUDE.md?
+❯ 1. Yes
+  2. Yes, allow all edits during this session (shift+Tab)
+  3. No
+
+Esc to cancel · Tab to add additional instructions"#,
+            expected_status: ExpectedStatus::AwaitingApproval,
+        },
+        // Arrow on choice 2
+        TestCase {
+            name: "arrow on choice 2",
+            content: r#"Do you want to make this edit to CLAUDE.md?
+  1. Yes
+❯ 2. Yes, allow all edits during this session (shift+Tab)
+  3. No
+
+Esc to cancel · Tab to add additional instructions"#,
+            expected_status: ExpectedStatus::AwaitingApproval,
+        },
+        // Arrow on choice 3 (CRITICAL - user reported bug)
+        TestCase {
+            name: "arrow on choice 3",
+            content: r#"Do you want to make this edit to CLAUDE.md?
+  1. Yes
+  2. Yes, allow all edits during this session (shift+Tab)
+❯ 3. No
+
+Esc to cancel · Tab to add additional instructions"#,
+            expected_status: ExpectedStatus::AwaitingApproval,
+        },
+        // No arrow, just numbered choices
+        TestCase {
+            name: "no arrow numbered choices",
+            content: r#"Do you want to make this edit to CLAUDE.md?
+  1. Yes
+  2. Yes, allow all edits during this session
+  3. No"#,
+            expected_status: ExpectedStatus::AwaitingApproval,
+        },
+        // Arrow in middle of 5 choices
+        TestCase {
+            name: "arrow in middle of 5 choices",
+            content: r#"Select an option:
+  1. First choice
+❯ 2. Second choice
+  3. Third choice
+  4. Fourth choice
+  5. Fifth choice"#,
+            expected_status: ExpectedStatus::AwaitingApproval,
+        },
+        // Prompt only (no choices) - should be Idle
+        TestCase {
+            name: "prompt only no choices",
+            content: r#"Some previous output
+
+❯ "#,
+            expected_status: ExpectedStatus::Idle,
+        },
+        // Empty content
+        TestCase {
+            name: "empty content",
+            content: "",
+            expected_status: ExpectedStatus::Unknown,
+        },
+        // Regular output
+        TestCase {
+            name: "regular output",
+            content: r#"This is some regular output
+with multiple lines
+and no approval prompt"#,
+            expected_status: ExpectedStatus::Idle,
+        },
+        // Yes/no words but not a prompt
+        TestCase {
+            name: "yes no words not prompt",
+            content: r#"The answer could be yes or no
+depending on what you ask."#,
+            expected_status: ExpectedStatus::Idle,
+        },
+        // Yes/No button style
+        TestCase {
+            name: "yes no button style",
+            content: r#"Do you want to allow this action?
+
+  Yes
+  Yes, and don't ask again for this session
+  No"#,
+            expected_status: ExpectedStatus::AwaitingApproval,
+        },
+        // Text y/n prompt
+        TestCase {
+            name: "text yn prompt",
+            content: r#"Allow this edit? [y/n]"#,
+            expected_status: ExpectedStatus::AwaitingApproval,
+        },
+        // File edit specific prompt
+        TestCase {
+            name: "file edit prompt",
+            content: r#"Do you want to edit src/main.rs?"#,
+            expected_status: ExpectedStatus::AwaitingApproval,
+        },
+        // Bash command prompt
+        TestCase {
+            name: "bash command prompt",
+            content: r#"Do you want to run this command?
+```bash
+cargo test
+```"#,
+            expected_status: ExpectedStatus::AwaitingApproval,
+        },
+    ];
+
+    let parser = ClaudeCodeParser::new();
+    let mut failures = Vec::new();
+
+    for (i, case) in cases.iter().enumerate() {
+        let status = parser.parse_status(case.content);
+        let matches = match (&case.expected_status, &status) {
+            (ExpectedStatus::Idle, AgentStatus::Idle) => true,
+            (ExpectedStatus::Unknown, AgentStatus::Unknown) => true,
+            (ExpectedStatus::AwaitingApproval, AgentStatus::AwaitingApproval { .. }) => true,
+            _ => false,
+        };
+
+        if !matches {
+            failures.push(format!(
+                "Case {}: '{}' - expected {:?}, got {:?}\nContent: {:?}",
+                i + 1,
+                case.name,
+                case.expected_status,
+                status,
+                case.content
+            ));
+        }
+    }
+
+    if !failures.is_empty() {
+        panic!(
+            "\n=== Approval Detection Test Failures ===\n{}\n",
+            failures.join("\n")
         );
     }
 }

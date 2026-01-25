@@ -8,6 +8,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Fixed
+- **Claude Code Approval Prompt Detection**: Fixed detection of numbered choice prompts when arrow (❯) is on choices other than the first
+  - Arrow can now appear on any choice line (1, 2, 3, etc.) and still be detected correctly
+  - Updated regex pattern to properly match lines with leading spaces: `^\s*(?:❯\s*)?(\d+)\.\s+(.+)$`
+  - Arrow on choice lines is now treated as selection indicator, not prompt boundary
+  - Improved performance by removing duplicate regex compilation
 - **tmuxcc-wrapper.sh Session Creation**: Fixed wrapper script to properly create tmuxcc session
   - Now creates bash session and sends tmuxcc command via send-keys (instead of direct execution)
   - Uses full path to tmuxcc binary to avoid PATH issues inside tmux
