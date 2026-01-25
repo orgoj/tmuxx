@@ -61,22 +61,7 @@ impl Styles {
         Style::default().fg(Color::Cyan)
     }
 
-    // Agent type colors
-    pub fn claude_code() -> Style {
-        Style::default().fg(Color::Magenta)
-    }
 
-    pub fn opencode() -> Style {
-        Style::default().fg(Color::Blue)
-    }
-
-    pub fn codex_cli() -> Style {
-        Style::default().fg(Color::Green)
-    }
-
-    pub fn gemini_cli() -> Style {
-        Style::default().fg(Color::Yellow)
-    }
 
     // Subagent styles
     pub fn subagent_running() -> Style {
