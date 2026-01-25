@@ -9,6 +9,7 @@ pub struct UniversalParser {
     matchers: Vec<CompiledMatcher>,
     state_rules: Vec<CompiledStateRule>,
     subagent_rules: Option<CompiledSubagentRules>,
+    layout_rules: Option<CompiledLayoutRules>,
 }
 
 enum CompiledMatcher {
@@ -34,6 +35,11 @@ struct CompiledSubagentRules {
     start: Regex,
     running: Regex,
     complete: Regex,
+}
+
+struct CompiledLayoutRules {
+    footer_separator: Option<Regex>,
+    header_separator: Option<Regex>,
 }
 
 impl UniversalParser {
@@ -97,12 +103,47 @@ impl UniversalParser {
             }
         });
 
+        let layout_rules = config.layout.as_ref().map(|rules| {
+            CompiledLayoutRules {
+                footer_separator: rules.footer_separator.as_ref().and_then(|p| Regex::new(p).ok()),
+                header_separator: rules.header_separator.as_ref().and_then(|p| Regex::new(p).ok()),
+            }
+        });
+
         Self {
             config,
             matchers,
             state_rules,
             subagent_rules,
+            layout_rules,
         }
+    }
+    pub fn extract_body<'a>(&self, content: &'a str) -> &'a str {
+        let mut start = 0;
+        let mut end = content.len();
+
+        if let Some(layout) = &self.layout_rules {
+            // Apply Header Separator (skip everything before match)
+            if let Some(re) = &layout.header_separator {
+                if let Some(m) = re.find(content) {
+                    start = m.end();
+                }
+            }
+
+            // Apply Footer Separator (skip everything after match)
+            if let Some(re) = &layout.footer_separator {
+                let search_region = &content[start..];
+                // Find the LAST match of the footer separator
+                if let Some(m) = re.find_iter(search_region).last() {
+                    end = start + m.start();
+                }
+            }
+        }
+
+        if start >= end {
+            return "";
+        }
+        &content[start..end]
     }
 }
 
@@ -111,15 +152,14 @@ impl AgentParser for UniversalParser {
         &self.config.name
     }
 
+    fn agent_color(&self) -> &str {
+        &self.config.color
+    }
+
     fn agent_type(&self) -> AgentType {
-        // Map ID to hardcoded type if it matches
-        match self.config.id.as_str() {
-            "claude" => AgentType::ClaudeCode,
-            "gemini" => AgentType::GeminiCli,
-            "opencode" => AgentType::OpenCode,
-            "codex_cli" => AgentType::CodexCli,
-            _ => AgentType::Custom(self.config.name.clone()),
-        }
+        // Universal parser always uses Custom type with name from config
+        // This avoids hardcoding specific logic for specific agents in the code
+        AgentType::Custom(self.config.name.clone())
     }
 
     fn match_strength(&self, detection_strings: &[&str]) -> MatchStrength {
@@ -172,10 +212,13 @@ impl AgentParser for UniversalParser {
     fn parse_status(&self, content: &str) -> AgentStatus {
         // Look at a large enough chunk to see prompts and context.
         // For prompts anchored to the absolute end, we MUST include the end.
-        let recent_content = safe_tail(content, 8192);
+        let raw_content = safe_tail(content, 16384); // Increased buffer for safer context
+
+        // 1. Isolate Body (strip header/footer if configured)
+        let body_content = self.extract_body(raw_content);
 
         for rule in &self.state_rules {
-            if let Some(caps) = rule.re.captures(recent_content) {
+            if let Some(caps) = rule.re.captures(body_content) {
                 let mut status_str = rule.status.clone();
                 let details = caps.name("details").map(|m| m.as_str().to_string());
 
@@ -226,7 +269,7 @@ impl AgentParser for UniversalParser {
             }
         }
 
-        if content.trim().is_empty() {
+        if body_content.trim().is_empty() {
             AgentStatus::Idle
         } else {
             let def = self.config.default_status.as_deref().unwrap_or("idle");
@@ -238,6 +281,8 @@ impl AgentParser for UniversalParser {
             }
         }
     }
+
+
 
     fn parse_subagents(&self, content: &str) -> Vec<Subagent> {
         let rules = match &self.subagent_rules {
@@ -297,5 +342,70 @@ impl AgentParser for UniversalParser {
 
     fn rejection_keys(&self) -> &str {
         self.config.keys.reject.as_deref().unwrap_or("n")
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::app::config::{AgentConfig, AgentKeys};
+    use crate::agents::AgentStatus;
+
+    #[test]
+    fn test_parse_status_with_footer_stripping() {
+        let config = AgentConfig {
+            id: "claude".to_string(),
+            name: "Claude".to_string(),
+            color: "magenta".to_string(),
+            priority: 100,
+            matchers: vec![],
+            state_rules: vec![crate::app::config::StateRule {
+                status: "processing".to_string(),
+                // Updated regex to handle boxed input and multi-line capture
+                pattern: r"(?ms)(?P<indicator>.*)\n[ \t]*[│]?─{10,}.*?\n[ \t]*[│]?.*❯[^\n]*\s*$".to_string(),
+                approval_type: None,
+                refinements: vec![crate::app::config::Refinement {
+                    group: "indicator".to_string(),
+                    pattern: "Baked".to_string(),
+                    status: "idle".to_string(),
+                }],
+            }],
+            title_indicators: None,
+            default_status: Some("processing".to_string()),
+            subagent_rules: None,
+            keys: AgentKeys::default(),
+            layout: Some(crate::app::config::LayoutConfig {
+                // Handle optional │ prefix
+                footer_separator: Some(r"(?m)^[ \t]*[│]?─{10,}.*?$".to_string()),
+                header_separator: None,
+            }),
+        };
+
+        let parser = UniversalParser::new(config);
+
+        // Simulated output from ct-test (Boxed style)
+        let content = "\
+Some previous content...
+│  Remaining Work (9 tests)                                                                                        │
+│                                                                                                                  │
+│✻ Baked for 24m 53s                                                                                               │
+│                                                                                                                  │
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+❯ 
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+  Model: Sonnet 4.5 | Style: default | Ctx: 0 | Ctx(u): 0.0% | Session: 24m                                      
+  ⏵⏵ accept edits on (shift+Tab to cycle) · 7 files +112 -62                                                     
+";
+
+        // Verify the status detection
+        let status = parser.parse_status(content);
+        
+        // Should catch 'Baked' in the indicator group
+        match status {
+            AgentStatus::Idle => {
+                // Success!
+            },
+            status => panic!("Expected Idle status, got {:?}", status),
+        }
     }
 }

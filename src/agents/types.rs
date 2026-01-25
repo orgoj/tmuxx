@@ -190,6 +190,10 @@ impl fmt::Display for AgentStatus {
 pub struct MonitoredAgent {
     /// Unique identifier for this agent
     pub id: String,
+    /// Human-readable name (from config or command)
+    pub name: String,
+    /// Agent color theme (from config, e.g. "magenta")
+    pub color: String,
     /// Tmux target (e.g., "main:0.1")
     pub target: String,
     /// Session name
@@ -225,6 +229,8 @@ impl MonitoredAgent {
     #[allow(clippy::too_many_arguments)]
     pub fn new(
         id: String,
+        name: String,
+        color: String,
         target: String,
         session: String,
         window: u32,
@@ -237,6 +243,8 @@ impl MonitoredAgent {
         let now = Instant::now();
         Self {
             id,
+            name,
+            color,
             target,
             session,
             window,
@@ -372,6 +380,8 @@ mod tests {
     fn test_monitored_agent() {
         let agent = MonitoredAgent::new(
             "agent-1".to_string(),
+            "Claude Code".to_string(),
+            "magenta".to_string(),
             "main:0.1".to_string(),
             "main".to_string(),
             0,

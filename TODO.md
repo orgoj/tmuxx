@@ -1,10 +1,13 @@
 # TODO - tmuxcc
 
-- lepsi definice agentu [[agent_patterns]]
-  - detekce i podle parents vsech
-  - definovatelna detekce stavu klienta
-  - musime umet nadefinovat a detekovat jakohokoliv klienta
-  - musi jit udelat u obecna detekce bash k pozna jestli uz je na konci input prompt
+- definice barvy pozadi pro typ agenta
+
+- generic shell poznat ze bezi tuio aplikace a neni to procesing, asi podle ramecku a nebo u mc je dole help lista (to by mohla byt primo detekce mc) umime udelat jakoukoliv detekci a to jmeno se pak objevi jako stav u panleu?
+
+- Configurable different mode for TODO section of screen, want to see beginning of TODO.md file if in project or other configurable name, multiple names and glob - first found is displayed
+
+
+- jak poznat commandy co bezi v ssh ?
 
 ## Priority Tasks
 
@@ -159,20 +162,8 @@ requires_confirmation = true
 
 - Fix unnecessary | in session tree display - check tmux with project skill
 
-- Configurable different mode for TODO section of screen, want to see beginning of TODO.md file if in project or other configurable name, multiple names and glob - first found is displayed
-
 
 - Does not detect query tool - shows idle
-
-- TODO detection is broken, did not recognize this
-```
-││✢ Processing anthropics/skills… (esc to interrupt · ctrl+t to hide tasks · 1m 17s · ↑ 414 tokens)                  │
-││  ⎿  ◼ #1 Process anthropics/skills repository                                                                     │
-││     ◻ #2 Process fcakyon/claude-codex-settings repository                                                         │
-││     ◻ #3 Process nikiforovall.blog article                                                                        │
-││     ◻ #4 Process wshobson GitHub profile                                                                          │
-││     ◻ #5 Process wshobson/agents repository
-```
 
 
 

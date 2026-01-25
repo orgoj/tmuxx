@@ -17,6 +17,12 @@ This project uses **CLAUDE.md** as the canonical source of truth. Always refer t
 - **Idle = Prompt**: For shell/generic sessions, use `default_status = "processing"`. Transition to `Idle` ONLY when a prompt (`$#%>❯`) is detected at the very end.
 - **Selection Visibility**: Use a combination of light background (Rgb 230, 230, 230) and cursor symbols (`▶`) for high visibility across themes.
 
+### 4. Configuration-Driven Architecture (CRITICAL)
+- **NO HARDCODED AGENTS**: The code must NEVER contain hardcoded logic for specific agents (e.g., "Claude", "Gemini").
+- **Universal Logic**: All behavior must be derived solely from `defaults.toml` / `config.toml`.
+- **Generic Handling**: Use generic systems that interpret the configuration at runtime. Avoid `match agent_id` or similar patterns.
+- **Agent Names**: Always use the `name` field from the configuration for display, never hardcoded enum values.
+
 ## Testing Checklist
 1. **tmux capture-pane -pt <target>**: ALWAYS read the raw buffer before diagnosing. 
 2. **Priority Check**: Ensure `generic_shell` has priority 10+ if users have priority 1 catch-alls.

@@ -88,6 +88,7 @@ pub async fn run_learn(args: LearnArgs) -> Result<()> {
     let definition = AgentConfig {
         id: name.to_lowercase().replace(' ', "-"),
         name: name.clone(),
+        color: "cyan".to_string(),
         priority: 10,
         matchers: vec![MatcherConfig::Command {
             pattern: regex::escape(&target.command),
@@ -105,6 +106,7 @@ pub async fn run_learn(args: LearnArgs) -> Result<()> {
             approve: Some("y".to_string()),
             reject: Some("n".to_string()),
         },
+        layout: None,
     };
 
     // Output TOML

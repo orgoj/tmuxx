@@ -261,7 +261,6 @@ mod tests {
             path: "/home/user".to_string(),
             pid: 99999,
             cmdline: "".to_string(),
-            cmdline: "".to_string(),
             child_commands: Vec::new(),
             ancestor_commands: Vec::new(),
         };

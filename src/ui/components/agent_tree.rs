@@ -8,7 +8,7 @@ use ratatui::{
     Frame,
 };
 
-use crate::agents::{AgentStatus, AgentType, ApprovalType, MonitoredAgent, SubagentStatus};
+use crate::agents::{AgentStatus, ApprovalType, MonitoredAgent, SubagentStatus};
 use crate::app::AppState;
 
 /// Widget for displaying agents in a tree organized by session/window
@@ -181,13 +181,16 @@ impl AgentTreeWidget {
                         }
                     };
 
-                    let mut type_style = match &agent.agent_type {
-                        AgentType::ClaudeCode => Style::default().fg(Color::Magenta),
-                        AgentType::OpenCode => Style::default().fg(Color::Blue),
-                        AgentType::CodexCli => Style::default().fg(Color::Green),
-                        AgentType::GeminiCli => Style::default().fg(Color::Yellow),
-                        AgentType::Custom(_) => Style::default().fg(Color::Cyan),
-                        AgentType::Unknown => Style::default().fg(Color::DarkGray),
+                    let mut type_style = match agent.color.to_lowercase().as_str() {
+                        "magenta" => Style::default().fg(Color::Magenta),
+                        "blue" => Style::default().fg(Color::Blue),
+                        "green" => Style::default().fg(Color::Green),
+                        "yellow" => Style::default().fg(Color::Yellow),
+                        "cyan" => Style::default().fg(Color::Cyan),
+                        "red" => Style::default().fg(Color::Red),
+                        "white" => Style::default().fg(Color::White),
+                        "gray" | "grey" => Style::default().fg(Color::Gray),
+                        _ => Style::default().fg(Color::Cyan), // Default fallback
                     };
 
                     let mut path_style = Style::default().fg(Color::Cyan);
@@ -242,7 +245,7 @@ impl AgentTreeWidget {
                     let mut info_parts = vec![
                         Span::raw("  "),
                         Span::styled(format!("{}│  ", cont_prefix), divider_style),
-                        Span::styled(agent.agent_type.short_name(), type_style),
+                        Span::styled(agent.name.clone(), type_style),
                         Span::styled(" │ ", divider_style),
                         Span::styled(status_text, status_style),
                         Span::styled(" │ ", divider_style),

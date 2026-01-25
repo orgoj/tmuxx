@@ -140,6 +140,8 @@ impl MonitorTask {
                 // Create monitored agent
                 let mut agent = MonitoredAgent::new(
                     format!("{}-{}", target, pane.pid),
+                    parser.agent_name().to_string(),
+                    parser.agent_color().to_string(),
                     target,
                     pane.session.clone(),
                     pane.window,

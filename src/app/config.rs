@@ -104,6 +104,10 @@ fn default_log_actions() -> bool {
     true
 }
 
+fn default_agent_color() -> String {
+    "cyan".to_string()
+}
+
 /// Configurable Agent Definition
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct AgentConfig {
@@ -112,6 +116,10 @@ pub struct AgentConfig {
 
     /// Display Name
     pub name: String,
+
+    /// Agent color theme (e.g. "magenta", "blue", "green")
+    #[serde(default = "default_agent_color")]
+    pub color: String,
 
     /// Priority (higher wins)
     #[serde(default)]
@@ -137,9 +145,21 @@ pub struct AgentConfig {
     #[serde(default)]
     pub subagent_rules: Option<SubagentRules>,
 
+    /// Configuration for parsing output regions (separating body from footer)
+    #[serde(default)]
+    pub layout: Option<LayoutConfig>,
+
     /// Key bindings
     #[serde(default)]
     pub keys: AgentKeys,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct LayoutConfig {
+    /// Regex identifying the separator for the footer (content after this is ignored)
+    pub footer_separator: Option<String>,
+    /// Regex identifying the separator for the header (content before this is ignored)
+    pub header_separator: Option<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -248,6 +268,23 @@ impl Config {
         final_agents.sort_by(|a, b| b.priority.cmp(&a.priority));
 
         config.agents = final_agents;
+        config
+    }
+
+    /// Loads only the embedded default configuration (ignores user config)
+    pub fn load_defaults() -> Self {
+        let default_toml = include_str!("../config/defaults.toml");
+        #[derive(Deserialize)]
+        struct AgentsOnly {
+            agents: Vec<AgentConfig>,
+        }
+        let defaults: AgentsOnly = toml::from_str(default_toml).unwrap_or_else(|e| {
+            eprintln!("Internal Error: Failed to parse default config: {}", e);
+            AgentsOnly { agents: Vec::new() }
+        });
+
+        let mut config = Config::default();
+        config.agents = defaults.agents;
         config
     }
 

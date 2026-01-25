@@ -124,7 +124,7 @@ impl PanePreviewWidget {
 
             // Outer block for the entire summary area
             let outer_block = Block::default()
-                .title(format!(" {} ", agent.agent_type.short_name()))
+                .title(format!(" {} ", agent.name))
                 .borders(Borders::ALL)
                 .border_type(BorderType::Rounded)
                 .border_style(Style::default().fg(Color::Gray));
@@ -251,7 +251,7 @@ impl PanePreviewWidget {
         let agent = state.selected_agent();
 
         let (title, content) = if let Some(agent) = agent {
-            let title = format!(" Preview: {} ({}) ", agent.target, agent.agent_type);
+            let title = format!(" Preview: {} ({}) ", agent.target, agent.name);
 
             // Show approval details if awaiting
             let content = if let AgentStatus::AwaitingApproval {
@@ -307,7 +307,7 @@ impl PanePreviewWidget {
             .unwrap_or_else(|| area.width.saturating_sub(2) as usize);
 
         let (title, lines) = if let Some(agent) = agent {
-            let title = format!(" {} ({}) ", agent.target, agent.agent_type);
+            let title = format!(" {} ({}) ", agent.target, agent.name);
 
             let mut styled_lines: Vec<Line> = Vec::new();
 

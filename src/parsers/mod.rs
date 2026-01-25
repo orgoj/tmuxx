@@ -29,6 +29,9 @@ pub trait AgentParser: Send + Sync {
     /// Returns the name of the agent
     fn agent_name(&self) -> &str;
 
+    /// Returns the configured color for the agent
+    fn agent_color(&self) -> &str;
+
     /// Returns the AgentType for this parser
     fn agent_type(&self) -> AgentType;
 
@@ -136,7 +139,7 @@ mod tests {
 
     #[test]
     fn test_parser_registry() {
-        let registry = ParserRegistry::new();
+        let registry = ParserRegistry::with_config(&Config::load_defaults());
 
         // Test finding parsers with various detection strings
         let claude_pane = PaneInfo {
@@ -150,6 +153,7 @@ mod tests {
             pid: 1234,
             cmdline: "/usr/bin/claude".to_string(),
             child_commands: Vec::new(),
+            ancestor_commands: Vec::new(),
         };
         assert!(registry.find_parser_for_pane(&claude_pane).is_some());
 
@@ -164,6 +168,7 @@ mod tests {
             pid: 1235,
             cmdline: "opencode".to_string(),
             child_commands: Vec::new(),
+            ancestor_commands: Vec::new(),
         };
         assert!(registry.find_parser_for_pane(&opencode_pane).is_some());
 
@@ -179,6 +184,7 @@ mod tests {
             pid: 1236,
             cmdline: "-zsh".to_string(),
             child_commands: vec!["claude -c".to_string(), "claude".to_string()],
+            ancestor_commands: Vec::new(),
         };
         assert!(registry.find_parser_for_pane(&child_claude_pane).is_some());
     }

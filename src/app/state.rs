@@ -564,6 +564,8 @@ mod tests {
         // Add some agents
         state.agents.root_agents.push(MonitoredAgent::new(
             "1".to_string(),
+            "Claude".to_string(),
+            "magenta".to_string(),
             "main:0.0".to_string(),
             "main".to_string(),
             0,
@@ -575,6 +577,8 @@ mod tests {
         ));
         state.agents.root_agents.push(MonitoredAgent::new(
             "2".to_string(),
+            "OpenCode".to_string(),
+            "blue".to_string(),
             "main:0.1".to_string(),
             "main".to_string(),
             0,
@@ -598,6 +602,8 @@ mod tests {
     fn create_test_agent(id: &str, session: &str, pane_index: u32) -> MonitoredAgent {
         MonitoredAgent::new(
             id.to_string(),
+            "Test Agent".to_string(),
+            "cyan".to_string(),
             format!("{}:0.{}", session, pane_index),
             session.to_string(),
             0,

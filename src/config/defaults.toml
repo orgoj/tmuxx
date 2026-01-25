@@ -3,7 +3,8 @@
 
 [[agents]]
 id = "claude"
-name = "Claude Code"
+name = "Claude"
+color = "magenta"
 priority = 100
   default_status = "processing"
   
@@ -15,19 +16,24 @@ priority = 100
   type = "ancestor"
   pattern = "(?i)claude|anthropic|claude-code"
 
-  # STATE RULES (First match wins)
-
   # 1. Structural Prompt Block (Synthesis/Contextual)
   # Recognizes the two lines with the prompt between them.
-  # Determines state based on the indicator line ABOVE the block.
+  # Determines state based on the indicator block ABOVE the separator.
+  # NOTE: Layout stripping removes the footer region, so we match up to the prompt.
   [[agents.state_rules]]
   status = "processing" # Fallback if block matches but indicator is unknown
-  pattern = '''(?m)^[ \t]*(?P<indicator>[^\n]*)\n─{10,}.*?\n❯[^\n]*\n─{10,}.*?$'''
+  # Capture everything up to the separator as indicator. Handle optional │ in separators.
+  pattern = '''(?ms)(?P<indicator>.*)\n[ \t]*[│]?─{10,}.*?\n[ \t]*[│]?.*❯[^\n]*\s*$'''
   
   [[agents.state_rules.refinements]]
   group = "indicator"
   pattern = "Baked"
   status = "idle"
+
+  [agents.layout]
+  # Defines the separator line above the footer.
+  # Everything below the LAST match of this line is treated as the "Footer" and ignored.
+  footer_separator = '''(?m)^[ \t]*[│]?─{10,}.*?$'''
 
   # 2. Specialized Approvals
   [[agents.state_rules]]
@@ -88,7 +94,8 @@ priority = 100
 
 [[agents]]
 id = "gemini"
-name = "Gemini CLI"
+name = "Gemini"
+color = "yellow"
 priority = 90
   [[agents.matchers]]
   type = "command"
@@ -101,6 +108,7 @@ priority = 90
 [[agents]]
 id = "opencode"
 name = "OpenCode"
+color = "blue"
 priority = 85
   [[agents.matchers]]
   type = "command"
@@ -112,7 +120,8 @@ priority = 85
 
 [[agents]]
 id = "codex_cli"
-name = "Codex CLI"
+name = "Codex"
+color = "green"
 priority = 80
   [[agents.matchers]]
   type = "command"
@@ -125,7 +134,7 @@ priority = 80
 [[agents]]
 id = "generic_shell"
 name = "shell"
-priority = 0
+priority = 10
   # Default for Terminal: if no prompt is seen, it's busy (processing)
   default_status = "processing"
 
