@@ -147,8 +147,6 @@ requires_confirmation = true
 
 ## Other
 
--- --debug-log zapisova vsechen debug a co sposusti do ./.tmuxcc.log
-
 - Config for left column width: character count or percentage
 
 - Fix unnecessary | in session tree display - check tmux with project skill

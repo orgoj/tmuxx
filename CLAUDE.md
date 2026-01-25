@@ -146,9 +146,7 @@ Parsers check ALL detection strings to handle various detection scenarios.
 ### Testing Discipline
 
 - **INVOKE tmuxcc-testing skill**: MANDATORY before ANY testing - contains session structure, send-keys rules, tmux safety
-- **One key at a time**: Send ONE key, capture output, verify, then next - prevents destructive commands
-- **ct-test is sacred**: ONLY send keys to ct-test session, NO window numbers
-- **NEVER create random tmux sessions**: Use ONLY existing sessions (ct-test, cc-tmuxcc, etc.)
+- See tmuxcc-testing skill for complete testing workflow and safety rules
 
 ## Common Pitfalls
 
@@ -156,7 +154,7 @@ Parsers check ALL detection strings to handle various detection scenarios.
 2. **Unicode Safety**: Use `unicode-width` crate for text truncation (paths, titles)
 3. **tmux Escaping**: Pane content may contain ANSI codes - parsers handle raw text
 4. **Child Process Detection**: Agents run in shells need child process scanning
-5. **Multi-byte Characters**: Use `safe_tail()` helper for safe string slicing
+5. **Multi-byte Characters**: Use `safe_tail()` helper for safe string slicing; always use `.chars()` for character indexing, never byte slicing
 6. **Upstream Data Problems**: When a feature "doesn't work", check if upstream data exists FIRST (e.g., agent detection before testing focus functionality)
 7. **Config Integration Completeness**: When adding config options, verify they're actually used in implementation code, not just defined in Config struct
 8. **Ratatui Paragraph Wrapping**: To disable wrapping, omit `.wrap()` call entirely; don't use `Wrap { trim: true }` which controls trimming, not wrapping
@@ -206,11 +204,21 @@ All skills are in `.claude/skills/`:
    - **INVOKE before implementing features!**
    - WebSearch for libraries, rtfmbro MCP for docs
    - Ratatui 0.29 documentation via MCP
+   - Check trait implementations, verify method existence
 
 5. **`tmuxcc-changelog`** - TODO.md and CHANGELOG.md management
    - **INVOKE when completing tasks!**
    - Move completed work from TODO.md to CHANGELOG.md
    - Keep TODO.md clean and focused
+
+6. **`tmuxcc-planning`** - Implementation planning workflow
+   - **INVOKE before writing code!**
+   - Ask clarifying questions, explore codebase
+   - Expect 5-7 corrections in review
+   - Integration philosophy: coexistence over replacement
+
+7. **`tmuxcc-gemini-review`** - Gemini CLI code review
+   - Use for AI-powered code review before commits
 
 ### Problem Diagnosis
 
@@ -220,13 +228,10 @@ All skills are in `.claude/skills/`:
 
 ### Plan Review and Correction Cycles
 
-- When creating implementation plans, include explicit code patterns, not just high-level descriptions
-- Expect user technical review to catch edge cases (off-by-one, API misuse, config integration)
+- **INVOKE tmuxcc-planning skill** before writing implementation plans
 - User provides precise corrections with exact code examples - apply them before implementation
 - For complex bugs/features: use Task tool Explore → Plan workflow, expect user review phase before implementation begins
-- Before committing features: verify README documents user-facing behavior, CHANGELOG.md has entry, config options are documented
-- Use `git commit --only <file>` for selective commits while keeping other changes staged
-- Before committing: verify `git status` for unexpected staged files (diary hooks, other sessions may stage files)
+- See tmuxcc-planning skill for complete planning workflow and common mistakes
 
 ### Key Principles
 

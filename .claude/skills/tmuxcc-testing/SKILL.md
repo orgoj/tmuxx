@@ -109,7 +109,47 @@ tmux capture-pane -t ct-test -p  # Full screen, no tail!
 - Verify expected state
 - ONLY THEN send commands
 
-### 6. NEVER send keys to session where tmuxcc is RUNNING!
+### 6. ALWAYS test with actual config files!
+
+```bash
+# ❌ WRONG - unit tests pass but runtime fails
+cargo test  # Tests pass, but config.toml silently fails!
+
+# ✅ CORRECT - test with actual config file
+# 1. Add serde deny_unknown_fields to Config struct
+#[serde(deny_unknown_fields)]
+pub struct Config { ... }
+
+# 2. Test with actual ~/.config/tmuxcc/config.toml
+./target/release/tmuxcc --debug-config  # Shows loaded config
+
+# 3. Verify config parsing works, not just unit tests
+```
+
+**Why:** Unit tests ≠ working runtime config loading. Use `deny_unknown_fields` to catch errors early.
+
+### 7. Tmux Automation Pattern for Wrapper Scripts
+
+**When launching tools in tmux sessions, use send-keys pattern:**
+
+```bash
+# ❌ WRONG - direct execution fails if tool not in PATH
+tmux new-session -d -s name "/path/to/tmuxcc"
+# Session dies immediately if tool exits!
+
+# ✅ CORRECT - bash session + send-keys
+tmux new-session -d -s "$SESSION" bash
+FULL_PATH=$(command -v tmuxcc)  # Resolve full path
+tmux send-keys -t "$SESSION" "$FULL_PATH" Enter
+tmux attach-session -t "$SESSION"
+```
+
+**Why:**
+- Sessions stay alive even if tool crashes (bash keeps running)
+- Full path prevents PATH issues inside tmux
+- Allows error inspection after tool exits
+
+### 8. NEVER send keys to session where tmuxcc is RUNNING!
 
 - ❌ FATAL: `tmux send-keys -t ct-test "y"` when tmuxcc runs there
 - **Why:** tmuxcc forwards keys to monitored sessions → unintended approvals!

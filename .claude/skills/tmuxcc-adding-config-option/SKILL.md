@@ -80,3 +80,40 @@ See `show_detached_sessions` implementation:
 - Runtime tested in tmux
 
 Follow this exact pattern.
+
+## CRITICAL: Use serde deny_unknown_fields
+
+**ALWAYS add `deny_unknown_fields` to Config struct to catch typos early!**
+
+```rust
+#[serde(default, deny_unknown_fields)]
+pub struct Config {
+    // ...
+}
+```
+
+**Why:**
+- **Immediate feedback**: Config with typos fails at load time, not silently ignored
+- **User-friendly**: User gets error: "unknown field `collor` (did you mean `color`?)"
+- **Without this**: Typos silently ignored, feature "doesn't work" with no error message
+
+**Example of failure without deny_unknown_fields:**
+```toml
+# User types "collor" instead of "color"
+status_collor = "blue"  # Typo!
+
+# Without deny_unknown_fields: Silently ignored, status stays default color
+# With deny_unknown_fields: Error at startup, user sees typo immediately
+```
+
+**Testing:**
+```bash
+# Add typo to config.toml
+echo "wrong_field = true" >> ~/.config/tmuxcc/config.toml
+
+# Test with deny_unknown_fields
+./target/release/tmuxcc  # Should error: "unknown field `wrong_field`"
+
+# Remove typo
+sed -i '/wrong_field/d' ~/.config/tmuxcc/config.toml
+```

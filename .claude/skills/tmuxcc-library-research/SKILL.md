@@ -101,3 +101,49 @@ mcp__github__get_file_contents owner="ratatui" repo="ratatui" path="examples/pop
 - Community-standard solutions
 - Saves time and reduces bugs
 - Professional code quality
+
+## ALWAYS Check Trait Implementations
+
+**Before writing manual conversion code, check if library provides traits!**
+
+### Example: Key Conversion with tui-textarea
+
+```rust
+// ❌ WRONG - manual key mapping
+let input = match key {
+    KeyEvent { code: Char('c'), .. } => Input { key: Key::Char('c'), .. },
+    // ... 100 lines of manual mapping
+};
+
+// ✅ CORRECT - use Into trait that library provides
+use tui_textarea::Input;
+let input: Input = key_event.into();  // Library handles conversion!
+```
+
+**Check for traits BEFORE coding:**
+1. Read library docs for `From`, `Into`, `TryFrom` implementations
+2. Use `rtfmbro` MCP to search docs for "impl From" or "impl Into"
+3. Never write manual conversion if trait exists
+
+**Why:** Libraries maintain trait compatibility with crossterm versions. Manual mapping breaks when library updates.
+
+## ALWAYS Verify Method Existence in Codebase
+
+**Before referencing methods in plans, check they actually exist!**
+
+```bash
+# ❌ WRONG - assume method exists
+state.selected_agent()  # This method doesn't exist!
+
+# ✅ CORRECT - search codebase first
+rg "fn.*agent" src/app/state.rs  # Find actual method
+# Result: state.agents.get_agent(state.selected_index)
+```
+
+**Verification workflow:**
+1. Use Grep tool to search for method patterns: `rg "fn.*method_name"`
+2. Read actual implementation to see correct signature
+3. Copy exact pattern from codebase
+4. Never guess method names
+
+**Why:** Plans with non-existent methods waste time during implementation review.
