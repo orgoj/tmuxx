@@ -138,9 +138,26 @@ impl PanePreviewWidget {
                 .constraints([Constraint::Percentage(50), Constraint::Percentage(50)])
                 .split(inner_area);
 
-            // Left column: TODOs
+            // Left column: TODOs (from file or from Claude Code parsing)
             let mut todo_lines: Vec<Line> = Vec::new();
-            if !summary.todos.is_empty() {
+            if state.config.todo_from_file {
+                if let Some(todo) = &state.current_todo {
+                    todo_lines.push(Line::from(vec![Span::styled(
+                        "Project TODO:",
+                        Style::default()
+                            .fg(Color::Gray)
+                            .add_modifier(Modifier::BOLD),
+                    )]));
+                    for line in todo.lines() {
+                        todo_lines.push(Line::from(vec![Span::styled(line, Style::default().fg(Color::White))]));
+                    }
+                } else {
+                    todo_lines.push(Line::from(vec![Span::styled(
+                        "No Project TODO",
+                        Style::default().fg(Color::DarkGray),
+                    )]));
+                }
+            } else if !summary.todos.is_empty() {
                 todo_lines.push(Line::from(vec![Span::styled(
                     "TODOs:",
                     Style::default()
@@ -165,7 +182,7 @@ impl PanePreviewWidget {
                 )]));
             }
 
-            let todo_paragraph = Paragraph::new(todo_lines);
+            let todo_paragraph = Paragraph::new(todo_lines).wrap(ratatui::widgets::Wrap { trim: false });
             frame.render_widget(todo_paragraph, columns[0]);
 
             // Right column: Activity and tools

@@ -2,6 +2,10 @@
 agent_name_color = "#000000"
 current_item_bg_color = "#4a4a4a"
 
+# Display TODO from project files (TODO.md, etc.)
+todo_from_file = true
+todo_files = ["TODO.md", "NOTES.md", "TASKS.md", "README.md"]
+
 [[agents]]
 id = "claude"
 name = "Claude"

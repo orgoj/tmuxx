@@ -1,8 +1,6 @@
 # TODO - tmuxcc
 
 
-- Configurable different mode for TODO section of screen, want to see beginning of TODO.md file if in project or other configurable name, multiple names and glob - first found is displayed
-
 - selected pane rychly filtr - default binding s - prepina mezi zobrazenim selected a normalnim
 
 - jak poznat commandy co bezi v ssh ?

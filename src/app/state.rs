@@ -156,6 +156,8 @@ pub struct AppState {
     pub system_stats: SystemStats,
     /// Whether the terminal likely supports TrueColor
     pub truecolor_supported: bool,
+    /// Content of the project TODO file for the currently selected agent
+    pub current_todo: Option<String>,
 }
 
 impl AppState {
@@ -193,6 +195,7 @@ impl AppState {
             last_tick: Instant::now(),
             system_stats: SystemStats::new(),
             truecolor_supported,
+            current_todo: None,
         }
     }
 
@@ -558,6 +561,41 @@ impl AppState {
         if !visible.is_empty() && !visible.contains(&self.selected_index) {
             self.selected_index = visible[0];
         }
+    }
+
+    /// Refresh the current project TODO content based on the selected agent's path
+    pub fn refresh_project_todo(&mut self) {
+        if !self.config.todo_from_file {
+            self.current_todo = None;
+            return;
+        }
+
+        let path = if let Some(agent) = self.selected_agent() {
+            &agent.path
+        } else {
+            self.current_todo = None;
+            return;
+        };
+
+        if path.is_empty() {
+            self.current_todo = None;
+            return;
+        }
+
+        let mut todo_content = None;
+        for file in &self.config.todo_files {
+            let full_path = std::path::Path::new(path).join(file);
+            if full_path.exists() && full_path.is_file() {
+                // Read the first few lines
+                if let Ok(content) = std::fs::read_to_string(full_path) {
+                    // Limit to first 20 lines to keep it reasonable
+                    let lines: Vec<&str> = content.lines().take(20).collect();
+                    todo_content = Some(lines.join("\n"));
+                    break;
+                }
+            }
+        }
+        self.current_todo = todo_content;
     }
 }
 

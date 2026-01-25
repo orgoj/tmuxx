@@ -206,6 +206,9 @@ async fn run_loop(
                 // Clean up invalid selections
                 let max_idx = state.agents.root_agents.len();
                 state.selected_agents.retain(|&idx| idx < max_idx);
+
+                // Refresh TODO content for the newly selected/updated agent
+                state.refresh_project_todo();
             }
 
             // Handle keyboard and mouse events
@@ -244,6 +247,7 @@ async fn run_loop(
                                         let estimated_idx = rel_y / 4;
                                         if estimated_idx < agents_count {
                                             state.select_agent(estimated_idx);
+                                            state.refresh_project_todo();
                                         }
                                     }
                                 }
@@ -256,9 +260,11 @@ async fn run_loop(
                             }
                             MouseEventKind::ScrollUp => {
                                 state.select_prev();
+                                state.refresh_project_todo();
                             }
                             MouseEventKind::ScrollDown => {
                                 state.select_next();
+                                state.refresh_project_todo();
                             }
                             _ => {}
                         }
@@ -367,9 +373,11 @@ async fn run_loop(
                                 }
                                 Action::NextAgent => {
                                     state.select_next();
+                                    state.refresh_project_todo();
                                 }
                                 Action::PrevAgent => {
                                     state.select_prev();
+                                    state.refresh_project_todo();
                                 }
                                 Action::ToggleSelection => {
                                     state.toggle_selection();
@@ -528,9 +536,11 @@ async fn run_loop(
                                 }
                                 Action::ScrollUp => {
                                     state.select_prev();
+                                    state.refresh_project_todo();
                                 }
                                 Action::ScrollDown => {
                                     state.select_next();
+                                    state.refresh_project_todo();
                                 }
                                 Action::SendKeys(keys) => {
                                     let indices = state.get_operation_indices();

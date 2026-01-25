@@ -78,6 +78,27 @@ pub struct Config {
     /// Color for multi-selected items background (checked). None = no background change.
     #[serde(default)]
     pub multi_selection_bg_color: Option<String>,
+
+    /// Whether to display TODO from a file instead of parsing pane output
+    #[serde(default = "default_todo_from_file")]
+    pub todo_from_file: bool,
+
+    /// List of file names/patterns to look for TODO content (first found wins)
+    #[serde(default = "default_todo_files")]
+    pub todo_files: Vec<String>,
+}
+
+fn default_todo_from_file() -> bool {
+    true
+}
+
+fn default_todo_files() -> Vec<String> {
+    vec![
+        "TODO.md".to_string(),
+        "NOTES.md".to_string(),
+        "TASKS.md".to_string(),
+        "README.md".to_string(),
+    ]
 }
 
 fn default_poll_interval() -> u64 {
@@ -249,6 +270,8 @@ impl Default for Config {
             agent_name_color: default_agent_name_color(),
             current_item_bg_color: default_current_item_bg_color(),
             multi_selection_bg_color: None,
+            todo_from_file: default_todo_from_file(),
+            todo_files: default_todo_files(),
         }
     }
 }
