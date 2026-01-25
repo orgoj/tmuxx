@@ -1,15 +1,20 @@
 #!/bin/bash
-# Script to install tmuxcc binary to ~/bin after approval
+# Install tmuxcc binaries to ~/bin
 set -e
 
-SOURCE="target/release/tmuxcc"
-DEST="$HOME/bin/tmuxcc"
+declare -A FILES=(
+    ["target/release/tmuxcc"]="$HOME/bin/tmuxcc"
+    ["scripts/tmuxcc-wrapper.sh"]="$HOME/bin/tcc"
+)
 
-if [ ! -f "$SOURCE" ]; then
-    echo "Error: $SOURCE not found. Run 'cargo build --release' first."
-    exit 1
-fi
-
-cp "$SOURCE" "$DEST"
-echo "Installed: $DEST"
-ls -la "$DEST"
+for src in "${!FILES[@]}"; do
+    dst="${FILES[$src]}"
+    if [ -f "$src" ]; then
+        cp "$src" "$dst"
+        chmod +x "$dst"
+        echo "Installed: $dst"
+    else
+        echo "Error: $src not found" >&2
+        exit 1
+    fi
+done
