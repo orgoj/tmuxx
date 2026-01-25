@@ -63,6 +63,10 @@ pub struct Config {
     /// Whether to log all actions to the status bar (default: true)
     #[serde(default = "default_log_actions")]
     pub log_actions: bool,
+
+    /// Generic agent definitions
+    #[serde(default)]
+    pub agent_definitions: Vec<AgentDefinition>,
 }
 
 fn default_poll_interval() -> u64 {
@@ -101,13 +105,69 @@ fn default_log_actions() -> bool {
     true
 }
 
-/// Pattern for detecting agent types
+
+
+/// Legacy pattern for detecting agent types (deprecated in favor of AgentDefinition)
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct AgentPattern {
     /// Command pattern to match (regex)
     pub pattern: String,
     /// Name of the agent type
     pub agent_type: String,
+}
+
+/// Generic agent definition for flexible configuration
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct AgentDefinition {
+    /// Name of the agent (e.g. "Claude Code")
+    pub name: String,
+    
+    /// Regex patterns to match command/process lines
+    pub match_patterns: Vec<String>,
+    
+    /// Priority (higher wins)
+    #[serde(default)]
+    pub priority: u32,
+    
+    /// State detection rules
+    #[serde(default)]
+    pub state_rules: Vec<StateRule>,
+
+    /// Approval keys
+    #[serde(default)]
+    pub approval_keys: Option<String>, 
+
+     /// Rejection keys 
+    #[serde(default)]
+    pub rejection_keys: Option<String>,
+}
+
+/// Rule for detecting agent state from output
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct StateRule {
+    /// The target state (e.g., "processing", "awaiting_input", "error")
+    pub state: String,
+    
+    /// Pattern to match in the output
+    pub pattern: String,
+    
+    /// Search mode: "contains", "regex", "ends_with"
+    #[serde(default)]
+    pub mode: MatchMode,
+}
+
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq)]
+#[serde(rename_all = "snake_case")]
+pub enum MatchMode {
+    Regex,
+    Contains,
+    EndsWith,
+}
+
+impl Default for MatchMode {
+    fn default() -> Self {
+        MatchMode::Contains
+    }
 }
 
 impl Default for Config {
@@ -126,6 +186,32 @@ impl Default for Config {
             ignore_self: default_ignore_self(),
             hide_bottom_input: default_hide_bottom_input(),
             log_actions: default_log_actions(),
+            agent_definitions: vec![
+                AgentDefinition {
+                    name: "Generic Shell".to_string(),
+                    match_patterns: vec![
+                        // Match common shells (exact match or ending with shell name)
+                        r"^(?:.*/)?(bash|zsh|fish|sh|ksh)$".to_string(),
+                    ],
+                    priority: 0, // Low priority, fallback
+                    state_rules: vec![
+                        StateRule {
+                            state: "awaiting_input".to_string(),
+                            // Matches typical prompts: "user@host:path$ ", "sh-5.1$ ", "> "
+                            // Regex breakdown:
+                            // ^ - start of line (optional, implicit in some modes but good to be explicit if using regex mode)
+                            // .* - any characters (user, host, path)
+                            // [>$#%] - common prompt characters
+                            // \s* - optional trailing whitespace
+                            // $ - end of string
+                            pattern: r".*[>$#%]\s*$".to_string(),
+                            mode: MatchMode::Regex,
+                        },
+                    ],
+                    approval_keys: None,
+                    rejection_keys: None,
+                }
+            ],
         }
     }
 }

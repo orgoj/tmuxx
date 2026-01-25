@@ -5,7 +5,6 @@ use std::process::Command;
 use std::sync::OnceLock;
 use std::time::{Duration, Instant};
 
-/// Process info stored in cache
 #[derive(Clone, Debug)]
 struct ProcessInfo {
     command: String,
@@ -82,10 +81,10 @@ impl ProcessTreeCache {
             if info.parent_pid == Some(pid) {
                 // Add full command
                 commands.push(info.command.clone());
-                // Add base name
+                // Add base name (e.g. "python3" from "/usr/bin/python3")
                 if let Some(first) = info.command.split_whitespace().next() {
                     if let Some(base) = first.rsplit('/').next() {
-                        if base != info.command {
+                        if base != info.command && !base.is_empty() {
                             commands.push(base.to_string());
                         }
                     }
@@ -94,6 +93,27 @@ impl ProcessTreeCache {
                 self.collect_children(child_pid, commands, depth + 1, max_depth);
             }
         }
+    }
+
+    fn get_ancestor_commands(&self, pid: u32, max_steps: u32) -> Vec<String> {
+        let mut commands = Vec::new();
+        let mut current_pid = pid;
+        let mut steps = 0;
+
+        while steps < max_steps {
+            if let Some(info) = self.processes.get(&current_pid) {
+                if let Some(ppid) = info.parent_pid {
+                    if let Some(parent_info) = self.processes.get(&ppid) {
+                        commands.push(parent_info.command.clone());
+                        current_pid = ppid;
+                        steps += 1;
+                        continue;
+                    }
+                }
+            }
+            break;
+        }
+        commands
     }
 
     fn get_cmdline(&self, pid: u32) -> Option<String> {
@@ -138,6 +158,8 @@ pub struct PaneInfo {
     pub cmdline: String,
     /// Child process commands (for detecting running agents)
     pub child_commands: Vec<String>,
+    /// Ancestor process commands (for wrapper detection)
+    pub ancestor_commands: Vec<String>,
 }
 
 impl PaneInfo {
@@ -171,7 +193,9 @@ impl PaneInfo {
         // Use cached process tree for fast lookups
         let cache = get_process_cache().lock();
         let cmdline = cache.get_cmdline(pid).unwrap_or_default();
+
         let child_commands = cache.get_child_commands(pid, 2); // Reduced depth to 2
+        let ancestor_commands = cache.get_ancestor_commands(pid, 3); // Look up 3 levels
 
         Some(Self {
             session: session.to_string(),
@@ -184,6 +208,7 @@ impl PaneInfo {
             pid,
             cmdline,
             child_commands,
+            ancestor_commands,
         })
     }
 
@@ -197,6 +222,9 @@ impl PaneInfo {
 
         // Add child command strings
         for cmd in &self.child_commands {
+            strings.push(cmd.as_str());
+        }
+        for cmd in &self.ancestor_commands {
             strings.push(cmd.as_str());
         }
 
@@ -226,7 +254,9 @@ mod tests {
             path: "/home/user".to_string(),
             pid: 99999,
             cmdline: "".to_string(),
+            cmdline: "".to_string(),
             child_commands: Vec::new(),
+            ancestor_commands: Vec::new(),
         };
         assert_eq!(pane.target(), "dev:2.3");
     }
@@ -250,10 +280,12 @@ mod tests {
             pid: 1234,
             cmdline: "-zsh".to_string(),
             child_commands: vec!["claude -c".to_string(), "claude".to_string()],
+            ancestor_commands: vec!["wrapper.sh".to_string()],
         };
         let strings = pane.detection_strings();
         assert!(strings.contains(&"zsh"));
         assert!(strings.contains(&"claude -c"));
         assert!(strings.contains(&"claude"));
+        assert!(strings.contains(&"wrapper.sh"));
     }
 }

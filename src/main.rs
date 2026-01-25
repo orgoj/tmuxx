@@ -43,13 +43,40 @@ struct Cli {
 
     /// Set config options (can be used multiple times)
     /// Example: --set show_detached_sessions=false
+    /// Set config options (can be used multiple times)
+    /// Example: --set show_detached_sessions=false
     #[arg(long = "set", value_name = "KEY=VALUE")]
     config_overrides: Vec<String>,
+
+    #[command(subcommand)]
+    command: Option<Commands>,
+}
+
+#[derive(clap::Subcommand)]
+enum Commands {
+    /// Learn mode: Interactive wizard to generate agent definitions
+    Learn {
+        /// Target pane ID or title (optional, defaults to interactive selection)
+        #[arg(short, long)]
+        pane: Option<String>,
+        
+        /// Name for the new agent
+        #[arg(short, long)]
+        name: Option<String>,
+    },
 }
 
 #[tokio::main]
 async fn main() -> Result<()> {
     let cli = Cli::parse();
+
+    // Handle Subcommands
+    if let Some(Commands::Learn { pane, name }) = cli.command {
+        return tmuxcc::cmd::learn::run_learn(tmuxcc::cmd::learn::LearnArgs {
+            target_pane: pane,
+            agent_name: name,
+        }).await;
+    }
 
     // Show config path and exit
     if cli.show_config_path {

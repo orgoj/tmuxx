@@ -2,12 +2,14 @@ mod claude_code;
 mod codex_cli;
 mod custom;
 mod gemini_cli;
+mod generic;
 mod opencode;
 
 pub use claude_code::ClaudeCodeParser;
 pub use codex_cli::CodexCliParser;
 pub use custom::CustomAgentParser;
 pub use gemini_cli::GeminiCliParser;
+pub use generic::GenericAgentParser;
 pub use opencode::OpenCodeParser;
 
 use crate::agents::{AgentStatus, AgentType, Subagent};
@@ -85,7 +87,14 @@ impl ParserRegistry {
             Box::new(GeminiCliParser::new()),
         ];
 
-        // Add custom parsers from config
+        // Add generic parsers from config (agent_definitions)
+        for agent_def in &config.agent_definitions {
+            if let Some(parser) = GenericAgentParser::new(agent_def.clone()) {
+                parsers.push(Box::new(parser));
+            }
+        }
+
+        // Add legacy custom parsers from config (agent_patterns)
         for pattern_config in &config.agent_patterns {
             if let Some(custom_parser) =
                 CustomAgentParser::new(&pattern_config.pattern, &pattern_config.agent_type)

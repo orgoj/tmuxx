@@ -52,12 +52,12 @@ script = "/path/to/notify.sh"
 - Content-based AI type detection (parse output for Claude/Gemini/Codex patterns)
 
 **Actions:**
-- [ ] Research: how to get parent PID and process tree on Linux/macOS
-- [ ] Implement parent process detection in PaneInfo
-- [ ] Implement process tree scanning (recursive parent/child)
-- [ ] Implement content-based AI type detection (regex patterns per AI)
-- [ ] Update ParserRegistry to use enhanced detection
-- [ ] Add detection strategy config (enable/disable strategies)
+- [x] Research: how to get parent PID and process tree on Linux/macOS
+- [x] Implement parent process detection in PaneInfo
+- [x] Implement process tree scanning (recursive parent/child)
+- [x] Implement content-based AI type detection (regex patterns per AI)
+- [x] Update ParserRegistry to use enhanced detection
+- [x] Add detection strategy config (enable/disable strategies)
 - [ ] Test: agent in wrapper → detected correctly
 - [ ] Test: content-based detection → correct AI type identified
 - [ ] Document detection strategies in README.md

@@ -1,5 +1,5 @@
 mod actions;
-mod config;
+pub mod config;
 mod config_override;
 mod key_binding;
 mod session_pattern;
