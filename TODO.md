@@ -1,5 +1,11 @@
 # TODO - tmuxcc
 
+- lepsi definice agentu [[agent_patterns]]
+  - detekce i podle parents vsech
+  - definovatelna detekce stavu klienta
+  - musime umet nadefinovat a detekovat jakohokoliv klienta
+  - musi jit udelat u obecna detekce bash k pozna jestli uz je na konci input prompt
+
 ## Priority Tasks
 
 ### Notification System for Action-Required Events
