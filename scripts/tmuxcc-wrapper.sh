@@ -13,8 +13,8 @@ set -euo pipefail
 SESSION="tmuxcc"
 TMUXCC_BIN="tmuxcc"  # Assumes tmuxcc is in PATH
 
-# Check if tmuxcc binary exists
-if ! command -v "$TMUXCC_BIN" &> /dev/null; then
+# Check if tmuxcc binary exists and get full path
+if ! TMUXCC_PATH=$(command -v "$TMUXCC_BIN" 2>/dev/null); then
     echo "Error: tmuxcc binary not found in PATH" >&2
     echo "Run: cargo install --path . OR add target/release to PATH" >&2
     exit 1
@@ -23,8 +23,10 @@ fi
 # Check if session exists
 if ! tmux has-session -t "$SESSION" 2>/dev/null; then
     echo "Creating new tmux session: $SESSION"
-    # Create new session in detached mode, running tmuxcc
-    tmux new-session -d -s "$SESSION" "$TMUXCC_BIN"
+    # Create new session in detached mode, running bash
+    tmux new-session -d -s "$SESSION" bash
+    # Send tmuxcc command to the session
+    tmux send-keys -t "$SESSION" "$TMUXCC_PATH" Enter
 fi
 
 # Attach or switch to the session

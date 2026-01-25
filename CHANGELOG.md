@@ -5,6 +5,14 @@ All notable changes to this fork (orgoj/tmuxcc) will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Fixed
+- **tmuxcc-wrapper.sh Session Creation**: Fixed wrapper script to properly create tmuxcc session
+  - Now creates bash session and sends tmuxcc command via send-keys (instead of direct execution)
+  - Uses full path to tmuxcc binary to avoid PATH issues inside tmux
+  - Session remains alive even if tmuxcc exits, allowing error inspection
+
 ## [0.1.12] - 2026-01-24
 
 ### Added
