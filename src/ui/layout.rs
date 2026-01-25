@@ -1,3 +1,4 @@
+use crate::app::config::SidebarWidth;
 use ratatui::layout::{Constraint, Direction, Rect};
 
 /// Layout manager for the application
@@ -18,13 +19,10 @@ impl Layout {
     }
 
     /// Splits the content area into 2 columns: agent list (left) and preview (right)
-    pub fn content_layout(area: Rect, sidebar_width: u16) -> (Rect, Rect) {
+    pub fn content_layout(area: Rect, sidebar_width: &SidebarWidth) -> (Rect, Rect) {
         let chunks = ratatui::layout::Layout::default()
             .direction(Direction::Horizontal)
-            .constraints([
-                Constraint::Percentage(sidebar_width),
-                Constraint::Percentage(100 - sidebar_width),
-            ])
+            .constraints([sidebar_width.to_constraint(), Constraint::Min(0)])
             .split(area);
         (chunks[0], chunks[1])
     }
@@ -33,15 +31,12 @@ impl Layout {
     /// Returns (sidebar, summary, preview)
     pub fn content_layout_no_input(
         area: Rect,
-        sidebar_width: u16,
+        sidebar_width: &SidebarWidth,
         show_summary: bool,
     ) -> (Rect, Rect, Rect) {
         let columns = ratatui::layout::Layout::default()
             .direction(Direction::Horizontal)
-            .constraints([
-                Constraint::Percentage(sidebar_width),
-                Constraint::Percentage(100 - sidebar_width),
-            ])
+            .constraints([sidebar_width.to_constraint(), Constraint::Min(0)])
             .split(area);
 
         if show_summary {
@@ -66,16 +61,13 @@ impl Layout {
     /// Returns (sidebar, summary, preview, input)
     pub fn content_layout_with_input(
         area: Rect,
-        sidebar_width: u16,
+        sidebar_width: &SidebarWidth,
         input_height: u16,
         show_summary: bool,
     ) -> (Rect, Rect, Rect, Rect) {
         let columns = ratatui::layout::Layout::default()
             .direction(Direction::Horizontal)
-            .constraints([
-                Constraint::Percentage(sidebar_width),
-                Constraint::Percentage(100 - sidebar_width),
-            ])
+            .constraints([sidebar_width.to_constraint(), Constraint::Min(0)])
             .split(area);
 
         let summary_height = if show_summary { 15 } else { 0 };
@@ -93,13 +85,10 @@ impl Layout {
     }
 
     /// Splits the content area with subagent log (2 columns, right side split vertically)
-    pub fn content_layout_with_log(area: Rect, sidebar_width: u16) -> (Rect, Rect, Rect) {
+    pub fn content_layout_with_log(area: Rect, sidebar_width: &SidebarWidth) -> (Rect, Rect, Rect) {
         let columns = ratatui::layout::Layout::default()
             .direction(Direction::Horizontal)
-            .constraints([
-                Constraint::Percentage(sidebar_width),
-                Constraint::Percentage(100 - sidebar_width),
-            ])
+            .constraints([sidebar_width.to_constraint(), Constraint::Min(0)])
             .split(area);
 
         let right_side = ratatui::layout::Layout::default()

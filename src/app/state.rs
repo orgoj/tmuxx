@@ -5,6 +5,7 @@ use crate::ui::components::ModalTextareaState;
 use std::collections::HashSet;
 use std::time::Instant;
 
+use super::config::SidebarWidth;
 use super::Config;
 
 /// Which panel is currently focused
@@ -151,8 +152,8 @@ pub struct AppState {
     pub should_quit: bool,
     /// Last error message (if any)
     pub last_error: Option<String>,
-    /// Sidebar width in percentage (15-70)
-    pub sidebar_width: u16,
+    /// Sidebar width (fixed or percentage)
+    pub sidebar_width: SidebarWidth,
     /// Animation tick counter
     pub tick: usize,
     /// Last tick time for animation throttling
@@ -175,6 +176,7 @@ impl AppState {
                 .map(|v| v.contains("truecolor"))
                 .unwrap_or(false);
 
+        let sidebar_width = config.sidebar_width.clone();
         Self {
             config,
             agents: AgentTree::new(),
@@ -195,7 +197,7 @@ impl AppState {
                 env!("CARGO_PKG_VERSION"),
                 if truecolor_supported { "tc" } else { "256" }
             )),
-            sidebar_width: 35,
+            sidebar_width,
             tick: 0,
             last_tick: Instant::now(),
             system_stats: SystemStats::new(),

@@ -1,10 +1,14 @@
 # TODO - tmuxcc
 
-- TODO na plnou sirku summary
+- [ ] menu commandy (stromove) definice s moznostmi jako binding, jen to bude organizovane v menu a to user a projekt config primo pro session
+    - musi v tom jit rychle vybirat jen sipkami nahoru/dolu/doprava(rozbali)/doleva a psani pismen okamzity fuzzy filter na vse, klavesa * vse rozbali
+
+- [ ] menu na prompty (stromove) - user a projekt definice, asi nejaky adresar a v nem soubory, v menu jen nazvy
+
 - [ ] selected pane rychly filtr - default binding s - prepina mezi zobrazenim selected a normalnim
+- [ ] refactor defautl - musi byt vse jen v config a v programu jen neco jako config->get("width", 24), zadne finkce a clasy co vraceli nejake default objekty, co to je za antipatern, mame config ten da vzdy hodnotu funci get a ta se pouziva, KISS
 - [ ] jak poznat commandy co bezi v ssh ?
-- [ ] menu na prompty - user a projekt definice, asi nejaky adresar a v nem soubory, v menu jen nazvy
-- [x] default binding must be in default.toml
+- [ ] todo na plnou sirku summary
 
 ## Priority Tasks
 
@@ -127,6 +131,7 @@ requires_confirmation = true
 - ✅ Inside tmux, same session - works
 - ✅ Inside tmux, cross-session - works (switch-client)
 - ⚠️ Outside tmux - **temporary workaround** with wrapper script
+- dalsi workaround mam v user config start terminalu s attach session
 
 **Temporary solution:** Wrapper script `scripts/tmuxcc-wrapper.sh`
 - Automatically ensures tmuxcc ALWAYS runs inside tmux session `tmuxcc`
@@ -155,17 +160,9 @@ requires_confirmation = true
 
 ## Other
 
-- Config for left column width: character count or percentage
-
 - Fix unnecessary | in session tree display - check tmux with project skill
-
-
-- Does not detect query tool - shows idle
-
-
-
 - collapse session? - needs select on session and session menu
-- preview preserver importasnt lines, wrap, must scroll to end after wrap
+- preview preserver important lines, wrap, must scroll to end after wrap
 - scroll in preview area?
 
 ---

@@ -121,7 +121,7 @@ async fn run_loop(
             if state.show_subagent_log {
                 // With subagent log: sidebar | summary+preview+input | subagent_log
                 let (left, preview, subagent_log) =
-                    Layout::content_layout_with_log(main_chunks[1], state.sidebar_width);
+                    Layout::content_layout_with_log(main_chunks[1], &state.sidebar_width);
                 AgentTreeWidget::render(frame, left, state);
 
                 // Split preview area for summary, preview, and input
@@ -146,7 +146,7 @@ async fn run_loop(
                     // No input panel at all
                     let (left, summary, preview) = Layout::content_layout_no_input(
                         main_chunks[1],
-                        state.sidebar_width,
+                        &state.sidebar_width,
                         state.show_summary_detail,
                     );
                     AgentTreeWidget::render(frame, left, state);
@@ -158,7 +158,7 @@ async fn run_loop(
                     // With input panel
                     let (left, summary, preview, input_area) = Layout::content_layout_with_input(
                         main_chunks[1],
-                        state.sidebar_width,
+                        &state.sidebar_width,
                         input_height,
                         state.show_summary_detail,
                     );
@@ -224,7 +224,7 @@ async fn run_loop(
                         let main_chunks = Layout::main_layout(area);
                         let _footer_area = main_chunks[2];
                         let (sidebar, _, _, input_area) = Layout::content_layout_with_input(
-                            main_chunks[1], state.sidebar_width, 3, state.show_summary_detail
+                            main_chunks[1], &state.sidebar_width, 3, state.show_summary_detail
                         );
 
                         match mouse.kind {
@@ -526,10 +526,10 @@ async fn run_loop(
                                     }
                                 }
                                 Action::SidebarWider => {
-                                    state.sidebar_width = (state.sidebar_width + 5).min(70);
+                                    state.sidebar_width.wider();
                                 }
                                 Action::SidebarNarrower => {
-                                    state.sidebar_width = state.sidebar_width.saturating_sub(5).max(15);
+                                    state.sidebar_width.narrower();
                                 }
                                 Action::SelectAgent(idx) => {
                                     state.select_agent(idx);
@@ -577,6 +577,7 @@ async fn run_loop(
                                 } => {
                                     if let Some(agent) = state.selected_agent() {
                                         let expanded = expand_command_variables(&command, agent);
+                                        let path = agent.path.clone();
 
                                         // Case 1: Terminal application (interactive, takes over screen)
                                         if is_terminal {
@@ -597,12 +598,17 @@ async fn run_loop(
                                             }
 
                                             // Run command synchronously with inherited stdio
-                                            let result = std::process::Command::new("bash")
-                                                .args(["-c", &expanded])
+                                            let mut command = std::process::Command::new("bash");
+                                            command.args(["-c", &expanded])
                                                 .stdin(std::process::Stdio::inherit())
                                                 .stdout(std::process::Stdio::inherit())
-                                                .stderr(std::process::Stdio::inherit())
-                                                .status();
+                                                .stderr(std::process::Stdio::inherit());
+
+                                            if !path.is_empty() {
+                                                command.current_dir(&path);
+                                            }
+
+                                            let result = command.status();
 
                                             // Restore TUI
                                             if let Err(e) = enable_raw_mode() {
@@ -645,9 +651,14 @@ async fn run_loop(
                                             use std::io::Write;
                                             let debug_mode = state.config.debug_mode;
 
-                                            let result = tokio::process::Command::new("bash")
-                                                .args(["-c", &expanded])
-                                                .output()
+                                            let mut cmd = tokio::process::Command::new("bash");
+                                            cmd.args(["-c", &expanded]);
+
+                                            if !path.is_empty() {
+                                                cmd.current_dir(&path);
+                                            }
+
+                                            let result = cmd.output()
                                                 .await
                                                 .map(|output| {
                                                     // Helper to log if debug enabled
@@ -699,12 +710,17 @@ async fn run_loop(
 
                                             // Non-blocking (async) - prevent output to screen UNLESS debug
                                             // If debug, redirect to log. If not debug, null.
-                                            let result = tokio::process::Command::new("bash")
-                                                .args(["-c", &expanded])
+                                            let mut cmd = tokio::process::Command::new("bash");
+                                            cmd.args(["-c", &expanded])
                                                 .stdin(std::process::Stdio::null())
                                                 .stdout(get_log_stdio(debug_mode))
-                                                .stderr(get_log_stdio(debug_mode))
-                                                .spawn()
+                                                .stderr(get_log_stdio(debug_mode));
+
+                                            if !path.is_empty() {
+                                                cmd.current_dir(&path);
+                                            }
+
+                                            let result = cmd.spawn()
                                                 .map(|_| format!("Started: {}", expanded))
                                                 .map_err(|e| format!("Failed to spawn: {}", e));
 

@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.17] - 2026-01-25
+
+### Added
+- **Configurable Sidebar Width**: The agent tree sidebar width is now configurable via `sidebar_width` in `defaults.toml` or CLI (`--set sidebar=24`).
+  - Supports fixed character width (e.g., `sidebar_width = 24`)
+  - Supports percentage width (e.g., `sidebar_width = "25%"`)
+  - Interactive resizing (`[` and `]`) now respects the configured unit (increments by characters or percentages)
+- **Automatic Working Directory context**: All shell commands executed via keybindings (`execute_command`) are now automatically started in the current working directory of the selected tmux pane.
+
+
 ## [0.1.16] - 2026-01-25
 
 ### Changed

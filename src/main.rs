@@ -163,9 +163,10 @@ async fn main() -> Result<()> {
                 );
             }
         }
-        println!("\nKey bindings:");
-        for (key, action) in &config.key_bindings.bindings {
-            println!("  [{}] -> {:?}", key, action);
+        if let Ok(toml_str) = toml::to_string_pretty(&config) {
+            println!("Configuration:\n{}", toml_str);
+        } else {
+            println!("Configuration (Debug format):\n{:#?}", config);
         }
         println!("\nPress Enter to continue...");
         let _ = std::io::stdin().read_line(&mut String::new());

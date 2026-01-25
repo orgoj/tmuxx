@@ -17,6 +17,7 @@ pub enum ConfigOverride {
     IgnoreSessions(Vec<String>),
     IgnoreSelf(bool),
     LogActions(bool),
+    SidebarWidth(super::config::SidebarWidth),
 }
 
 impl ConfigOverride {
@@ -113,8 +114,22 @@ impl ConfigOverride {
                 })?;
                 Ok(ConfigOverride::LogActions(val))
             }
+            "sidebarwidth" | "sidebar" => {
+                let val = if value.contains('%') {
+                    super::config::SidebarWidth::Percent(value.to_string())
+                } else {
+                    let w = value.parse::<u16>().map_err(|_| {
+                        anyhow!(
+                            "Invalid value for sidebar_width: '{}'. Expected a number or percentage like '25%'.",
+                            value
+                        )
+                    })?;
+                    super::config::SidebarWidth::Fixed(w)
+                };
+                Ok(ConfigOverride::SidebarWidth(val))
+            }
             _ => Err(anyhow!(
-                "Unknown config key: '{}'. Valid keys: poll_interval_ms, capture_lines, show_detached_sessions, debug_mode, truncate_long_lines, max_line_width, popup_trigger_key, ignore_sessions, ignore_self, log_actions, keybindings.KEY (or kb.KEY)",
+                "Unknown config key: '{}'. Valid keys: poll_interval_ms, capture_lines, show_detached_sessions, debug_mode, truncate_long_lines, max_line_width, popup_trigger_key, ignore_sessions, ignore_self, log_actions, sidebar_width, keybindings.KEY (or kb.KEY)",
                 key
             )),
         }
@@ -136,6 +151,7 @@ impl ConfigOverride {
             ConfigOverride::IgnoreSessions(sessions) => config.ignore_sessions = sessions,
             ConfigOverride::IgnoreSelf(val) => config.ignore_self = val,
             ConfigOverride::LogActions(val) => config.log_actions = val,
+            ConfigOverride::SidebarWidth(val) => config.sidebar_width = val,
         }
     }
 }
