@@ -74,13 +74,32 @@ impl AgentTreeWidget {
 
         // Build title
         let title = if selected_count > 0 {
-            format!(" {} {} │ {} {} ", selected_count, state.config.messages.label_sel, active_count, state.config.messages.label_pending)
+            format!(
+                " {} {} │ {} {} ",
+                selected_count,
+                state.config.messages.label_sel,
+                active_count,
+                state.config.messages.label_pending
+            )
         } else if subagent_count > 0 {
-            format!(" {} {} │ {} {} ", active_count, state.config.messages.label_pending, subagent_count, state.config.messages.label_subs)
+            format!(
+                " {} {} │ {} {} ",
+                active_count,
+                state.config.messages.label_pending,
+                subagent_count,
+                state.config.messages.label_subs
+            )
         } else if active_count > 0 {
-            format!(" ⚠ {} {} ", active_count, state.config.messages.label_pending)
+            format!(
+                " ⚠ {} {} ",
+                active_count, state.config.messages.label_pending
+            )
         } else {
-            format!(" {} {} ", filtered_agents.len(), state.config.messages.label_agents)
+            format!(
+                " {} {} ",
+                filtered_agents.len(),
+                state.config.messages.label_agents
+            )
         };
 
         let border_color = if !state.is_input_focused() {
@@ -148,20 +167,20 @@ impl AgentTreeWidget {
             } else {
                 header_template.replace("{session}", session)
             };
-            
+
             // Text style (FG only)
             let text_style = Style::default().fg(header_fg).add_modifier(Modifier::BOLD);
-            
+
             // Item style (BG applies to full width)
             let mut item_style = Style::default();
             if let Some(bg) = header_bg {
                 item_style = item_style.bg(bg);
             }
 
-            items.push(ListItem::new(Line::from(vec![Span::styled(
-                header_str,
-                text_style,
-            )])).style(item_style));
+            items.push(
+                ListItem::new(Line::from(vec![Span::styled(header_str, text_style)]))
+                    .style(item_style),
+            );
 
             for ((window_num, window_name), window_agents) in windows.iter() {
                 for (original_idx, agent) in window_agents.iter() {
@@ -348,9 +367,7 @@ fn render_parsed_template<'a, 'b>(
         for part in line_parts {
             match part {
                 TemplatePart::Text(t) => spans.push(Span::raw(t.clone())),
-                TemplatePart::Placeholder(name) => {
-                    spans.push(render_placeholder(name, agent, ctx))
-                }
+                TemplatePart::Placeholder(name) => spans.push(render_placeholder(name, agent, ctx)),
             }
         }
         lines.push(Line::from(spans));
@@ -429,7 +446,7 @@ fn render_placeholder<'a, 'b>(
                 .color
                 .as_deref()
                 .unwrap_or(&ctx.state.config.agent_name_color);
-            
+
             let color = if let Some(c) = ctx.color_cache.get(color_name) {
                 *c
             } else {
@@ -437,7 +454,7 @@ fn render_placeholder<'a, 'b>(
                 ctx.color_cache.insert(color_name.to_string(), c);
                 c
             };
-            
+
             Span::styled(&agent.name, Style::default().fg(color))
         }
         "pid" => Span::styled(agent.pid.to_string(), Style::default().fg(Color::DarkGray)),

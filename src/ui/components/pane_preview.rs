@@ -50,7 +50,10 @@ impl PanePreviewWidget {
         if let Some(agent) = agent {
             // Use config-driven parser summary
             let registry = ParserRegistry::with_config(&state.config);
-            let summary = if let Some(parser) = registry.all_parsers().find(|p| p.agent_name() == agent.name) {
+            let summary = if let Some(parser) = registry
+                .all_parsers()
+                .find(|p| p.agent_name() == agent.name)
+            {
                 parser.parse_summary(&agent.last_content)
             } else {
                 crate::parsers::AgentSummary::default()
@@ -103,7 +106,10 @@ impl PanePreviewWidget {
                 )]));
                 for (completed, text) in &summary.tasks {
                     let (icon, style) = if *completed {
-                        (state.config.indicators.subagent_completed.as_str(), Style::default().fg(Color::DarkGray))
+                        (
+                            state.config.indicators.subagent_completed.as_str(),
+                            Style::default().fg(Color::DarkGray),
+                        )
                     } else {
                         ("☐ ", Style::default().fg(Color::White))
                     };
@@ -210,7 +216,10 @@ impl PanePreviewWidget {
 
             // Use config-driven parser for approval keys
             let registry = ParserRegistry::with_config(&state.config);
-            let (approve_key, reject_key) = if let Some(parser) = registry.all_parsers().find(|p| p.agent_name() == agent.name) {
+            let (approve_key, reject_key) = if let Some(parser) = registry
+                .all_parsers()
+                .find(|p| p.agent_name() == agent.name)
+            {
                 (parser.approval_keys(), parser.rejection_keys())
             } else {
                 ("y", "n")
@@ -222,7 +231,10 @@ impl PanePreviewWidget {
                 details,
             } = &agent.status
             {
-                state.config.messages.approval_prompt
+                state
+                    .config
+                    .messages
+                    .approval_prompt
                     .replace("{agent_type}", &agent.agent_type.to_string())
                     .replace("{approval_type}", &approval_type.to_string())
                     .replace("{details}", details)
@@ -285,7 +297,9 @@ impl PanePreviewWidget {
             let start = content_lines.len().saturating_sub(available_lines);
 
             let registry = ParserRegistry::with_config(&state.config);
-            let parser = registry.all_parsers().find(|p| p.agent_name() == agent.name);
+            let parser = registry
+                .all_parsers()
+                .find(|p| p.agent_name() == agent.name);
 
             for line in &content_lines[start..] {
                 // Always truncate lines to fit display width (no wrapping)

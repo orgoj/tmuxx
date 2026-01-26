@@ -53,8 +53,7 @@ pub enum SubagentStatus {
     Unknown,
 }
 
-impl SubagentStatus {
-}
+impl SubagentStatus {}
 
 impl fmt::Display for SubagentStatus {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {

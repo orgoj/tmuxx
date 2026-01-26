@@ -146,22 +146,30 @@ impl UniversalParser {
             }
         });
 
-        let summary_rules = config.summary_rules.as_ref().map(|rules| CompiledSummaryRules {
-            activity: rules.activity.as_ref().and_then(|p| Regex::new(p).ok()),
-            task_pending: rules.task_pending.as_ref().and_then(|p| Regex::new(p).ok()),
-            task_completed: rules.task_completed.as_ref().and_then(|p| Regex::new(p).ok()),
-            tool_use: rules.tool_use.as_ref().and_then(|p| Regex::new(p).ok()),
-        });
+        let summary_rules = config
+            .summary_rules
+            .as_ref()
+            .map(|rules| CompiledSummaryRules {
+                activity: rules.activity.as_ref().and_then(|p| Regex::new(p).ok()),
+                task_pending: rules.task_pending.as_ref().and_then(|p| Regex::new(p).ok()),
+                task_completed: rules
+                    .task_completed
+                    .as_ref()
+                    .and_then(|p| Regex::new(p).ok()),
+                tool_use: rules.tool_use.as_ref().and_then(|p| Regex::new(p).ok()),
+            });
 
         let highlight_rules = config
             .highlight_rules
             .iter()
             .filter_map(|rule| {
-                Regex::new(&rule.pattern).ok().map(|re| CompiledHighlightRule {
-                    re,
-                    color: rule.color.clone(),
-                    modifiers: rule.modifiers.clone(),
-                })
+                Regex::new(&rule.pattern)
+                    .ok()
+                    .map(|re| CompiledHighlightRule {
+                        re,
+                        color: rule.color.clone(),
+                        modifiers: rule.modifiers.clone(),
+                    })
             })
             .collect();
 
@@ -512,8 +520,8 @@ impl AgentParser for UniversalParser {
     }
 
     fn highlight_line(&self, line: &str) -> Option<ratatui::style::Style> {
-        use ratatui::style::{Modifier, Style};
         use crate::ui::Styles;
+        use ratatui::style::{Modifier, Style};
 
         for rule in &self.highlight_rules {
             if rule.re.is_match(line) {

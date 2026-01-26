@@ -171,7 +171,7 @@ command = "cargo test"
 
 ## Technical Challenges
 
-- **Async editor:** Need to block tmuxcc while editor is open
+- **Async editor:** Need to block tmuxx while editor is open
 - **Pipeline stdout capture:** Must distinguish send-keys vs paste-result
 - **Temp file cleanup:** Ensure cleanup even on errors
 - **Variable security:** Prevent injection (escape shell special chars)

@@ -111,7 +111,6 @@ impl AgentTree {
     }
 }
 
-
 /// Main application state
 #[derive(Debug)]
 pub struct AppState {
@@ -187,7 +186,9 @@ impl AppState {
         let sidebar_width = config.sidebar_width.clone();
         let version = env!("CARGO_PKG_VERSION");
         let color_mode = if truecolor_supported { "tc" } else { "256" };
-        let welcome = config.messages.welcome
+        let welcome = config
+            .messages
+            .welcome
             .replace("{version}", version)
             .replace("{color_mode}", color_mode);
 
@@ -810,7 +811,8 @@ mod tests {
 
     #[test]
     fn test_app_state_navigation() {
-        let config = Config::default();
+        let mut config = Config::default();
+        config.cyclic_navigation = true;
         let mut state = AppState::new(config);
 
         // Add some agents
@@ -908,6 +910,7 @@ mod tests {
     #[test]
     fn test_navigation_active_filter_skips_idle() {
         let mut state = AppState::default();
+        state.config.cyclic_navigation = true;
         use crate::agents::AgentStatus;
 
         // Add 3 agents: Idle, Processing, Idle
@@ -969,6 +972,7 @@ mod tests {
     #[test]
     fn test_navigation_with_filter_multiple_visible() {
         let mut state = AppState::default();
+        state.config.cyclic_navigation = true;
 
         // Add 3 agents
         state

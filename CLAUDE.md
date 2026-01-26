@@ -162,7 +162,7 @@ Parsers check ALL detection strings to handle various detection scenarios.
 8.  **Ratatui Paragraph Wrapping**: To disable wrapping, omit `.wrap()` call entirely; don't use `Wrap { trim: true }` which controls trimming, not wrapping
 9.  **HashMap Display Order**: HashMap iteration is non-deterministic - ALWAYS sort keys explicitly for UI consistency
 10. **Trailing Content in UI**: When displaying "last N lines", trim trailing empty content first to ensure actual data is visible
-11. **Skipping Skills**: Attempting tasks without invoking relevant skills leads to mistakes - check `.pi/skills/` first
+11. **Skipping Skills**: Attempting tasks without invoking relevant skills leads to mistakes - check `.claude/skills/` first
 12. **Batch Operations Without Verification**: Sending multiple commands at once can cause destructive failures - verify each step
 13. **View/Model Index Mismatch**: When filtering affects display, navigation MUST use filtered indices - otherwise cursor lands on hidden items or skips erratically
 14. **Single Method Fix Tunnel Vision**: When fixing one method, audit entire API for same pattern - often multiple methods have the same issue
@@ -173,7 +173,7 @@ Parsers check ALL detection strings to handle various detection scenarios.
 
 ### Skill-First Development
 
-- **Check skills BEFORE starting**: Search `.pi/skills/` for relevant skills before implementing
+- **Check skills BEFORE starting**: Search `.claude/skills/` for relevant skills before implementing
 - **INVOKE skills matching task type**: Testing? → tmuxx-testing. Commit? → tmuxx-commit. Config? → tmuxx-adding-config-option
 - **Create skills for repetitive workflows**: If explaining same process twice → create skill
 - **Documentation extraction**: Keep CLAUDE.md under 300 lines - extract repetitive workflows into skills
@@ -186,7 +186,7 @@ Parsers check ALL detection strings to handle various detection scenarios.
 - **Generic skills (tmux-automation, etc.)**: Only if no project skill exists for the task
 - **Skill obligation applies to PROJECT skills**: The "must use skills" rule refers to these project skills
 
-All skills are in `.pi/skills/`:
+All skills are in `.claude/skills/`:
 
 1. **`tmuxx-adding-config-option`** - Pattern for adding new config options with CLI override support
    - Use when adding bool, string, or number config options
@@ -295,10 +295,6 @@ All skills are in `.pi/skills/`:
 - `.claude/diary/` (user's existing entries - don't translate old ones, new ones in English)
 - `.claude/plans/` (user's existing entries - don't translate old ones, new ones in English)
 
-**Action required for `.dippy`:**
-- [ ] Option 1: Translate `.dippy` to English
-- [ ] Option 2: Rename with Czech marker: `.dippy_cs`, `.dippy.cs`, or `.dippy-cs`
-
 **CRITICAL: Auto-correct Czech to English:**
 - User writes in Czech in conversation → OK
 - User writes Czech in CODE/DOCS → AI fixes IMMEDIATELY when seen in diff
@@ -307,25 +303,13 @@ All skills are in `.pi/skills/`:
 - User reads English well but writes Czech → AI translates for them
 - Don't ask permission, just fix it in the same response
 
-**Important:**
-- **Upstream inheritance:** Original fork (nyanko3141592/tmuxcc) was Japanese → must translate ALL Japanese text
-- CLI help was in Japanese → translate to English
-- Error messages were in Japanese → translate to English
-- This is NOT optional - project must be English for open source community
-
-**Why:**
-- Project is public fork - needs to be accessible globally
-- English is standard for open source projects
-- Makes code readable by wider audience
-- Professional presentation for international community
-
 ## Project Context
 
 **tmuxx** - AI Agent Dashboard for tmux (originally tmuxcc)
 
 - **Origins**: Hard fork and total rewrite of `tmuxcc`, inspired by `tmuxclai` vision
 - **Repository**: `https://github.com/orgoj/tmuxx`
-- **Vision**: See IDEAS.md for roadmap and future features
+- **Vision**: See TODO.md for roadmap and future features
 
 ## Version and Publishing
 

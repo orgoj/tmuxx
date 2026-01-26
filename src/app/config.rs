@@ -131,8 +131,12 @@ pub struct TimingConfig {
     pub hysteresis_ms: u64,
 }
 
-fn default_tick_interval() -> u64 { 80 }
-fn default_hysteresis() -> u64 { 2000 }
+fn default_tick_interval() -> u64 {
+    80
+}
+fn default_hysteresis() -> u64 {
+    2000
+}
 
 impl Default for TimingConfig {
     fn default() -> Self {
@@ -177,13 +181,27 @@ fn default_approval_msg() -> String {
 fn default_welcome_msg() -> String {
     "tmuxx v{version} [{color_mode}] - Press ? for help".to_string()
 }
-fn default_label_todo() -> String { "Project TODO:".to_string() }
-fn default_label_tasks() -> String { "Tasks:".to_string() }
-fn default_label_tools() -> String { "Tools:".to_string() }
-fn default_label_sel() -> String { "sel".to_string() }
-fn default_label_pending() -> String { "pending".to_string() }
-fn default_label_subs() -> String { "subs".to_string() }
-fn default_label_agents() -> String { "agents".to_string() }
+fn default_label_todo() -> String {
+    "Project TODO:".to_string()
+}
+fn default_label_tasks() -> String {
+    "Tasks:".to_string()
+}
+fn default_label_tools() -> String {
+    "Tools:".to_string()
+}
+fn default_label_sel() -> String {
+    "sel".to_string()
+}
+fn default_label_pending() -> String {
+    "pending".to_string()
+}
+fn default_label_subs() -> String {
+    "subs".to_string()
+}
+fn default_label_agents() -> String {
+    "agents".to_string()
+}
 
 impl Default for MessageConfig {
     fn default() -> Self {
@@ -224,14 +242,30 @@ pub struct StatusIndicators {
     pub spinner: Vec<String>,
 }
 
-fn default_idle_indicator() -> String { "●".to_string() }
-fn default_processing_indicator() -> String { "◐".to_string() }
-fn default_approval_indicator() -> String { "⚠".to_string() }
-fn default_error_indicator() -> String { "✗".to_string() }
-fn default_unknown_indicator() -> String { "?".to_string() }
-fn default_subagent_running_indicator() -> String { "▶".to_string() }
-fn default_subagent_completed_indicator() -> String { "✓".to_string() }
-fn default_subagent_failed_indicator() -> String { "✗".to_string() }
+fn default_idle_indicator() -> String {
+    "●".to_string()
+}
+fn default_processing_indicator() -> String {
+    "◐".to_string()
+}
+fn default_approval_indicator() -> String {
+    "⚠".to_string()
+}
+fn default_error_indicator() -> String {
+    "✗".to_string()
+}
+fn default_unknown_indicator() -> String {
+    "?".to_string()
+}
+fn default_subagent_running_indicator() -> String {
+    "▶".to_string()
+}
+fn default_subagent_completed_indicator() -> String {
+    "✓".to_string()
+}
+fn default_subagent_failed_indicator() -> String {
+    "✗".to_string()
+}
 fn default_spinner_frames() -> Vec<String> {
     vec!["⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"]
         .into_iter()
@@ -255,9 +289,13 @@ impl Default for StatusIndicators {
     }
 }
 
-fn default_true() -> bool { true }
+fn default_true() -> bool {
+    true
+}
 
-fn default_buffer_size() -> usize { 16384 }
+fn default_buffer_size() -> usize {
+    16384
+}
 
 #[derive(Deserialize, Default)]
 #[serde(default)]

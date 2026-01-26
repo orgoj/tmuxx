@@ -22,6 +22,10 @@ debug_mode = false
 # Line truncation in preview (recommended: true)
 truncate_long_lines = true
 
+# Enable TODO file reading from project root
+# todo_from_file = true
+# todo_files = ["TODO.md", "NOTES.md", "README.md", "TASKS.md"]
+
 # Agent patterns - monitor all panes
 [[agent_patterns]]
 pattern = "*"

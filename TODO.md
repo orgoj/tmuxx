@@ -17,4 +17,25 @@
 - [ ] **Notifikační systém**: Desktopové a terminálové upozornění na události vyžadující pozornost (approval, error).
 - [ ] **Externí TODO Generátor**: Podpora pro externí programy (např. `beads`), které budou generovat obsah TODO okna dynamicky.
 - [ ] **Focus (f) - Outside Tmux**: Automatické otevírání nového okna terminálu (Kitty, Alacritty) s připojením k session, pokud `tmuxx` běží mimo tmux.
-- [ ] **Action Menu**: Komplexní systém konfigurovatelných akcí (proměnné, bash pipeline). Viz [TODO-MENU.md](TODO-MENU.md).
+- [ ] **Action Menu**: Komplexní systém konfigurovatelných akcí (proměnné, bash pipeline).
+
+## 🔮 Nápady a Roadmap (Ideas)
+
+### AI Integrace
+- [ ] **AI-Powered Workflows**: Analýza obrazovky pomocí AI a navrhování akcí.
+  - Příklad: Capture screen -> Send to Claude -> Show fix -> Paste to pane.
+- [ ] **Context-aware Suggestions**: Návrhy příkazů na základě stavu agenta.
+
+### Notifikace a Hooky
+- [ ] **Desktop Notifications**: `notify-send` nebo nativní notifikace při chybě/požadavku na schválení.
+- [ ] **Hook System**: Spouštění skriptů při událostech (např. `approval_needed`, `agent_error`).
+- [ ] **Event Filtering**: Notifikovat jen akční události, ne informační.
+
+### Konfigurace a Rozšíření
+- [ ] **Config Hot Reload**: Automatické načtení změn v `config.toml`.
+- [ ] **Plugin System**: Možnost přidávat nové parsery agentů jako externí moduly/skripty.
+- [ ] **Profiles**: Rychlé přepínání mezi sadami nastavení (např. "Work", "Home").
+
+### Pokročilá Detekce
+- [ ] **Process Tree Analysis**: Detekce agentů přes analýzu stromu procesů (nejen přímý command).
+- [ ] **Parent Process Detection**: Lepší detekce wrapperů.
