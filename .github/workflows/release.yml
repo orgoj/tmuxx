@@ -20,13 +20,13 @@ jobs:
         include:
           - os: ubuntu-latest
             target: x86_64-unknown-linux-gnu
-            artifact: tmuxcc
+            artifact: tmuxx
           - os: macos-latest
             target: x86_64-apple-darwin
-            artifact: tmuxcc
+            artifact: tmuxx
           - os: macos-latest
             target: aarch64-apple-darwin
-            artifact: tmuxcc
+            artifact: tmuxx
     steps:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@stable
@@ -38,12 +38,12 @@ jobs:
       - name: Package
         run: |
           cd target/${{ matrix.target }}/release
-          tar czf ../../../tmuxcc-${{ github.ref_name }}-${{ matrix.target }}.tar.gz ${{ matrix.artifact }}
+          tar czf ../../../tmuxx-${{ github.ref_name }}-${{ matrix.target }}.tar.gz ${{ matrix.artifact }}
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
-          name: tmuxcc-${{ matrix.target }}
-          path: tmuxcc-${{ github.ref_name }}-${{ matrix.target }}.tar.gz
+          name: tmuxx-${{ matrix.target }}
+          path: tmuxx-${{ github.ref_name }}-${{ matrix.target }}.tar.gz
 
   create-release:
     name: Create Release
