@@ -606,10 +606,9 @@ impl AppState {
                 }
             }
 
-            if self.filter_selected
-                && self.selected_agents.contains(&index) {
-                    matched = true;
-                }
+            if self.filter_selected && self.selected_agents.contains(&index) {
+                matched = true;
+            }
 
             if !matched {
                 return false;
@@ -774,7 +773,7 @@ mod tests {
             "code".to_string(),
             0,
             "/home/user/project1".to_string(),
-            AgentType::ClaudeCode,
+            AgentType::Named("Claude".to_string()),
             None,
             1000,
         ));
@@ -788,7 +787,7 @@ mod tests {
             "code".to_string(),
             1,
             "/home/user/project2".to_string(),
-            AgentType::OpenCode,
+            AgentType::Named("OpenCode".to_string()),
             None,
             1001,
         ));
@@ -815,7 +814,7 @@ mod tests {
             "code".to_string(),
             pane_index,
             format!("/home/user/{}", session),
-            AgentType::ClaudeCode,
+            AgentType::Named("Agent".to_string()),
             None,
             1000 + pane_index,
         )

@@ -6,12 +6,9 @@ use super::subagent::Subagent;
 /// Types of AI agents that can be monitored
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum AgentType {
-    ClaudeCode,
-    OpenCode,
-    CodexCli,
-    GeminiCli,
-    /// Custom agent type from user config (name stored in string)
-    Custom(String),
+    /// Generic named agent from config
+    Named(String),
+    /// Unidentified agent
     Unknown,
 }
 
@@ -19,11 +16,7 @@ impl AgentType {
     /// Returns the display name of the agent
     pub fn display_name(&self) -> String {
         match self {
-            AgentType::ClaudeCode => "Claude Code".to_string(),
-            AgentType::OpenCode => "OpenCode".to_string(),
-            AgentType::CodexCli => "Codex CLI".to_string(),
-            AgentType::GeminiCli => "Gemini CLI".to_string(),
-            AgentType::Custom(name) => name.clone(),
+            AgentType::Named(name) => name.clone(),
             AgentType::Unknown => "Unknown".to_string(),
         }
     }
@@ -31,12 +24,8 @@ impl AgentType {
     /// Returns a short name for the agent (for compact display)
     pub fn short_name(&self) -> String {
         match self {
-            AgentType::ClaudeCode => "Claude".to_string(),
-            AgentType::OpenCode => "Open".to_string(),
-            AgentType::CodexCli => "Codex".to_string(),
-            AgentType::GeminiCli => "Gemini".to_string(),
-            AgentType::Custom(name) => {
-                // Abbreviate custom names to first 6 chars
+            AgentType::Named(name) => {
+                // Abbreviate names to first 6 chars
                 if name.len() > 6 {
                     format!("{}...", &name[..6])
                 } else {
@@ -358,8 +347,11 @@ mod tests {
 
     #[test]
     fn test_agent_type_display() {
-        assert_eq!(AgentType::ClaudeCode.display_name(), "Claude Code");
-        assert_eq!(AgentType::OpenCode.short_name(), "Open");
+        assert_eq!(
+            AgentType::Named("Claude Code".to_string()).display_name(),
+            "Claude Code"
+        );
+        assert_eq!(AgentType::Named("Open".to_string()).short_name(), "Open");
     }
 
     #[test]
@@ -392,7 +384,7 @@ mod tests {
             "code".to_string(),
             1,
             "/home/user/project".to_string(),
-            AgentType::ClaudeCode,
+            AgentType::Named("Claude Code".to_string()),
             None,
             12345,
         );

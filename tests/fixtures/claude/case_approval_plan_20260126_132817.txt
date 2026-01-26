@@ -1,0 +1,170 @@
+ 5. Add tests in `tests/test_typer_cli.py`
+
+ ---
+ Implementation Steps
+
+ Step 1: Dependencies (15 min)
+
+ - Add typer>=0.12.0 to pyproject.toml
+ - Run uv sync
+
+ Step 2: Exception System (1 hour)
+
+ - Create exceptions.py with CLIError, ValidationError, ConfigError, IndexNotFoundError
+ - Add tests for exception formatting
+
+ Step 3: Core Commands Migration (2 hours)
+
+ - Rewrite cli.py with Typer
+ - Implement index, search, clear, status commands
+ - Add type hints throughout
+
+ Step 4: Remaining Commands (1 hour)
+
+ - Migrate install, hook-clear, encoding-info, setup, config-example, skill-usage, skill-setup
+
+ Step 5: New List Command (1 hour)
+
+ - Implement list_files() command
+ - Add pattern, size, encoding options
+ - Add comprehensive tests
+
+ Step 6: Format Simplification (30 min)
+
+ - Remove -j, -c, -T flags
+ - Keep only --format/-f
+ - Update help text
+
+ Step 7: Error Integration (1 hour)
+
+ - Replace parser.error() with raise CLIError()
+ - Add validation using ValidationError
+ - Test JSON output mode
+
+ Step 8: Testing (2 hours)
+
+ - Write test_typer_cli.py
+ - Test all 12 commands
+ - Test error handling (JSON + human modes)
+ - Test backward compatibility
+ - Achieve >90% coverage
+
+ Step 9: Documentation (1 hour)
+
+ - Update README.md with list command
+ - Add AI integration section
+ - Update CLAUDE.md with Typer patterns
+
+ Step 10: Final Validation (30 min)
+
+ - Run all tests: uv run python run_tests.py
+ - Manual testing of each command
+ - Verify no regressions
+
+ Total: ~10-11 hours
+
+ ---
+ Critical Files
+
+ 1. src/tantivy2agents/cli.py - Complete rewrite from argparse to Typer (200-250 lines)
+ 2. src/tantivy2agents/exceptions.py - NEW: Exception system with structured output (150 lines)
+ 3. pyproject.toml - Add typer>=0.12.0 dependency
+ 4. tests/test_typer_cli.py - NEW: Comprehensive test coverage (400-500 lines)
+ 5. README.md - Update with new command and simplified examples
+ 6. CLAUDE.md - Add Typer patterns section
+
+ ---
+ Verification
+
+ Manual Testing
+
+ # Test help
+ tantivy2agents --help
+ tantivy2agents search --help
+
+ # Test new list command
+ tantivy2agents list
+ tantivy2agents list --pattern "*.md" --size
+
+ # Test format simplification
+ tantivy2agents search "test" --format json
+ tantivy2agents search "test" -f csv
+
+ # Test structured errors
+ tantivy2agents search ""
+ TANTIVY_JSON_OUTPUT=true tantivy2agents search "" 2>&1 | jq .
+
+ # Test all existing commands
+ tantivy2agents install
+ tantivy2agents index --force
+ tantivy2agents status
+ tantivy2agents clear
+
+ Automated Testing
+
+ # Run all tests
+ uv run python run_tests.py
+
+ # Run Typer tests
+ uv run pytest tests/test_typer_cli.py -v
+
+ # Coverage
+ uv run pytest --cov=tantivy2agents --cov-report=term-missing
+
+ Success Criteria
+
+ - All 12 commands work correctly
+ - New list command functional
+ - Format flags simplified (--format only)
+ - Structured errors in both JSON and human format
+ - All tests pass (>90% coverage)
+ - README.md updated
+ - CLAUDE.md updated
+ - No regressions in existing functionality
+ - AI agents can use CLI without hardcoded knowledge
+ - Help text is auto-generated and accurate
+
+ ---
+ Benefits
+
+ For AI Agents
+
+ - Structured JSON output - Easily parseable results
+ - Clear error messages - Actionable hints in JSON format
+ - Type hints - Introspection capabilities
+ - Predictable interface - Consistent command structure
+ - File preview - Explore without side effects
+
+ For Humans
+
+ - Cleaner help - No outdated hardcoded examples
+ - Friendly errors - Emoji-based with hints
+ - Simpler flags - No confusion with -j/-c/-T
+ - File preview - See what will be indexed
+
+ For Developers
+
+ - Less boilerplate - 5x less code than argparse
+ - Auto documentation - Help from docstrings
+ - Type safety - mypy compatibility
+ - Easier extension - Add commands by adding functions
+
+ ---
+ Sources
+
+ - Typer documentation: https://typer.tiangolo.com/
+ - Python CLI frameworks comparison (2025): https://juejin.cn/post/7518607166904238143
+ - Click vs Typer: https://python.plainenglish.io/building-command-line-tools-in-python-click-vs-argparse-vs-typer-514442c25a56
+ - Current CLI implementation: src/tantivy2agents/cli.py (174 lines)
+ - Agent class: src/tantivy2agents/agent.py
+╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌
+
+ Would you like to proceed?
+
+ ❯ 1. Yes, clear context and auto-accept edits (shift+tab)
+   2. Yes, auto-accept edits
+   3. Yes, manually approve edits
+   4. Type here to tell Claude what to change
+
+ ctrl-g to edit in Zede · fluttering-coalescing-whisper.md
+

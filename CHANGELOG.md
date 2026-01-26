@@ -12,6 +12,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Removed all legacy hardcoded status string matching from `UniversalParser`.
   - Added explicit `type` field to `state_rules` (Idle, Working, Error, Approval).
   - Added `default_type` to `AgentConfig` to set baseline status without pattern matches.
+  - Removed `AgentType` enum variants (`ClaudeCode`, `OpenCode`, etc.) in favor of generic `Named(String)`.
+  - Added `tracing::warn!` logs for invalid regex patterns in configuration.
   - Status labels are now decoupled from internal state logic.
 - **Improved Test System**:
   - `Capture Test Case` (`C-s`) now prompts for explicit standardized status types.

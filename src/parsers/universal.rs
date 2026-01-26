@@ -1,4 +1,5 @@
 use regex::Regex;
+use tracing::warn;
 
 use crate::agents::{AgentStatus, AgentType, ApprovalType, Subagent, SubagentStatus, SubagentType};
 use crate::app::config::{AgentConfig, MatcherConfig};
@@ -51,47 +52,65 @@ impl UniversalParser {
         let mut matchers = Vec::new();
         for m in &config.matchers {
             match m {
-                MatcherConfig::Command { pattern } => {
-                    if let Ok(re) = Regex::new(pattern) {
-                        matchers.push(CompiledMatcher::Command(re));
-                    }
-                }
-                MatcherConfig::Ancestor { pattern } => {
-                    if let Ok(re) = Regex::new(pattern) {
-                        matchers.push(CompiledMatcher::Ancestor(re));
-                    }
-                }
-                MatcherConfig::Title { pattern } => {
-                    if let Ok(re) = Regex::new(pattern) {
-                        matchers.push(CompiledMatcher::Title(re));
-                    }
-                }
+                MatcherConfig::Command { pattern } => match Regex::new(pattern) {
+                    Ok(re) => matchers.push(CompiledMatcher::Command(re)),
+                    Err(e) => warn!(
+                        "Invalid command pattern '{}' for agent {}: {}",
+                        pattern, config.name, e
+                    ),
+                },
+                MatcherConfig::Ancestor { pattern } => match Regex::new(pattern) {
+                    Ok(re) => matchers.push(CompiledMatcher::Ancestor(re)),
+                    Err(e) => warn!(
+                        "Invalid ancestor pattern '{}' for agent {}: {}",
+                        pattern, config.name, e
+                    ),
+                },
+                MatcherConfig::Title { pattern } => match Regex::new(pattern) {
+                    Ok(re) => matchers.push(CompiledMatcher::Title(re)),
+                    Err(e) => warn!(
+                        "Invalid title pattern '{}' for agent {}: {}",
+                        pattern, config.name, e
+                    ),
+                },
             }
         }
 
         let mut state_rules = Vec::new();
         for rule in &config.state_rules {
-            if let Ok(re) = Regex::new(&rule.pattern) {
-                let mut refinements = Vec::new();
-                for r in &rule.refinements {
-                    if let Ok(ref_re) = Regex::new(&r.pattern) {
-                        refinements.push(CompiledRefinement {
-                            group: r.group.clone(),
-                            re: ref_re,
-                            status: r.status.clone(),
-                            kind: r.kind.clone(),
-                            approval_type: r.approval_type.clone(),
-                        });
+            match Regex::new(&rule.pattern) {
+                Ok(re) => {
+                    let mut refinements = Vec::new();
+                    for r in &rule.refinements {
+                        match Regex::new(&r.pattern) {
+                            Ok(ref_re) => {
+                                refinements.push(CompiledRefinement {
+                                    group: r.group.clone(),
+                                    re: ref_re,
+                                    status: r.status.clone(),
+                                    kind: r.kind.clone(),
+                                    approval_type: r.approval_type.clone(),
+                                });
+                            }
+                            Err(e) => warn!(
+                                "Invalid refinement pattern '{}' in rule for agent {}: {}",
+                                r.pattern, config.name, e
+                            ),
+                        }
                     }
+                    state_rules.push(CompiledStateRule {
+                        status: rule.status.clone(),
+                        kind: rule.kind.clone(),
+                        re,
+                        approval_type: rule.approval_type.clone(),
+                        last_lines: rule.last_lines,
+                        refinements,
+                    });
                 }
-                state_rules.push(CompiledStateRule {
-                    status: rule.status.clone(),
-                    kind: rule.kind.clone(),
-                    re,
-                    approval_type: rule.approval_type.clone(),
-                    last_lines: rule.last_lines,
-                    refinements,
-                });
+                Err(e) => warn!(
+                    "Invalid state rule pattern '{}' for agent {}: {}",
+                    rule.pattern, config.name, e
+                ),
             }
         }
 
@@ -175,7 +194,7 @@ impl AgentParser for UniversalParser {
     fn agent_type(&self) -> AgentType {
         // Universal parser always uses Custom type with name from config
         // This avoids hardcoding specific logic for specific agents in the code
-        AgentType::Custom(self.config.name.clone())
+        AgentType::Named(self.config.name.clone())
     }
 
     fn match_strength(&self, detection_strings: &[&str]) -> MatchStrength {

@@ -48,6 +48,17 @@ impl<'a> SessionWindowTree<'a> {
     }
 }
 
+/// Context for rendering an agent line
+struct AgentRenderCtx<'a> {
+    state: &'a AppState,
+    session: &'a str,
+    window_id: u32,
+    window_name: &'a str,
+    available_width: usize,
+    is_cursor: bool,
+    is_selected: bool,
+}
+
 impl AgentTreeWidget {
     pub fn render(frame: &mut Frame, area: Rect, state: &AppState) {
         // Get filtered agents with original indices
@@ -126,18 +137,18 @@ impl AgentTreeWidget {
                     let is_cursor = *original_idx == state.selected_index;
                     let is_selected = state.is_multi_selected(*original_idx);
 
-                    // Render agent using template
-                    let rendered_lines = render_agent(
-                        template,
-                        agent,
+                    let ctx = AgentRenderCtx {
                         state,
+                        session,
+                        window_id: *window_num,
+                        window_name,
+                        available_width,
                         is_cursor,
                         is_selected,
-                        available_width,
-                        session,
-                        *window_num,
-                        window_name,
-                    );
+                    };
+
+                    // Render agent using template
+                    let rendered_lines = render_agent(template, agent, &ctx);
 
                     for (i, line) in rendered_lines.into_iter().enumerate() {
                         let style = if i == 0 {
@@ -184,19 +195,19 @@ impl AgentTreeWidget {
                         found = true;
                         break 'outer;
                     }
-                    // Count lines this agent takes
-                    let lines = render_agent(
-                        template,
-                        agent,
+
+                    let ctx = AgentRenderCtx {
                         state,
-                        false,
-                        false,
-                        available_width,
                         session,
-                        *window_num,
+                        window_id: *window_num,
                         window_name,
-                    )
-                    .len();
+                        available_width,
+                        is_cursor: false,
+                        is_selected: false,
+                    };
+
+                    // Count lines this agent takes
+                    let lines = render_agent(template, agent, &ctx).len();
                     visual_index += lines;
                 }
             }
@@ -237,19 +248,18 @@ impl AgentTreeWidget {
 
             for ((window_num, window_name), window_agents) in windows.iter() {
                 for (original_idx, agent) in window_agents.iter() {
-                    // Calculate height of this agent
-                    let lines = render_agent(
-                        template,
-                        agent,
+                    let ctx = AgentRenderCtx {
                         state,
-                        false,
-                        false,
-                        width,
                         session,
-                        *window_num,
+                        window_id: *window_num,
                         window_name,
-                    )
-                    .len();
+                        available_width: width,
+                        is_cursor: false,
+                        is_selected: false,
+                    };
+
+                    // Calculate height of this agent
+                    let lines = render_agent(template, agent, &ctx).len();
 
                     // Check if row falls within this agent's block
                     if row >= visual_index && row < visual_index + lines {
@@ -269,13 +279,7 @@ impl AgentTreeWidget {
 fn render_agent<'a>(
     template: &str,
     agent: &'a MonitoredAgent,
-    state: &'a AppState,
-    is_cursor: bool,
-    is_selected: bool,
-    available_width: usize,
-    session: &str,
-    window_id: u32,
-    window_name: &str,
+    ctx: &AgentRenderCtx<'a>,
 ) -> Vec<Line<'a>> {
     let mut lines = Vec::new();
 
@@ -289,25 +293,14 @@ fn render_agent<'a>(
     // Split template by newlines
     for tmpl_line in effective_template.lines() {
         // Special case: {subagents} placeholder expands to multiple lines
-        if tmpl_line.contains("{subagents}")
-            && tmpl_line.trim() == "{subagents}" {
-                // Standalone subagents placeholder - render proper subagent lines
-                lines.extend(render_subagents(agent, state, available_width));
-                continue;
-            }
-            // If mixed with other text, handle it (though usually it should be on its own line)
+        if tmpl_line.contains("{subagents}") && tmpl_line.trim() == "{subagents}" {
+            // Standalone subagents placeholder - render proper subagent lines
+            lines.extend(render_subagents(agent, ctx.state, ctx.available_width));
+            continue;
+        }
+        // If mixed with other text, handle it (though usually it should be on its own line)
 
-        let rendered_line = render_template_line(
-            tmpl_line,
-            agent,
-            state,
-            is_cursor,
-            is_selected,
-            available_width,
-            session,
-            window_id,
-            window_name,
-        );
+        let rendered_line = render_template_line(tmpl_line, agent, ctx);
         lines.push(rendered_line);
     }
 
@@ -316,7 +309,7 @@ fn render_agent<'a>(
     // unless we add specific placeholders for them.
     // For now, let's append them at the end if the status requires attention.
     if agent.status.needs_attention() {
-        lines.extend(render_status_details(agent, available_width));
+        lines.extend(render_status_details(agent, ctx.available_width));
     }
 
     lines
@@ -325,13 +318,7 @@ fn render_agent<'a>(
 fn render_template_line<'a>(
     tmpl_line: &str,
     agent: &'a MonitoredAgent,
-    state: &'a AppState,
-    is_cursor: bool,
-    is_selected: bool,
-    available_width: usize,
-    session: &str,
-    window_id: u32,
-    window_name: &str,
+    ctx: &AgentRenderCtx<'a>,
 ) -> Line<'a> {
     let mut spans = Vec::new();
     let chars: Vec<char> = tmpl_line.chars().collect();
@@ -345,17 +332,7 @@ fn render_template_line<'a>(
                 let placeholder: String = chars[i + 1..end_idx].iter().collect();
 
                 // Render placeholder
-                spans.push(render_placeholder(
-                    &placeholder,
-                    agent,
-                    state,
-                    is_cursor,
-                    is_selected,
-                    available_width,
-                    session,
-                    window_id,
-                    window_name,
-                ));
+                spans.push(render_placeholder(&placeholder, agent, ctx));
 
                 i = end_idx + 1;
                 continue;
@@ -373,36 +350,36 @@ fn render_template_line<'a>(
 fn render_placeholder<'a>(
     name: &str,
     agent: &'a MonitoredAgent,
-    state: &'a AppState,
-    is_cursor: bool,
-    is_selected: bool,
-    _width: usize,
-    session: &str,
-    window_id: u32,
-    window_name: &str,
+    ctx: &AgentRenderCtx<'a>,
 ) -> Span<'a> {
     match name {
-        "session" => Span::styled(session.to_string(), Style::default().fg(Color::Cyan)),
-        "window_id" => Span::styled(window_id.to_string(), Style::default().fg(Color::DarkGray)),
-        "window_name" => Span::styled(window_name.to_string(), Style::default().fg(Color::White)),
+        "session" => Span::styled(ctx.session.to_string(), Style::default().fg(Color::Cyan)),
+        "window_id" => Span::styled(
+            ctx.window_id.to_string(),
+            Style::default().fg(Color::DarkGray),
+        ),
+        "window_name" => Span::styled(
+            ctx.window_name.to_string(),
+            Style::default().fg(Color::White),
+        ),
         "selection" => {
-            let text = if is_selected && is_cursor {
+            let text = if ctx.is_selected && ctx.is_cursor {
                 "▶☑"
-            } else if is_selected {
+            } else if ctx.is_selected {
                 " ☑"
-            } else if is_cursor {
+            } else if ctx.is_cursor {
                 "▶ "
             } else {
                 "  "
             };
-            if is_cursor {
+            if ctx.is_cursor {
                 Span::styled(
                     text,
                     Style::default()
                         .fg(Color::Rgb(0, 100, 200))
                         .add_modifier(Modifier::BOLD),
                 )
-            } else if is_selected {
+            } else if ctx.is_selected {
                 Span::styled(text, Style::default().fg(Color::Cyan))
             } else {
                 Span::styled(text, Style::default().fg(Color::White))
@@ -411,7 +388,7 @@ fn render_placeholder<'a>(
         "status_char" => match &agent.status {
             AgentStatus::Idle { .. } => Span::styled("●", Style::default().fg(Color::Green)),
             AgentStatus::Processing { .. } => {
-                Span::styled(state.spinner_frame(), Style::default().fg(Color::Yellow))
+                Span::styled(ctx.state.spinner_frame(), Style::default().fg(Color::Yellow))
             }
             AgentStatus::AwaitingApproval { .. } => Span::styled(
                 "⚠",
@@ -424,7 +401,7 @@ fn render_placeholder<'a>(
             let color = agent
                 .color
                 .as_deref()
-                .unwrap_or(&state.config.agent_name_color);
+                .unwrap_or(&ctx.state.config.agent_name_color);
             Span::styled(&agent.name, Style::default().fg(parse_color(color)))
         }
         "pid" => Span::styled(agent.pid.to_string(), Style::default().fg(Color::DarkGray)),
@@ -642,7 +619,7 @@ fn truncate_str(s: &str, max_len: usize) -> String {
             s.chars()
                 .take(max_len.saturating_sub(2))
                 .collect::<String>()
-        )
+            )
     }
 }
 
