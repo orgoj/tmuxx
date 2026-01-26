@@ -75,8 +75,9 @@ pub trait AgentParser: Send + Sync {
     }
 
     /// Returns highlighting rules for this agent
-    fn highlight_rules(&self) -> &[crate::app::config::HighlightRule] {
-        &[]
+    fn highlight_line(&self, line: &str) -> Option<ratatui::style::Style> {
+        let _ = line;
+        None
     }
 
     /// Returns the key(s) to send for approval
@@ -109,7 +110,10 @@ impl ParserRegistry {
         let mut parsers: Vec<Box<dyn AgentParser>> = Vec::new();
         // Initialize parsers from config agents
         for agent_config in &config.agents {
-            parsers.push(Box::new(UniversalParser::new(agent_config.clone())));
+            parsers.push(Box::new(UniversalParser::new(
+                agent_config.clone(),
+                config.capture_buffer_size,
+            )));
         }
 
         Self { parsers }

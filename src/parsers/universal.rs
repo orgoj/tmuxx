@@ -7,6 +7,7 @@ use crate::parsers::{safe_tail, AgentParser, MatchStrength};
 
 pub struct UniversalParser {
     config: AgentConfig,
+    capture_buffer_size: usize,
     matchers: Vec<CompiledMatcher>,
     state_rules: Vec<CompiledStateRule>,
     subagent_rules: Option<CompiledSubagentRules>,
@@ -63,7 +64,7 @@ struct CompiledLayoutRules {
 }
 
 impl UniversalParser {
-    pub fn new(config: AgentConfig) -> Self {
+    pub fn new(config: AgentConfig, capture_buffer_size: usize) -> Self {
         let mut matchers = Vec::new();
         for m in &config.matchers {
             match m {
@@ -177,6 +178,7 @@ impl UniversalParser {
 
         Self {
             config,
+            capture_buffer_size,
             matchers,
             state_rules,
             subagent_rules,
@@ -283,7 +285,7 @@ impl AgentParser for UniversalParser {
     fn parse_status(&self, content: &str) -> AgentStatus {
         // Look at a large enough chunk to see prompts and context.
         // For prompts anchored to the absolute end, we MUST include the end.
-        let raw_content = safe_tail(content, self.config.capture_buffer_size.unwrap_or(16384));
+        let raw_content = safe_tail(content, self.capture_buffer_size);
 
         // 1. Isolate Body (strip header/footer if configured)
         let body_content = self.extract_body(raw_content);
@@ -509,8 +511,25 @@ impl AgentParser for UniversalParser {
         summary
     }
 
-    fn highlight_rules(&self) -> &[crate::app::config::HighlightRule] {
-        &self.config.highlight_rules
+    fn highlight_line(&self, line: &str) -> Option<ratatui::style::Style> {
+        use ratatui::style::{Modifier, Style};
+        use crate::ui::Styles;
+
+        for rule in &self.highlight_rules {
+            if rule.re.is_match(line) {
+                let mut style = Style::default().fg(Styles::parse_color(&rule.color));
+                for modifier in &rule.modifiers {
+                    match modifier.to_lowercase().as_str() {
+                        "bold" => style = style.add_modifier(Modifier::BOLD),
+                        "italic" => style = style.add_modifier(Modifier::ITALIC),
+                        "dim" => style = style.add_modifier(Modifier::DIM),
+                        _ => {}
+                    }
+                }
+                return Some(style);
+            }
+        }
+        None
     }
 
     fn approval_keys(&self) -> &str {
@@ -563,9 +582,11 @@ mod tests {
                 footer_separator: Some(r"(?m)^[ \t]*[│]?─{10,}.*?$".to_string()),
                 header_separator: None,
             }),
+            summary_rules: None,
+            highlight_rules: Vec::new(),
         };
 
-        let parser = UniversalParser::new(config);
+        let parser = UniversalParser::new(config, 16384);
 
         // Simulated output from ct-test (Boxed style)
         let content = "\

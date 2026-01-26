@@ -10,7 +10,6 @@ use unicode_width::{UnicodeWidthChar, UnicodeWidthStr};
 use crate::agents::AgentStatus;
 use crate::app::AppState;
 use crate::parsers::ParserRegistry;
-use crate::ui::Styles;
 
 /// Truncate a line to fit within max_width
 /// Returns (truncated_string, was_truncated)
@@ -286,39 +285,17 @@ impl PanePreviewWidget {
             let start = content_lines.len().saturating_sub(available_lines);
 
             let registry = ParserRegistry::with_config(&state.config);
-            let highlight_rules =
-                if let Some(parser) = registry.all_parsers().find(|p| p.agent_name() == agent.name) {
-                    parser.highlight_rules()
-                } else {
-                    &[]
-                };
+            let parser = registry.all_parsers().find(|p| p.agent_name() == agent.name);
 
             for line in &content_lines[start..] {
                 // Always truncate lines to fit display width (no wrapping)
                 let (display_line, _was_truncated) = truncate_line(line, max_line_width);
 
                 // Apply syntax highlighting based on config rules
-                let mut style = Style::default();
-                for rule in highlight_rules {
-                    // Check if rule pattern matches this line
-                    if let Ok(re) = regex::Regex::new(&rule.pattern) {
-                        if re.is_match(&display_line) {
-                            style = style.fg(Styles::parse_color(&rule.color));
-                            for modifier in &rule.modifiers {
-                                match modifier.to_lowercase().as_str() {
-                                    "bold" => style = style.add_modifier(Modifier::BOLD),
-                                    "italic" => style = style.add_modifier(Modifier::ITALIC),
-                                    "dim" => style = style.add_modifier(Modifier::DIM),
-                                    _ => {}
-                                }
-                            }
-                            break;
-                        }
-                    }
-                }
+                let style = parser.and_then(|p| p.highlight_line(&display_line));
 
                 // If no rule matched, use default behavior (some fallback highlighting)
-                if style == Style::default() {
+                if style.is_none() {
                     let spans = if display_line.starts_with('+') && !display_line.starts_with("+++")
                     {
                         vec![Span::styled(
@@ -346,7 +323,7 @@ impl PanePreviewWidget {
                     };
                     styled_lines.push(Line::from(spans));
                 } else {
-                    styled_lines.push(Line::from(vec![Span::styled(display_line, style)]));
+                    styled_lines.push(Line::from(vec![Span::styled(display_line, style.unwrap())]));
                 }
             }
 

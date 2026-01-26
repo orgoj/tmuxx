@@ -78,7 +78,7 @@ fn run_suite_for_dir(dir: &std::path::Path, config: &Config) -> Result<(usize, u
     };
 
     // Initialize Parser
-    let parser = UniversalParser::new(agent_config);
+    let parser = UniversalParser::new(agent_config, config.capture_buffer_size);
 
     // Iterate over fixtures
     let mut files: Vec<PathBuf> = fs::read_dir(dir)?
