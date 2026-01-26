@@ -7,7 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Documentation
+- **README Rewrite**: Complete overhaul of README.md to reflect current features (tmuxx rename, config-driven architecture, menu system).
+- **Wrapper Documentation**: Added dedicated section for `txx` wrapper script.
+
 ### Fixed
+- **Wrapper Script**: Updated `scripts/tmuxx-wrapper.sh` to pass command line arguments to the binary.
 - **Clippy Warning**: Fixed collapsible-else-if warning in `src/ui/app.rs`.
 
 ## [0.2.0] - 2026-01-26 - The "Tmuxx" Rewrite

@@ -21,7 +21,7 @@ if ! TMUXX_PATH=$(command -v "$TMUXX_BIN" 2>/dev/null); then
 fi
 
 if [ -n "${TMUX:-}" ]; then
-    "$TMUXX_BIN"
+    "$TMUXX_BIN" "$@"
 else
     # Check if session exists
     if ! tmux has-session -t "$SESSION" 2>/dev/null; then
