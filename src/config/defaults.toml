@@ -44,7 +44,7 @@ priority = 100
   # Refinement: Detect questions in the body to switch to awaiting_approval
   [[agents.state_rules.refinements]]
   group = "body"
-  pattern = "(?i)Do you want to|wants to exit.*?mode|Exit.*?mode\\?|confirm"
+  pattern = "(?i)Do you want to|wants to exit.*?mode|Exit.*?mode\\?|confirm|Would you like to"
   status = "confirm"
   type = "approval"
   [[agents.state_rules.refinements]]

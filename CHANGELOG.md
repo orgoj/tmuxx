@@ -15,6 +15,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Removed `AgentType` enum variants (`ClaudeCode`, `OpenCode`, etc.) in favor of generic `Named(String)`.
   - Added `tracing::warn!` logs for invalid regex patterns in configuration.
   - Status labels are now decoupled from internal state logic.
+
+### Fixed
+- **Claude Detection**: Added support for "Would you like to proceed?" prompt in approval detection.
 - **Improved Test System**:
   - `Capture Test Case` (`C-s`) now prompts for explicit standardized status types.
   - `tmuxcc test` updated to handle `working` and `approval` keywords with backward compatibility.
