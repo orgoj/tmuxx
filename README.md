@@ -361,6 +361,10 @@ hide_bottom_input = true
 # When true, a message is shown in the footer for every key binding action triggered
 log_actions = true
 
+# Default type for an agent if no rules match (default: "idle")
+# Options: "working", "idle", "error", "approval"
+default_type = "working"
+
 # Session Filtering
 # Auto-ignore the session where tmuxcc runs (default: true)
 # This prevents tmuxcc from showing itself in the dashboard
@@ -659,10 +663,11 @@ tmuxcc --set poll_interval=1000 --set showdetached=false
 ```
 
 **Available config keys:**
-- `poll_interval_ms` (or `pollinterval`) - Polling interval in milliseconds
-- `capture_lines` (or `capturelines`) - Lines to capture from panes
-- `show_detached_sessions` (or `showdetached`) - Show/hide detached sessions
-- `debug_mode` (or `debug`) - Enable/disable debug logging in the TUI
+- `poll_interval` - Polling interval in ms
+- `capture_lines` - Lines to capture
+- `show_detached_sessions` - Show/hide detached
+- `default_type` - Default agent state (working/idle/error/approval)
+- `debug_mode` - Enable TUI debug logging
 - `truncate_long_lines` (or `truncate`) - Enable/disable line truncation in preview
 - `max_line_width` (or `linewidth`) - Max line width for truncation (number or 'none')
 - `popup_trigger_key` (or `popupkey`) - Key to trigger popup input dialog (default: "/")

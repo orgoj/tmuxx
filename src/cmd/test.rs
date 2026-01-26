@@ -107,20 +107,25 @@ fn run_suite_for_dir(dir: &std::path::Path, config: &Config) -> Result<(usize, u
             continue;
         }
 
-        let status_part = if filename.contains("awaiting_approval") {
-            "awaiting_approval"
-        } else if filename.contains("awaiting_input") {
-            "awaiting_input"
+        let status_part = if filename.contains("awaiting_approval") || filename.contains("approval")
+        {
+            "approval"
+        } else if filename.contains("awaiting_input") || filename.contains("idle") {
+            "idle"
+        } else if filename.contains("processing") || filename.contains("working") {
+            "working"
+        } else if filename.contains("error") {
+            "error"
         } else {
             parts[1]
         };
 
         let expected_status_enum = match status_part {
-            "idle" => AgentStatus::Idle,
-            "processing" => AgentStatus::Processing {
+            "idle" => AgentStatus::Idle { label: None },
+            "working" | "processing" => AgentStatus::Processing {
                 activity: "".to_string(),
             },
-            "awaiting_approval" => AgentStatus::AwaitingApproval {
+            "approval" | "awaiting_approval" => AgentStatus::AwaitingApproval {
                 approval_type: crate::agents::ApprovalType::Other("".to_string()),
                 details: "".to_string(),
             },

@@ -96,12 +96,7 @@ impl AgentTree {
         use crate::agents::AgentStatus;
         self.root_agents
             .iter()
-            .filter(|a| {
-                matches!(
-                    a.status,
-                    AgentStatus::Processing { .. } | AgentStatus::Tui { .. }
-                )
-            })
+            .filter(|a| matches!(a.status, AgentStatus::Processing { .. }))
             .count()
     }
 
@@ -173,6 +168,8 @@ pub struct AppState {
     pub filter_active: bool,
     /// Filter: Show only selected agents
     pub filter_selected: bool,
+    /// Cached projection: Indices of agents currently visible in the UI
+    pub visible_indices: Vec<usize>,
 }
 
 impl AppState {
@@ -216,6 +213,7 @@ impl AppState {
             menu_tree: MenuTreeState::new(),
             filter_active: false,
             filter_selected: false,
+            visible_indices: Vec::new(),
         }
     }
 
@@ -342,41 +340,47 @@ impl AppState {
 
     /// Selects the next visible agent (respects filter)
     pub fn select_next(&mut self) {
-        let visible = self.visible_agent_indices();
-        if visible.is_empty() {
+        if self.visible_indices.is_empty() {
             return; // No visible agents, no-op
         }
 
         // Find current position in visible list
-        if let Some(current_pos) = visible.iter().position(|&idx| idx == self.selected_index) {
+        if let Some(current_pos) = self
+            .visible_indices
+            .iter()
+            .position(|&idx| idx == self.selected_index)
+        {
             // Move to next visible (wrap around)
-            let next_pos = (current_pos + 1) % visible.len();
-            self.selected_index = visible[next_pos];
+            let next_pos = (current_pos + 1) % self.visible_indices.len();
+            self.selected_index = self.visible_indices[next_pos];
         } else {
             // Current not visible, jump to first visible
-            self.selected_index = visible[0];
+            self.selected_index = self.visible_indices[0];
         }
     }
 
     /// Selects the previous visible agent (respects filter)
     pub fn select_prev(&mut self) {
-        let visible = self.visible_agent_indices();
-        if visible.is_empty() {
+        if self.visible_indices.is_empty() {
             return; // No visible agents, no-op
         }
 
         // Find current position in visible list
-        if let Some(current_pos) = visible.iter().position(|&idx| idx == self.selected_index) {
+        if let Some(current_pos) = self
+            .visible_indices
+            .iter()
+            .position(|&idx| idx == self.selected_index)
+        {
             // Move to previous visible (wrap around)
             let prev_pos = if current_pos == 0 {
-                visible.len() - 1
+                self.visible_indices.len() - 1
             } else {
                 current_pos - 1
             };
-            self.selected_index = visible[prev_pos];
+            self.selected_index = self.visible_indices[prev_pos];
         } else {
             // Current not visible, jump to first visible
-            self.selected_index = visible[0];
+            self.selected_index = self.visible_indices[0];
         }
     }
 
@@ -390,8 +394,7 @@ impl AppState {
     /// Toggles selection of the current agent (only if visible)
     pub fn toggle_selection(&mut self) {
         // Only allow toggling selection of visible agents
-        let visible = self.visible_agent_indices();
-        if !visible.contains(&self.selected_index) {
+        if !self.visible_indices.contains(&self.selected_index) {
             return; // Current agent is hidden, no-op
         }
 
@@ -400,29 +403,42 @@ impl AppState {
         } else {
             self.selected_agents.insert(self.selected_index);
         }
+
+        // If "Selected Only" filter is active, updating selection might change visibility
+        if self.filter_selected {
+            self.update_visible_indices();
+            self.ensure_visible_selection();
+        }
     }
 
     /// Selects all visible agents (respects filter)
     pub fn select_all(&mut self) {
-        let visible = self.visible_agent_indices();
+        // We use a clone to avoid immutable/mutable borrow issues if sub-methods are called
+        let visible = self.visible_indices.clone();
         for i in visible {
             self.selected_agents.insert(i);
+        }
+
+        if self.filter_selected {
+            self.update_visible_indices();
         }
     }
 
     /// Clears all selections
     pub fn clear_selection(&mut self) {
         self.selected_agents.clear();
+        if self.filter_selected {
+            self.update_visible_indices();
+            self.ensure_visible_selection();
+        }
     }
 
     /// Returns visible indices to operate on (selected agents, or current if none selected)
     /// Only returns indices that are currently visible (match filter)
     pub fn get_operation_indices(&self) -> Vec<usize> {
-        let visible = self.visible_agent_indices();
-
         if self.selected_agents.is_empty() {
             // If current is visible, return it; otherwise empty
-            if visible.contains(&self.selected_index) {
+            if self.visible_indices.contains(&self.selected_index) {
                 vec![self.selected_index]
             } else {
                 vec![]
@@ -433,7 +449,7 @@ impl AppState {
                 .selected_agents
                 .iter()
                 .copied()
-                .filter(|idx| visible.contains(idx))
+                .filter(|idx| self.visible_indices.contains(idx))
                 .collect();
             indices.sort();
             indices
@@ -495,7 +511,15 @@ impl AppState {
 
     /// Set a status message (non-error, displayed differently)
     pub fn set_status(&mut self, message: String) {
-        self.last_error = Some(format!("✓ {}", message));
+        self.last_error = None;
+        self.set_error(message);
+    }
+
+    /// Sets the filter pattern and updates visibility projection
+    pub fn set_filter_pattern(&mut self, pattern: Option<String>) {
+        self.filter_pattern = pattern;
+        self.update_visible_indices();
+        self.ensure_visible_selection();
     }
 
     /// Clears the error message
@@ -538,7 +562,11 @@ impl AppState {
     /// Check if an agent matches the current filter pattern
     pub fn matches_filter(&self, agent: &MonitoredAgent) -> bool {
         // Find index of this agent (fallback, O(N))
-        let index = self.agents.root_agents.iter().position(|a| std::ptr::eq(a, agent));
+        let index = self
+            .agents
+            .root_agents
+            .iter()
+            .position(|a| std::ptr::eq(a, agent));
         if let Some(idx) = index {
             self.matches_filter_impl(idx, agent)
         } else {
@@ -550,7 +578,11 @@ impl AppState {
                 Some(pattern) if pattern.is_empty() => true,
                 Some(pattern) => {
                     let pattern_lower = pattern.to_lowercase();
-                    agent.agent_type.to_string().to_lowercase().contains(&pattern_lower)
+                    agent
+                        .agent_type
+                        .to_string()
+                        .to_lowercase()
+                        .contains(&pattern_lower)
                         || agent.session.to_lowercase().contains(&pattern_lower)
                         || agent.window_name.to_lowercase().contains(&pattern_lower)
                         || agent.target.to_lowercase().contains(&pattern_lower)
@@ -569,22 +601,21 @@ impl AppState {
 
             if self.filter_active {
                 // Active = Not Idle
-                if !matches!(agent.status, crate::agents::AgentStatus::Idle) {
+                if !matches!(agent.status, crate::agents::AgentStatus::Idle { .. }) {
                     matched = true;
                 }
             }
 
-            if self.filter_selected {
-                if self.selected_agents.contains(&index) {
+            if self.filter_selected
+                && self.selected_agents.contains(&index) {
                     matched = true;
                 }
-            }
 
             if !matched {
                 return false;
             }
         }
-        
+
         // Text pattern (Text filter is always AND logic with the above)
         match &self.filter_pattern {
             None => true,                                // No filter = show all
@@ -606,77 +637,59 @@ impl AppState {
         }
     }
 
-    // ... (rest of methods)
-
-    // ... (in tests module)
-
-
-
-    /// Get filtered agent list
-    pub fn filtered_agents(&self) -> Vec<&MonitoredAgent> {
-        self.agents
-            .root_agents
-            .iter()
-            .enumerate()
-            .filter(|(idx, agent)| self.matches_filter_impl(*idx, agent))
-            .map(|(_, agent)| agent)
-            .collect()
-    }
-
-    /// Get filtered agent list with their original indices
-    pub fn filtered_agents_with_indices(&self) -> Vec<(usize, &MonitoredAgent)> {
-        self.agents
-            .root_agents
-            .iter()
-            .enumerate()
-            .filter(|(idx, agent)| self.matches_filter_impl(*idx, agent))
-            .collect()
-    }
-
-    /// Returns indices of agents that are currently visible (match filter)
-    pub fn visible_agent_indices(&self) -> Vec<usize> {
-        self.agents
+    /// Update the cached projection of visible agents.
+    /// This should be called whenever agents or filters change.
+    pub fn update_visible_indices(&mut self) {
+        self.visible_indices = self
+            .agents
             .root_agents
             .iter()
             .enumerate()
             .filter(|(idx, agent)| self.matches_filter_impl(*idx, agent))
             .map(|(idx, _)| idx)
+            .collect();
+    }
+
+    // ... (rest of methods)
+
+    // ... (in tests module)
+
+    /// Get filtered agent list
+    pub fn filtered_agents(&self) -> Vec<&MonitoredAgent> {
+        self.visible_indices
+            .iter()
+            .filter_map(|&idx| self.agents.root_agents.get(idx))
             .collect()
+    }
+
+    /// Get filtered agent list with their original indices
+    pub fn filtered_agents_with_indices(&self) -> Vec<(usize, &MonitoredAgent)> {
+        self.visible_indices
+            .iter()
+            .filter_map(|&idx| self.agents.root_agents.get(idx).map(|agent| (idx, agent)))
+            .collect()
+    }
+
+    /// Returns indices of agents that are currently visible (match filter)
+    pub fn visible_agent_indices(&self) -> Vec<usize> {
+        self.visible_indices.clone()
     }
 
     /// Ensures the current selection points to a visible agent.
     /// If actual current agent is hidden, tries to find the nearest visible neighbor.
     pub fn ensure_visible_selection(&mut self) {
-        let visible = self.visible_agent_indices();
-
-        // Remove hidden agents from multi-selection?
-        // User request: "s - prepina mezi zobrazenim selected a normalnim"
-        // If I toggle "Show Selected", obviously all visible are selected.
-        // If I untoggle, I should keep selection? Yes.
-        // But if I toggle "Active Only", and a selected agent is Idle (hidden), should it be unselected?
-        // Probably not physically unselected, just hidden. 
-        // But `toggle_selection` logic relies on visibility.
-        // Let's Keep `selected_agents` intact even if hidden, but `get_operation_indices` filters them.
-        // Just ensure `selected_index` (cursor) is visible.
-
-        if visible.is_empty() {
-            // No visible agents at all
-             return;
-        }
-
-        if visible.contains(&self.selected_index) {
-            // Context preserved!
+        if self.visible_indices.is_empty() {
             return;
         }
 
-        // Current index is hidden. Find nearest visible.
-        // We want the visible agent with index closest to self.selected_index.
-        // Since visible is sorted, we can binary search or just linear scan.
-        
-        let mut nearest_idx = visible[0];
+        if self.visible_indices.contains(&self.selected_index) {
+            return;
+        }
+
+        let mut nearest_idx = self.visible_indices[0];
         let mut min_diff = (self.selected_index as isize - nearest_idx as isize).abs();
 
-        for &idx in &visible {
+        for &idx in &self.visible_indices {
             let diff = (self.selected_index as isize - idx as isize).abs();
             if diff < min_diff {
                 min_diff = diff;
@@ -685,14 +698,16 @@ impl AppState {
         }
         self.selected_index = nearest_idx;
     }
-    
+
     pub fn toggle_filter_active(&mut self) {
         self.filter_active = !self.filter_active;
+        self.update_visible_indices();
         self.ensure_visible_selection();
     }
 
     pub fn toggle_filter_selected(&mut self) {
         self.filter_selected = !self.filter_selected;
+        self.update_visible_indices();
         self.ensure_visible_selection();
     }
 
@@ -777,6 +792,7 @@ mod tests {
             None,
             1001,
         ));
+        state.update_visible_indices();
 
         assert_eq!(state.selected_index, 0);
         state.select_next();
@@ -822,9 +838,10 @@ mod tests {
             .agents
             .root_agents
             .push(create_test_agent("3", "session-c", 2));
+        state.update_visible_indices();
 
         // Filter to hide session-b (index 1)
-        state.filter_pattern = Some("session-a".to_string());
+        state.set_filter_pattern(Some("session-a".to_string()));
 
         // Start at first visible (session-a, idx 0)
         state.selected_index = 0;
@@ -845,16 +862,19 @@ mod tests {
 
         // Add 3 agents: Idle, Processing, Idle
         let mut a1 = create_test_agent("1", "idle1", 0);
-        a1.status = AgentStatus::Idle;
+        a1.status = AgentStatus::Idle { label: None };
         state.agents.root_agents.push(a1);
 
         let mut a2 = create_test_agent("2", "working", 1);
-        a2.status = AgentStatus::Processing { activity: "work".to_string() };
+        a2.status = AgentStatus::Processing {
+            activity: "work".to_string(),
+        };
         state.agents.root_agents.push(a2);
 
         let mut a3 = create_test_agent("3", "idle2", 2);
-        a3.status = AgentStatus::Idle;
+        a3.status = AgentStatus::Idle { label: None };
         state.agents.root_agents.push(a3);
+        state.update_visible_indices();
 
         // Verify all 3 present
         assert_eq!(state.visible_agent_indices(), vec![0, 1, 2]);
@@ -862,7 +882,7 @@ mod tests {
         // Enable Active Filter (should hide 0 and 2)
         state.toggle_filter_active();
         assert!(state.filter_active);
-        
+
         // Only 1 should be visible
         assert_eq!(state.visible_agent_indices(), vec![1]);
 
@@ -877,15 +897,17 @@ mod tests {
         // Prev should loop to 1
         state.select_prev();
         assert_eq!(state.selected_index, 1);
-        
-        // Now make 3 working
+
         if let Some(agent) = state.agents.get_agent_mut(2) {
-            agent.status = AgentStatus::Processing { activity: "work".to_string() };
+            agent.status = AgentStatus::Processing {
+                activity: "work".to_string(),
+            };
         }
-        
+        state.update_visible_indices();
+
         // Now 1 and 2 visible
         assert_eq!(state.visible_agent_indices(), vec![1, 2]);
-        
+
         // Navigation: 1 -> 2 -> 1
         assert_eq!(state.selected_index, 1);
         state.select_next();
@@ -893,7 +915,6 @@ mod tests {
         state.select_next();
         assert_eq!(state.selected_index, 1);
     }
-
 
     #[test]
     fn test_navigation_with_filter_multiple_visible() {
@@ -912,9 +933,10 @@ mod tests {
             .agents
             .root_agents
             .push(create_test_agent("3", "test-c", 2));
+        state.update_visible_indices();
 
         // Filter to show only "test" sessions (indices 0 and 2)
-        state.filter_pattern = Some("test".to_string());
+        state.set_filter_pattern(Some("test".to_string()));
 
         // Start at index 0
         state.selected_index = 0;
@@ -949,9 +971,10 @@ mod tests {
             .agents
             .root_agents
             .push(create_test_agent("2", "session-b", 1));
+        state.update_visible_indices();
 
         // Filter that matches nothing
-        state.filter_pattern = Some("nonexistent".to_string());
+        state.set_filter_pattern(Some("nonexistent".to_string()));
 
         // Store original index
         let original = state.selected_index;
@@ -981,9 +1004,10 @@ mod tests {
             .agents
             .root_agents
             .push(create_test_agent("3", "test-c", 2));
+        state.update_visible_indices();
 
         // Filter to show only "test" sessions
-        state.filter_pattern = Some("test".to_string());
+        state.set_filter_pattern(Some("test".to_string()));
 
         // Select all should only select visible (indices 0 and 2)
         state.select_all();
@@ -1011,6 +1035,7 @@ mod tests {
             .agents
             .root_agents
             .push(create_test_agent("3", "test-c", 2));
+        state.update_visible_indices();
 
         // Select all agents first (no filter)
         state.select_all();
@@ -1020,8 +1045,7 @@ mod tests {
         state.selected_index = 1;
 
         // Now filter to hide prod-b
-        state.filter_pattern = Some("test".to_string());
-        state.ensure_visible_selection();
+        state.set_filter_pattern(Some("test".to_string()));
 
         // Cursor should move to first visible (index 0)
         assert_eq!(state.selected_index, 0);
@@ -1050,12 +1074,13 @@ mod tests {
             .agents
             .root_agents
             .push(create_test_agent("3", "test-c", 2));
+        state.update_visible_indices();
 
         // Select all before filter
         state.select_all();
 
         // Apply filter to hide prod-b
-        state.filter_pattern = Some("test".to_string());
+        state.set_filter_pattern(Some("test".to_string()));
 
         // get_operation_indices should only return visible ones
         let indices = state.get_operation_indices();
@@ -1075,9 +1100,10 @@ mod tests {
             .agents
             .root_agents
             .push(create_test_agent("2", "prod-b", 1));
+        state.update_visible_indices();
 
         // Filter to hide prod-b
-        state.filter_pattern = Some("test".to_string());
+        state.set_filter_pattern(Some("test".to_string()));
 
         // Set cursor to hidden agent (shouldn't happen normally, but test edge case)
         state.selected_index = 1;
@@ -1092,7 +1118,6 @@ mod tests {
         assert!(state.selected_agents.contains(&0));
     }
 
-
     #[test]
     fn test_filters_union() {
         let mut state = AppState::default();
@@ -1100,44 +1125,50 @@ mod tests {
 
         // 0: Idle, Selected
         let mut a0 = create_test_agent("0", "idle-sel", 0);
-        a0.status = AgentStatus::Idle;
+        a0.status = AgentStatus::Idle { label: None };
         state.agents.root_agents.push(a0);
 
         // 1: Working, Selected
         let mut a1 = create_test_agent("1", "work-sel", 1);
-        a1.status = AgentStatus::Processing { activity: "work".to_string() };
+        a1.status = AgentStatus::Processing {
+            activity: "work".to_string(),
+        };
         state.agents.root_agents.push(a1);
 
         // 2: Working, Not Selected
         let mut a2 = create_test_agent("2", "work-unsel", 2);
-        a2.status = AgentStatus::Processing { activity: "work".to_string() };
+        a2.status = AgentStatus::Processing {
+            activity: "work".to_string(),
+        };
         state.agents.root_agents.push(a2);
 
         // 3: Idle, Not Selected
         let mut a3 = create_test_agent("3", "idle-unsel", 3);
-        a3.status = AgentStatus::Idle;
+        a3.status = AgentStatus::Idle { label: None };
         state.agents.root_agents.push(a3);
+        state.update_visible_indices();
 
         // Select 0 and 1
         state.selected_agents.insert(0);
         state.selected_agents.insert(1);
-        
+        state.update_visible_indices();
+
         // 1. No filters -> All visible
         assert_eq!(state.visible_agent_indices(), vec![0, 1, 2, 3]);
 
         // 2. Active Only -> 1, 2 (Working)
-        state.filter_active = true;
+        state.toggle_filter_active();
         assert_eq!(state.visible_agent_indices(), vec![1, 2]);
 
         // 3. Selected Only (Active still ON) -> Union (Active OR Selected)
         // Active match: 1, 2
         // Selected match: 0, 1
         // Union: 0, 1, 2
-        state.filter_selected = true;
+        state.toggle_filter_selected();
         assert_eq!(state.visible_agent_indices(), vec![0, 1, 2]);
 
         // 4. Active OFF, Selected Only -> 0, 1
-        state.filter_active = false;
+        state.toggle_filter_active();
         assert_eq!(state.visible_agent_indices(), vec![0, 1]);
     }
 }

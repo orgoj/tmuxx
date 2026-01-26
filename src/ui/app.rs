@@ -211,6 +211,9 @@ async fn run_loop(
             // Handle monitor updates
             Some(update) = rx.recv() => {
                 state.agents = update.agents;
+                // Update cached visibility projection after agent list changes
+                state.update_visible_indices();
+
                 // Ensure selected index is valid
                 if state.selected_index >= state.agents.root_agents.len() {
                     state.selected_index = state.agents.root_agents.len().saturating_sub(1);
@@ -253,7 +256,7 @@ async fn run_loop(
                                         // Use precise logic from AgentTreeWidget
                                         let rel_y = (y - sidebar.y).saturating_sub(1) as usize;
                                         let width = sidebar.width.saturating_sub(2) as usize; // inside borders
-                                        
+
                                         if let Some(idx) = AgentTreeWidget::get_agent_index_at_row(rel_y, state, width) {
                                             state.select_agent(idx);
                                             state.refresh_project_todo();
@@ -951,7 +954,7 @@ async fn run_loop(
                                         let content = agent.last_content.clone();
                                         state.popup_input = Some(PopupInputState {
                                             title: "Capture Test Case".to_string(),
-                                            prompt: "Expected Status (idle, processing, etc.):".to_string(),
+                                            prompt: "Expected Status (idle, working, error, approval):".to_string(),
                                             buffer: String::new(),
                                             cursor: 0,
                                             popup_type: PopupType::CaptureStatus { content },
@@ -1023,12 +1026,10 @@ async fn run_loop(
                                             PopupType::Filter => {
                                                 // Apply filter
                                                 if popup.buffer.is_empty() {
-                                                    state.filter_pattern = None; // Clear filter
+                                                    state.set_filter_pattern(None);
                                                 } else {
-                                                    state.filter_pattern = Some(popup.buffer);
+                                                    state.set_filter_pattern(Some(popup.buffer));
                                                 }
-                                                // Ensure selection points to visible agent and clean up selections
-                                                state.ensure_visible_selection();
                                             }
                                             PopupType::GeneralInput => {
                                                 // Send to selected agent

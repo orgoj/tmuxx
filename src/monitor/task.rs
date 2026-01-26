@@ -119,7 +119,7 @@ impl MonitorTask {
                 if is_active {
                     // Update last active time
                     self.last_active.insert(target.clone(), now);
-                } else if matches!(status, AgentStatus::Idle) {
+                } else if matches!(status, AgentStatus::Idle { .. }) {
                     // Check if we were recently active
                     if let Some(last) = self.last_active.get(&target) {
                         if now.duration_since(*last) < Duration::from_millis(STATUS_HYSTERESIS_MS) {

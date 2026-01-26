@@ -125,7 +125,7 @@ impl fmt::Display for ApprovalType {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum AgentStatus {
     /// Agent is idle and ready for input
-    Idle,
+    Idle { label: Option<String> },
     /// Agent is actively processing
     Processing { activity: String },
     /// Agent is waiting for user approval
@@ -135,8 +135,6 @@ pub enum AgentStatus {
     },
     /// Agent encountered an error
     Error { message: String },
-    /// Agent is running a TUI application (mc, htop, etc.)
-    Tui { name: String },
     /// Unable to determine agent status
     Unknown,
 }
@@ -153,11 +151,10 @@ impl AgentStatus {
     /// Returns a short status indicator for UI
     pub fn indicator(&self) -> &str {
         match self {
-            AgentStatus::Idle => "●",
+            AgentStatus::Idle { .. } => "●",
             AgentStatus::Processing { .. } => "◐",
             AgentStatus::AwaitingApproval { .. } => "⚠",
             AgentStatus::Error { .. } => "✗",
-            AgentStatus::Tui { .. } => "○",
             AgentStatus::Unknown => "?",
         }
     }
@@ -165,7 +162,7 @@ impl AgentStatus {
     /// Returns a short status text
     pub fn short_text(&self) -> String {
         match self {
-            AgentStatus::Idle => "Idle".to_string(),
+            AgentStatus::Idle { label } => label.clone().unwrap_or_else(|| "Idle".to_string()),
             AgentStatus::Processing { activity } => {
                 if activity.is_empty() {
                     "Processing".to_string()
@@ -177,7 +174,6 @@ impl AgentStatus {
                 format!("APPROVAL NEEDED [{}]", approval_type.short_desc())
             }
             AgentStatus::Error { message } => format!("Error: {}", message),
-            AgentStatus::Tui { name } => name.clone(),
             AgentStatus::Unknown => "Unknown".to_string(),
         }
     }
@@ -368,7 +364,7 @@ mod tests {
 
     #[test]
     fn test_agent_status_needs_attention() {
-        assert!(!AgentStatus::Idle.needs_attention());
+        assert!(!AgentStatus::Idle { label: None }.needs_attention());
         assert!(!AgentStatus::Processing {
             activity: "thinking".to_string()
         }

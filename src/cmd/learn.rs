@@ -51,29 +51,29 @@ pub async fn run_learn(args: LearnArgs) -> Result<()> {
     }
     println!("-----------------------------------\n");
 
-    print!("What is the current state? [P]rocessing, [I]nput, [E]rror, [D]one: ");
+    print!("What is the current state? [W]orking, [I]dle, [E]rror, [A]pproval: ");
     io::stdout().flush()?;
     let mut state_input = String::new();
     io::stdin().read_line(&mut state_input)?;
     let state_char = state_input.trim().to_lowercase();
 
-    let state = match state_char.chars().next() {
-        Some('p') => "processing",
-        Some('i') => "awaiting_input",
-        Some('e') => "error",
-        Some('d') => "completed",
-        _ => "processing",
+    let (status, kind) = match state_char.chars().next() {
+        Some('w') => ("working", Some(crate::app::config::RuleType::Working)),
+        Some('i') => ("idle", Some(crate::app::config::RuleType::Idle)),
+        Some('e') => ("error", Some(crate::app::config::RuleType::Error)),
+        Some('a') => ("approval", Some(crate::app::config::RuleType::Approval)),
+        _ => ("working", Some(crate::app::config::RuleType::Working)),
     };
 
     // 4. Propose Pattern
     let last_line = lines.last().unwrap_or(&"");
-    let proposed_pattern = if state == "awaiting_input" {
+    let proposed_pattern = if status == "ready" || status == "done" {
         format!("{}$", regex::escape(last_line.trim()))
     } else {
         String::new()
     };
 
-    println!("Proposed pattern for '{}': {}", state, proposed_pattern);
+    println!("Proposed pattern for '{}': {}", status, proposed_pattern);
     print!("Enter pattern (regex) [Press Enter to accept proposed]: ");
     io::stdout().flush()?;
     let mut pattern_input = String::new();
@@ -95,7 +95,8 @@ pub async fn run_learn(args: LearnArgs) -> Result<()> {
             pattern: regex::escape(&target.command),
         }],
         state_rules: vec![StateRule {
-            status: state.to_string(),
+            status: status.to_string(),
+            kind,
             pattern: final_pattern,
             approval_type: None,
             last_lines: None,
@@ -104,6 +105,7 @@ pub async fn run_learn(args: LearnArgs) -> Result<()> {
         subagent_rules: None,
         title_indicators: None,
         default_status: None,
+        default_type: None,
         keys: AgentKeys {
             approve: Some("y".to_string()),
             reject: Some("n".to_string()),

@@ -35,15 +35,19 @@ impl HeaderWidget {
         if state.filter_active {
             spans.push(Span::styled("│", Style::default().fg(Color::DarkGray)));
             spans.push(Span::styled(
-                " [Active Only] ",
-                Style::default().fg(Color::Cyan).add_modifier(Modifier::BOLD),
+                " [Active] ",
+                Style::default()
+                    .fg(Color::Cyan)
+                    .add_modifier(Modifier::BOLD),
             ));
         }
         if state.filter_selected {
             spans.push(Span::styled("│", Style::default().fg(Color::DarkGray)));
             spans.push(Span::styled(
-                " [Selected Only] ",
-                Style::default().fg(Color::Magenta).add_modifier(Modifier::BOLD),
+                " [Selected] ",
+                Style::default()
+                    .fg(Color::Magenta)
+                    .add_modifier(Modifier::BOLD),
             ));
         }
 

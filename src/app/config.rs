@@ -306,6 +306,10 @@ pub struct AgentConfig {
     #[serde(default)]
     pub default_status: Option<String>,
 
+    /// Explicit type for the default status
+    #[serde(rename = "default_type", default)]
+    pub default_type: Option<RuleType>,
+
     /// How to detect subagents
     #[serde(default)]
     pub subagent_rules: Option<SubagentRules>,
@@ -350,6 +354,9 @@ pub struct AgentKeys {
 pub struct StateRule {
     pub status: String,
     pub pattern: String,
+    /// Explicit categorization of the status
+    #[serde(rename = "type")]
+    pub kind: Option<RuleType>,
     /// Explicit approval type if status is 'awaiting_approval'
     pub approval_type: Option<String>,
     /// If set, only search within the last N lines
@@ -359,11 +366,22 @@ pub struct StateRule {
     pub refinements: Vec<Refinement>,
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "snake_case")]
+pub enum RuleType {
+    Idle,
+    Working,
+    Approval,
+    Error,
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Refinement {
     pub group: String,
     pub pattern: String,
     pub status: String,
+    #[serde(rename = "type")]
+    pub kind: Option<RuleType>,
     pub approval_type: Option<String>,
 }
 

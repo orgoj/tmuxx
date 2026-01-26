@@ -21,7 +21,7 @@ id = "claude"
 name = "Claude"
 background_color = "#fce4fc"
 priority = 100
-  default_status = "processing"
+  default_type = "working"
 
   [[agents.matchers]]
   type = "command"
@@ -36,66 +36,70 @@ priority = 100
   # Determines state based on the indicator block ABOVE the separator.
   # NOTE: Layout stripping removes the footer region, so we match up to the prompt.
   [[agents.state_rules]]
-  status = "idle" # Fallback is now IDLE because if we match the structure, we see a prompt.
+  status = "idle"
+  type = "idle"
   # Capture everything up to the separator as indicator. Handle optional │ in separators.
-  # Support both solid (─) and dashed (╌) lines.
-  # Support body capture and suffix (content after prompt, e.g. help text).
-  # Use (?:^|\n) to robustly match line boundaries.
-  # Use non-greedy indicator (.*?) to start from the top of the block.
-  # Use [^\n]*❯ for prompt to prevent swallowing body lines.
-  # Use [│]* instead of [│]? to handle multiple pipe characters (e.g. from tmux split panes).
-  # Use non-greedy (?P<body>.*?) before the footer to correctly isolate the current active block.
   pattern = '''(?ms)(?P<indicator>.*)(?:^|\n)[ \t]*[│]*[─╌]{10,}.*?(?:$|\n)(?P<body>.*?)(?:^|\n)[ \t]*[│]*[^\n]*❯(?P<suffix>.*)$'''
 
   # Refinement: Detect questions in the body to switch to awaiting_approval
   [[agents.state_rules.refinements]]
   group = "body"
   pattern = "(?i)Do you want to|wants to exit.*?mode|Exit.*?mode\\?|confirm"
-  status = "awaiting_approval"
+  status = "confirm"
+  type = "approval"
   [[agents.state_rules.refinements]]
   group = "indicator"
   pattern = '''(?is)(?:Mulling|Thinking|Esc to interrupt|✢|∴)[^\n]*(?:\n[^\n]*){0,3}\s*\z'''
-  status = "processing"
+  status = "Thinking"
+  type = "working"
 
 
   # 2. Specialized Approvals
   [[agents.state_rules]]
-  status = "awaiting_approval"
+  status = "edit"
+  type = "approval"
   approval_type = "edit"
   pattern = '''(?i)(?:Edit|Write|Modify)\s+.*?\?|Do you want to (?:edit|write|modify)|Allow.*?edit'''
 
   [[agents.state_rules]]
-  status = "awaiting_approval"
+  status = "create"
+  type = "approval"
   approval_type = "create"
   pattern = '''(?i)Create\s+.*?\?|Do you want to create|Allow.*?create'''
 
   [[agents.state_rules]]
-  status = "awaiting_approval"
+  status = "delete"
+  type = "approval"
   approval_type = "delete"
   pattern = '''(?i)Delete\s+.*?\?|Do you want to delete|Allow.*?delete'''
 
   [[agents.state_rules]]
-  status = "awaiting_approval"
+  status = "shell"
+  type = "approval"
   approval_type = "shell"
   pattern = '''(?i)(?:Run|Execute)\s+(?:command|bash|shell)|Do you want to run|Allow.*?(?:command|bash)|run this command'''
 
   [[agents.state_rules]]
-  status = "awaiting_approval"
+  status = "mcp"
+  type = "approval"
   approval_type = "mcp"
   pattern = '''(?i)MCP\s+tool|Do you want to use.*?MCP|Allow.*?MCP'''
 
   [[agents.state_rules]]
-  status = "awaiting_approval"
+  status = "question"
+  type = "approval"
   pattern = '''(?ms)(?<details>Let me ask you.*?)(\n\s*Enter to select\s*[\n\r]*\z)'''
 
   # 3. Legacy Input Detection (Fallback)
   [[agents.state_rules]]
-  status = "awaiting_input"
+  status = "Claude Code"
+  type = "idle"
   pattern = '''(?s).*[❯]\s*\z'''
 
   # 4. Processing Indicators (Manual)
   [[agents.state_rules]]
-  status = "processing"
+  status = "Thinking"
+  type = "working"
   pattern = '''(?mx)
     (?:
       ^[ \t]*[✽⎿✻✢*∴]\s+.*   # Spinner or continuation (Added ✢, *, ∴)
@@ -130,7 +134,8 @@ priority = 90
   pattern = "(?i)gemini|google"
 
   [[agents.state_rules]]
-  status = "awaiting_input"
+  status = "Gemini"
+  type = "idle"
   pattern = '''(?s).*[>]\s*\z'''
 
 [[agents]]
@@ -143,7 +148,8 @@ priority = 85
   pattern = "(?i)opencode|open-code"
 
   [[agents.state_rules]]
-  status = "awaiting_input"
+  status = "OpenCode"
+  type = "idle"
   pattern = '''(?s).*[>]\s*\z'''
 
 [[agents]]
@@ -156,7 +162,8 @@ priority = 80
   pattern = "(?i)codex|openai"
 
   [[agents.state_rules]]
-  status = "awaiting_input"
+  status = "Codex"
+  type = "idle"
   pattern = '''(?s).*[>]\s*\z'''
 
 [[agents]]
@@ -165,7 +172,7 @@ name = "shell"
 background_color = "#eaffe3"
 priority = 10
   # Default for Terminal: if no prompt is seen, it's busy (processing)
-  default_status = "processing"
+  default_type = "working"
 
   [[agents.matchers]]
   type = "command"
@@ -173,35 +180,41 @@ priority = 10
 
   # Generic Shell State Rules: TUI Apps (mc, htop, etc.)
   [[agents.state_rules]]
-  status = "tui:mc"
+  status = "mc"
+  type = "idle"
   last_lines = 3
   pattern = '''(?m)^ 1Help\s+2Menu\s+3View\s+4Edit\s+5Copy\s+6RenMov'''
 
   [[agents.state_rules]]
-  status = "tui:htop"
+  status = "htop"
+  type = "idle"
   last_lines = 3
   pattern = '''(?m)^(?:F1| 1)Help\s+F?2Setup\s+F?3Search\s+F?4Filter\s+F?5'''
 
   [[agents.state_rules]]
-  status = "tui:vim"
+  status = "vim"
+  type = "idle"
   last_lines = 3
   pattern = '''(?m)^-- (?:INSERT|VISUAL|REPLACE) --|\[[0-9]+\]\s+[0-9]+%\s+L:[0-9]+\s+C:[0-9]+'''
 
   [[agents.state_rules]]
-  status = "tui:generic"
+  status = "tui"
+  type = "idle"
   last_lines = 3
   # Detect common frame characters used in TUIs (mc, dialog, etc.)
   pattern = '''[│┌┐└┘├┤┬┴┼═║╔╗╚╝╠╣╦╩╬]'''
 
   # Error State: Non-zero exit code in prompt (e.g. "1 x")
   [[agents.state_rules]]
-  status = "error"
+  status = "Err"
+  type = "error"
   last_lines = 300
   pattern = '''(?s).*\d+\s+x\s*\z'''
 
   # Generic Shell State Rules: ONLY the prompt makes it Idle
   [[agents.state_rules]]
-  status = "idle"
+  status = "shell"
+  type = "idle"
   last_lines = 300
   # Support standard prompts: $, #, %, >, ❯
   pattern = '''(?s).*[$#%>❯]\s*\z'''

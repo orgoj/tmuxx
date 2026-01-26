@@ -225,7 +225,7 @@ impl PanePreviewWidget {
             // If no activity info, show status
             if activity_lines.is_empty() {
                 let status_text = match &agent.status {
-                    AgentStatus::Idle => "Ready for input",
+                    AgentStatus::Idle { label } => label.as_deref().unwrap_or("Ready for input"),
                     AgentStatus::Processing { activity } => activity.as_str(),
                     AgentStatus::AwaitingApproval { approval_type, .. } => {
                         activity_lines.push(Line::from(vec![
@@ -238,7 +238,6 @@ impl PanePreviewWidget {
                         ""
                     }
                     AgentStatus::Error { message } => message.as_str(),
-                    AgentStatus::Tui { name } => name.as_str(),
                     AgentStatus::Unknown => "...",
                 };
                 if !status_text.is_empty() && activity_lines.is_empty() {

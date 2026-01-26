@@ -7,6 +7,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- **Config-Driven Status Architecture**: Transitioned to a 100% configuration-driven status system.
+  - Removed all legacy hardcoded status string matching from `UniversalParser`.
+  - Added explicit `type` field to `state_rules` (Idle, Working, Error, Approval).
+  - Added `default_type` to `AgentConfig` to set baseline status without pattern matches.
+  - Status labels are now decoupled from internal state logic.
+- **Improved Test System**:
+  - `Capture Test Case` (`C-s`) now prompts for explicit standardized status types.
+  - `tmuxcc test` updated to handle `working` and `approval` keywords with backward compatibility.
+  - `tmuxcc learn` standardized to use the new status naming convention.
+
+### Changed
+- **Fixture Naming**: Renamed all legacy test fixtures to follow the standardized naming convention:
+  - `case_processing_*` -> `case_working_*`
+  - `case_awaiting_approval_*` -> `case_approval_*`
+
 ## [0.1.22] - 2026-01-25
 
 

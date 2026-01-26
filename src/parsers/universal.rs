@@ -20,6 +20,7 @@ enum CompiledMatcher {
 
 struct CompiledStateRule {
     status: String,
+    kind: Option<crate::app::config::RuleType>,
     re: Regex,
     approval_type: Option<String>,
     last_lines: Option<usize>,
@@ -30,6 +31,7 @@ struct CompiledRefinement {
     group: String,
     re: Regex,
     status: String,
+    kind: Option<crate::app::config::RuleType>,
     approval_type: Option<String>,
 }
 
@@ -77,12 +79,14 @@ impl UniversalParser {
                             group: r.group.clone(),
                             re: ref_re,
                             status: r.status.clone(),
+                            kind: r.kind.clone(),
                             approval_type: r.approval_type.clone(),
                         });
                     }
                 }
                 state_rules.push(CompiledStateRule {
                     status: rule.status.clone(),
+                    kind: rule.kind.clone(),
                     re,
                     approval_type: rule.approval_type.clone(),
                     last_lines: rule.last_lines,
@@ -256,6 +260,7 @@ impl AgentParser for UniversalParser {
 
             if let Some(caps) = rule.re.captures(&search_content) {
                 let mut status_str = rule.status.clone();
+                let mut status_kind = rule.kind.clone();
                 let mut approval_type_override = None;
                 let details = caps.name("details").map(|m| m.as_str().to_string());
 
@@ -264,6 +269,9 @@ impl AgentParser for UniversalParser {
                     if let Some(group_match) = caps.name(&refinement.group) {
                         if refinement.re.is_match(group_match.as_str()) {
                             status_str = refinement.status.clone();
+                            if refinement.kind.is_some() {
+                                status_kind = refinement.kind.clone();
+                            }
                             if refinement.approval_type.is_some() {
                                 approval_type_override = refinement.approval_type.clone();
                             }
@@ -272,60 +280,78 @@ impl AgentParser for UniversalParser {
                     }
                 }
 
-                match status_str.as_str() {
-                    "processing" | "running" | "working" => {
-                        return AgentStatus::Processing {
-                            activity: details.unwrap_or_else(|| "Processing".to_string()),
-                        };
-                    }
-                    "awaiting_approval" => {
-                        let final_approval_type = approval_type_override
-                            .as_deref()
-                            .or(rule.approval_type.as_deref());
-                        let approval_type = match final_approval_type {
-                            Some("edit") => ApprovalType::FileEdit,
-                            Some("create") => ApprovalType::FileCreate,
-                            Some("delete") => ApprovalType::FileDelete,
-                            Some("shell") => ApprovalType::ShellCommand,
-                            Some("mcp") => ApprovalType::McpTool,
-                            _ => ApprovalType::Other("Action Required".to_string()),
-                        };
-                        return AgentStatus::AwaitingApproval {
-                            approval_type,
-                            details: details.unwrap_or_default(),
-                        };
-                    }
-                    "error" => {
-                        return AgentStatus::Error {
-                            message: details.unwrap_or_else(|| "Error detected".to_string()),
-                        };
-                    }
-                    "awaiting_input" | "idle" => {
-                        return AgentStatus::Idle;
-                    }
-                    s if s.starts_with("tui:") => {
-                        return AgentStatus::Tui {
-                            name: s[4..].to_string(),
-                        };
-                    }
-                    _ => {
-                        return AgentStatus::Processing {
-                            activity: rule.status.clone(),
-                        };
+                // If explicit kind is set, use it.
+                if let Some(kind) = status_kind {
+                    use crate::app::config::RuleType;
+                    match kind {
+                        RuleType::Idle => {
+                            return AgentStatus::Idle {
+                                label: Some(status_str),
+                            };
+                        }
+                        RuleType::Working => {
+                            return AgentStatus::Processing {
+                                activity: details.unwrap_or(status_str),
+                            };
+                        }
+                        RuleType::Error => {
+                            return AgentStatus::Error {
+                                message: details.unwrap_or(status_str),
+                            };
+                        }
+                        RuleType::Approval => {
+                            let final_approval_type = approval_type_override
+                                .as_deref()
+                                .or(rule.approval_type.as_deref());
+                            let approval_type = match final_approval_type {
+                                Some("edit") => ApprovalType::FileEdit,
+                                Some("create") => ApprovalType::FileCreate,
+                                Some("delete") => ApprovalType::FileDelete,
+                                Some("shell") => ApprovalType::ShellCommand,
+                                Some("mcp") => ApprovalType::McpTool,
+                                _ => ApprovalType::Other("Action Required".to_string()),
+                            };
+                            return AgentStatus::AwaitingApproval {
+                                approval_type,
+                                details: details.unwrap_or(status_str),
+                            };
+                        }
                     }
                 }
             }
         }
 
         if body_content.trim().is_empty() {
-            AgentStatus::Idle
+            AgentStatus::Idle { label: None }
         } else {
-            let def = self.config.default_status.as_deref().unwrap_or("idle");
-            match def {
-                "processing" | "running" | "working" => AgentStatus::Processing {
-                    activity: "Processing".to_string(),
-                },
-                _ => AgentStatus::Idle,
+            // Priority: default_type > default_status string mapping > Idle/Processing based on parser default
+            if let Some(kind) = &self.config.default_type {
+                use crate::app::config::RuleType;
+                let label = self.config.default_status.clone();
+                match kind {
+                    RuleType::Idle => return AgentStatus::Idle { label },
+                    RuleType::Working => {
+                        return AgentStatus::Processing {
+                            activity: label.unwrap_or_else(|| "Processing".to_string()),
+                        }
+                    }
+                    RuleType::Error => {
+                        return AgentStatus::Error {
+                            message: label.unwrap_or_else(|| "Error".to_string()),
+                        }
+                    }
+                    RuleType::Approval => {
+                        return AgentStatus::AwaitingApproval {
+                            approval_type: ApprovalType::Other("Action Required".to_string()),
+                            details: label.unwrap_or_default(),
+                        }
+                    }
+                }
+            }
+
+            // Fallback: Default to Idle if no specific logic matches and no default_type is configured
+            AgentStatus::Idle {
+                label: self.config.default_status.clone(),
             }
         }
     }
@@ -409,6 +435,7 @@ mod tests {
             matchers: vec![],
             state_rules: vec![crate::app::config::StateRule {
                 status: "processing".to_string(),
+                kind: Some(crate::app::config::RuleType::Working),
                 // Updated regex to handle boxed input and multi-line capture
                 pattern: r"(?ms)(?P<indicator>.*)\n[ \t]*[│]?─{10,}.*?\n[ \t]*[│]?.*❯[^\n]*\s*$"
                     .to_string(),
@@ -417,6 +444,7 @@ mod tests {
                     group: "indicator".to_string(),
                     pattern: "Baked".to_string(),
                     status: "idle".to_string(),
+                    kind: Some(crate::app::config::RuleType::Idle),
                     approval_type: None,
                 }],
                 last_lines: Some(0),
@@ -424,6 +452,7 @@ mod tests {
             title_indicators: None,
             keys: AgentKeys::default(),
             subagent_rules: None,
+            default_type: None,
             layout: Some(crate::app::config::LayoutConfig {
                 // Handle optional │ prefix
                 footer_separator: Some(r"(?m)^[ \t]*[│]?─{10,}.*?$".to_string()),
@@ -452,7 +481,7 @@ Some previous content...
 
         // Should catch 'Baked' in the indicator group
         match status {
-            AgentStatus::Idle => {
+            AgentStatus::Idle { .. } => {
                 // Success!
             }
             status => panic!("Expected Idle status, got {:?}", status),
