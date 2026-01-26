@@ -66,6 +66,7 @@ script = "/path/to/notify.sh"
 - [x] Enhance UniversalParser to support subagents and approval types
 - [x] Restore catch-all behavior to ensure no sessions are lost
 - [x] Migrate user config to new format-based detection → correct AI type identified
+- [x] Added "pi" agent definition to `defaults.toml`
 - [ ] Document detection strategies in README.md
 
 ### AI-Specific Control Configuration

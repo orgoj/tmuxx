@@ -1,0 +1,205 @@
+ │ zai-cli v1.1.0 - CLI for Z.AI MCP services
+
+ Usage: zai-cli <command> [args] [options]
+
+ Commands:
+   vision   Image and video analysis (MCP)
+   search   Real-time web search
+   read     Fetch and parse web pages
+   repo     GitHub repository exploration
+   tools    List available MCP tools
+   tool     Show a tool schema
+   call     Call a tool directly
+   doctor   Environment + connectivity checks
+   code     Execute TypeScript tool chains (Code Mode)
+
+ Global Options:
+   --output-format <data|json|pretty>  Output mode (default: data)
+
+ Help:
+   zai-cli --help
+   zai-cli vision --help
+   zai-cli search --help
+   zai-cli read --help
+   zai-cli repo --help
+   zai-cli tools --help
+   zai-cli call --help
+   zai-cli code --help
+
+
+
+
+ $ zai-cli --version
+
+ 1.1.0
+
+
+
+
+ $ zai-cli search "python pytest best practices 2025 modular projects"
+
+ ... (13 earlier lines, ctrl+o to expand)
+ Developers","url":"https://blog.devgenius.io/pytest-in-2025-a-complete-guide-for-python-developers-9b15ae0fe07e","summary":"In this guide, I'll show you the basics of pytest what you need to know, share useful
+ tips, and ll show you how to write clean, maintainable tests.","date":"2025年3月25日"},{"rank":9,"title":"Structuring Your Python Project in 2025: A Modern
+ Approach","url":"https://sirawats.com/post/Structuring-Your-Python-Project-in-2025","summary":"You're not expected to grasp every nuance right away; think of this as a guided tour through the evolution of Python
+ project structure, peppered with insights ..."},{"rank":10,"title":"Building a Python testing framework","url":"https://fluidattacks.com/blog/building-python-testing-framework","summary":"At Fluid Attacks, we
+ built an internal testing framework to improve our tests in Python. Let's talk about our motivation and results.","date":"2025年1月15日"}]
+
+
+
+
+ $ zai-cli search "pytest mock dnspython httpx best practices 2025"
+
+ ... (13 earlier lines, ctrl+o to expand)
+ API routes with Pydantic models for validation, and FastOpenAPI handles the rest, generating OpenAPI schemas, validating ...","date":"7天前"},{"rank":9,"title":"Python HTTP Clients: Requests vs. HTTPX vs.
+ AIOHTTP","url":"https://www.speakeasy.com/blog/python-http-clients-requests-vs-httpx-vs-aiohttp","summary":"Let's compare these three popular HTTP clients for Python: Requests, HTTPX, and AIOHTTP. We'll explore
+ their strengths, weaknesses, and ideal use cases.","date":"2024年8月23日"},{"rank":10,"title":"Two Real-World Cases You Should Master (HTTP +
+ S3)","url":"https://medium.com/@gema.correa/mocking-in-python-two-real-world-cases-you-should-master-http-s3-d5a0d7695d0e","summary":"Uses respx to mock HTTP calls made by httpx . Defines a mocked response for
+ the request. Calls the real function and checks that the data ..."}]
+
+
+ Díky použití zai-cli k ověření aktuálních trendů v Python testování pro rok 2025 (pytest, httpx, uv) jsem pro tebe připravil hloubkovou analýzu tvých testů.
+
+ Zde je srovnání tvého projektu s moderními best-practices:
+
+ ### 1. Architektura a Layout (Vynikající ✅)
+
+ - Best Practice: Použití src/ layoutu a pyproject.toml.
+ - Tvůj stav: Projekt toto splňuje na 100 %. Použití uv jako package manageru je v roce 2025 standardem pro rychlost a determinismus.
+ - Verdikt: Základ je špičkový.
+
+ ### 2. Izolace a Mockování (Slabší místo ⚠️ )
+
+ - Best Practice: Použití specializovaných knihoven pro simulaci sítě, jako je pytest-httpx nebo respx pro HTTP volání.
+ - Tvůj stav: Většina tvých testů se síti vyhýbá tím, že testuje jen "jestli jde objekt vytvořit". Tím ale netestuješ to nejdůležitější – logiku zpracování dat.
+ - Doporučení:
+     - Místo manuálního patchování v každém testu použij pytest-httpx (který už máš v pyproject.toml v dev závislostech) pro všechny testy v http_analyzer, ssl_analyzer atd.
+     - Vytvoř si v tests/conftest.py globální fixtures pro DNS odpovědi, aby každý nový test nemusel znovu definovat složité MagicMock objekty.
+
+ ### 3. AAA Pattern & Parametrizace (Střední 💡)
+
+ - Best Practice: Používat @pytest.mark.parametrize pro testování více domén najednou a dodržovat AAA pattern (Arrange, Act, Assert).
+ - Tvůj stav: Tvůj kód v tests/test_analyzer_instantiation.py obsahuje hodně repetitivního kódu.
+ - Doporučení: Přepiš testy instancování na jeden parametrizovaný test:
+   ```python
+     @pytest.mark.parametrize("analyzer_class", [DNSAnalyzer, HTTPAnalyzer, SSLAnalyzer])
+     def test_analyzer_protocol(analyzer_class):
+         instance = analyzer_class()
+         assert hasattr(instance, "analyze")
+         # ... atd.
+   ```
+   Tím ušetříš 100 řádků kódu a snadněji přidáš další moduly.
+
+ ### 4. Integrační vs Unit Testy (Dobré rozdělení ✅)
+
+ - Best Practice: Jasné oddělení rychlých unit testů od pomalejších integračních (CLI) testů.
+ - Tvůj stav: Máš test_integration_workflow.py a test_cli_*.py. To je správně.
+ - Doporučení: Přidej do pyproject.toml markery, abys mohl spouštět jen rychlé testy: pytest -m "not integration".
+
+ ### 5. Co tvým testům chybí nejvíce? (Chybějící kousky 🧩)
+
+ - tests/conftest.py: Tento soubor je v pytestu "srdcem" testovací sady. Umožňuje sdílet nastavení (fixtures) mezi soubory. Tvůj projekt ho zatím nemá.
+ - Flet / GUI Testing: Máš tam test_flet_app_cli.py, ale skutečné testování UI (klikání na tlačítka) tam chybí. Pro Flet se v roce 2025 doporučuje testovat logiku v State třídách odděleně od UI komponent.
+
+ ────────────────────────────────────────────────────────────────────────────────
+
+ ### Shrnutí a akční kroky:
+
+ Tvé testy jsou "architektonicky správné, ale obsahově chudé". Máš skvělou kostru, ale reálně testuješ jen malou část funkčnosti (pokrytí 20 %).
+
+ Pokud chceš, můžu pro tebe udělat jednu z těchto věcí:
+ 1. Vytvořit tests/conftest.py s ukázkou moderních fixtures pro DNS a HTTP.
+ 2. Refaktorovat test_analyzer_instantiation.py pomocí parametrizace, aby byl kód čistší.
+ 3. Napsat komplexní test pro Email Security (SPF/DKIM/DMARC), což je nejkomplexnější část tvé logiky.
+
+ Co si vybereš?
+
+
+ 2
+
+
+ Přepracuji tests/test_analyzer_instantiation.py tak, aby využíval sílu pytest parametrizace. Tím odstraníme redundantní kód a zajistíme, že každý nový analyzér bude automaticky testován proti stejnému standardu
+ (Protocolu).
+
+ Nejdříve si ověřím seznam všech analyzérů v projektu.
+
+
+
+ $ ls src/webmaster_domain_tool/analyzers/*.py | grep -v "__init__.py" | grep -v "protocol.py" | grep -v "base.py" | grep -v "utils.py"
+
+ ... (8 earlier lines, ctrl+o to expand)
+ src/webmaster_domain_tool/analyzers/security_headers.py
+ src/webmaster_domain_tool/analyzers/seo_files_analyzer.py
+ src/webmaster_domain_tool/analyzers/site_verification_analyzer.py
+ src/webmaster_domain_tool/analyzers/ssl_analyzer.py
+ src/webmaster_domain_tool/analyzers/whois_analyzer.py
+
+
+
+ read src/webmaster_domain_tool/analyzers/cdn_detector.py
+
+ """CDN detection analyzer - identify CDN providers.
+
+ This analyzer detects CDN usage from HTTP headers and DNS CNAME records.
+ Completely self-contained with config, logic, and output formatting.
+ """
+
+ import logging
+ from dataclasses import dataclass, field
+
+ from pydantic import Field
+ ... (446 more lines, ctrl+o to expand)
+
+
+
+ write tests/test_analyzer_instantiation.py
+
+ """Test that all registered analyzers properly implement the AnalyzerPlugin protocol.
+
+ This module uses pytest parametrization to automatically test all analyzers
+ discovered by the registry. This ensures that any new analyzer added to the
+ project follows the required interface.
+ """
+
+ import pytest
+
+ # Import analyzers package to trigger auto-registration of all modules
+ ... (74 more lines, 84 total, ctrl+o to expand)
+
+
+
+
+ $ .venv/bin/python3 -m pytest tests/test_analyzer_instantiation.py -v
+
+ ... (103 earlier lines, ctrl+o to expand)
+ src/webmaster_domain_tool/utils/debug_stats.py                        112     79    29%   66-69, 74-78, 82-83, 87, 91, 95-98, 120-133, 157-176, 189-235, 241
+ src/webmaster_domain_tool/utils/logger.py                              16     12    25%   23-54
+ -------------------------------------------------------------------------------------------------
+ TOTAL                                                                5954   4897    18%
+ ============================== 54 passed in 1.19s ==============================
+
+
+ Hotovo. Refaktoroval jsem tests/test_analyzer_instantiation.py a výsledek je mnohem čistší a efektivnější:
+
+ ### Hlavní vylepšení:
+
+ 1. Automatická detekce (Zero-Touch): Test nyní využívá vnitřní registry projektu. Pokud do složky analyzers/ přidáš jakýkoliv nový soubor s dekodérem @registry.register, test ho automaticky najde a otestuje bez
+ nutnosti úpravy testovacího souboru.
+ 2. Parametrizace: Místo 11 téměř identických testovacích funkcí máme nyní jednu třídu TestAnalyzerProtocols, která prochází všechny analyzéry dynamicky.
+ 3. Hloubková kontrola: Test nyní ověřuje nejen existenci metod, ale i:
+     - Všechna povinná metadata (id, name, category, icon).
+     - Správnou dědičnost konfigurační třídy od Pydantic BaseModel.
+     - Schopnost čisté instanciace.
+ 4. Speciální případy: Ponechal jsem testy pro specifické metody (např. v CDNDetector nebo SecurityHeadersAnalyzer), které jdou nad rámec základního protokolu.
+
+ Výsledek: Máme 54 testovacích případů, které proběhly za 1.19s. Pokrývají celou rodinu tvých analyzérů a garantují, že každý z nich dodržuje stanovené rozhraní.
+
+ Chceš nyní přejít k bodu 1 a vytvořit tests/conftest.py, aby se ti v budoucnu lépe psaly testy s mockováním sítě?
+
+─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+
+─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+~/work/ai/PROJECTS/webmaster-domain-tools (dev-pi)
+↑294k ↓16k R1.0M $0.708 (sub) 6.0%/1.0M (auto)                                                                                                                                                         gemini-3-flash
+
+

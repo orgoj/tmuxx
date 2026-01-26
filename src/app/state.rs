@@ -524,9 +524,9 @@ impl AppState {
         self.show_prompts = !self.show_prompts;
         // Close menu if prompts opens
         if self.show_prompts {
-             self.show_menu = false;
+            self.show_menu = false;
         } else {
-             self.prompts_tree.filter.clear();
+            self.prompts_tree.filter.clear();
         }
     }
 

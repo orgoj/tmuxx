@@ -474,14 +474,14 @@ impl Config {
         if let Some(config_dir) = dirs::config_dir() {
             let user_prompts_dir = config_dir.join("tmuxcc").join("prompts");
             if let Some(dir_prompts) = Self::load_prompts_from_dir(&user_prompts_dir) {
-                 config.prompts.items.extend(dir_prompts.items);
+                config.prompts.items.extend(dir_prompts.items);
             }
         }
 
         // Project directory: ./.tmuxcc/prompts
         let project_prompts_dir = PathBuf::from(".tmuxcc").join("prompts");
         if let Some(dir_prompts) = Self::load_prompts_from_dir(&project_prompts_dir) {
-             config.prompts.items.extend(dir_prompts.items);
+            config.prompts.items.extend(dir_prompts.items);
         }
 
         config
@@ -491,7 +491,7 @@ impl Config {
     fn load_project_prompts_config() -> Option<MenuConfig> {
         let project_config_path = PathBuf::from(".tmuxcc.toml");
         if project_config_path.exists() {
-             if let Ok(content) = std::fs::read_to_string(&project_config_path) {
+            if let Ok(content) = std::fs::read_to_string(&project_config_path) {
                 #[derive(Deserialize)]
                 struct ProjectConfig {
                     prompts: Option<MenuConfig>,
@@ -499,7 +499,7 @@ impl Config {
                 if let Ok(proj) = toml::from_str::<ProjectConfig>(&content) {
                     return proj.prompts;
                 }
-             }
+            }
         }
         None
     }
@@ -518,7 +518,8 @@ impl Config {
 
             for entry in entries {
                 let path = entry.path();
-                let name = path.file_stem()
+                let name = path
+                    .file_stem()
                     .and_then(|s| s.to_str())
                     .unwrap_or("unknown")
                     .to_string();
@@ -536,19 +537,19 @@ impl Config {
                         }
                     }
                 } else if path.is_file() {
-                     if let Ok(content) = std::fs::read_to_string(&path) {
-                         // Only include if content is not empty? Or trim?
-                         let content = content.trim().to_string();
-                         if !content.is_empty() {
-                             items.push(super::menu_config::MenuItem {
-                                 name,
-                                 description: None,
-                                 execute_command: None,
-                                 text: Some(content),
-                                 items: Vec::new(),
-                             });
-                         }
-                     }
+                    if let Ok(content) = std::fs::read_to_string(&path) {
+                        // Only include if content is not empty? Or trim?
+                        let content = content.trim().to_string();
+                        if !content.is_empty() {
+                            items.push(super::menu_config::MenuItem {
+                                name,
+                                description: None,
+                                execute_command: None,
+                                text: Some(content),
+                                items: Vec::new(),
+                            });
+                        }
+                    }
                 }
             }
         }

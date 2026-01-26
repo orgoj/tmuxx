@@ -136,6 +136,44 @@ priority = 100
   pattern = '''(?s).*[$#%>❯]\s*\z'''
 
 [[agents]]
+id = "pi"
+name = "Pi"
+background_color = "#eef2ff"
+priority = 95
+  default_type = "working"
+
+  [[agents.matchers]]
+  type = "command"
+  pattern = "(?i)^pi$"
+
+  [[agents.matchers]]
+  type = "title"
+  pattern = "(?i)^π"
+
+  [[agents.state_rules]]
+  status = "Approval Required"
+  type = "approval"
+  # Match explicit "Approval Required" block
+  # OR any output ending with ? (ignoring status bar lines starting with ~, /, ↑, or ─)
+  pattern = '''(?is)(?:Approval Required|.*\?\s*(?:(?m)^[~/↑─].*\s*)*\z)'''
+  last_lines = 40
+
+  [[agents.state_rules]]
+  status = "Working..."
+  type = "working"
+  pattern = '''(?i)[⠋⠙⠹⠸⠼⠴⠦⠧⠇⠏]\s*Working\.\.\.'''
+
+  [[agents.state_rules]]
+  status = "idle"
+  type = "idle"
+  pattern = '''(?s).*❯\s*\z'''
+
+  [[agents.state_rules]]
+  status = "idle"
+  type = "idle"
+  pattern = '''(?m)^↑[\d\.]+[kM]?\s+↓[\d\.]+[kM]?.*'''
+
+[[agents]]
 id = "gemini"
 name = "Gemini"
 background_color = "#fcfce0"

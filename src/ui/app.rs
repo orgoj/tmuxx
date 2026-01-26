@@ -137,12 +137,12 @@ async fn run_loop(
                 if state.show_summary_detail {
                     PanePreviewWidget::render_summary(frame, preview_chunks[0], state);
                 }
-                
+
                 // Only render detailed view if an agent is actually selected/visible
                 if state.selected_agent().is_some() {
                     PanePreviewWidget::render_detailed(frame, preview_chunks[1], state);
                 }
-                
+
                 // Only render input if not hidden
                 if !state.config.hide_bottom_input {
                     InputWidget::render(frame, preview_chunks[2], state);
@@ -697,7 +697,7 @@ async fn run_loop(
                                      if let Some((text_opt, name, path, is_submenu)) = selection {
                                          if let Some(text) = text_opt {
                                                 state.toggle_prompts();
-                                                
+
                                                 if key.modifiers.contains(KeyModifiers::ALT) {
                                                     // Open in ModalTextarea
                                                     state.modal_textarea = Some(ModalTextareaState::new(

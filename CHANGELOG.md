@@ -8,6 +8,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **"pi" Agent Definition**: Added a new agent definition for the "pi" coding agent to `defaults.toml`.
+  - Precise detection via command name (`pi`) and pane title prefix (`π`).
+  - Native state rules for "Working..." indicators and approval requests.
+
+## [0.1.24] - 2026-01-26
+
+### Added
+- **"pi" Agent**: Support for "pi" coding agent with state detection and approval monitoring.
 - **Config-Driven Status Architecture**: Transitioned to a 100% configuration-driven status system.
   - Removed all legacy hardcoded status string matching from `UniversalParser`.
   - Added explicit `type` field to `state_rules` (Idle, Working, Error, Approval).

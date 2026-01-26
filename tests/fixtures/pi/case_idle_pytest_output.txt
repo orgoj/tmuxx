@@ -1,0 +1,205 @@
+ """Tests for DNS analyzer."""
+
+ from webmaster_domain_tool.analyzers.dns_analyzer import (
+     DNSAnalysisResult,
+     DNSAnalyzer,
+     DNSConfig,
+     DNSRecord,
+     DNSSECInfo,
+ )
+
+ ... (75 more lines, ctrl+o to expand)
+
+
+
+ $ grep -r "CNAME" tests/
+
+ (no output)
+
+ Command exited with code 1
+
+
+
+ read tests/test_dns_analyzer_output.py
+
+ """Test DNS analyzer's describe_output() method.
+
+ This module tests the v1.0.0 analyzer output system:
+ - OutputDescriptor structure validation
+ - Semantic styling (no hardcoded colors)
+ - Error/warning severity marking
+ - Verbosity level assignment
+ - JSON serialization
+ """
+
+ ... (347 more lines, ctrl+o to expand)
+
+
+ Testy v projektu jsou velmi dobře navrženy z hlediska architektury, ale mají určité rezervy v hloubkové logice analyzérů.
+
+ Zde je shrnutí mého review testovací sady:
+
+ ### ✅ Co je špičkové (Dostatečné)
+
+ - Testy rozhraní (Protocols): Každý analyzér má test, který ověřuje, zda implementuje požadované metody (analyze, describe_output, to_dict). To je kritické pro modulární systém.
+ - Integrace CLI: Testy ověřují, že fungují parametry jako --skip, --verbosity a různé formáty výstupu (json, cli).
+ - Sémantické styly: Existují testy, které hlídají, aby analyzéry nepoužívaly natvrdo barvy (např. "red"), ale sémantické třídy ("error"), což je klíčové pro budoucí změny témat.
+ - Prevence Import Errorů: Díky testům instancování se zachytí chyby v type hintech (častý problém v Pythonu 3.13), které by jinak shodily celou aplikaci při importu.
+
+ ### ⚠️  Kde jsou rezervy (Doporučení ke zlepšení)
+
+ - Chybí Unit testy vnitřní logiky: Většina testů analyzérů končí u "vytvoření instance". Samotná metoda analyze() se v unit testech často nespouští, protože dělá síťové požadavky.
+     - Příklad: Pravidlo, že CNAME nesmí koexistovat s A záznamem, je v kódu implementováno, ale v tests/ není žádný test, který by toto pravidlo ověřil pomocí "mockovaných" (podstrčených) dat.
+ - Absence Mockování sítě: Pro skutečně robustní testy by bylo dobré mít testy, které nasimulují konkrétní (i chybné) odpovědi ze sítě a ověří, jak je analyzér zpracuje.
+ - Negative Testing: Testy se málo zaměřují na "edge cases" – např. co se stane, když DNS vrátí totálně nesmyslná data nebo když je SSL certifikát poškozený.
+
+ ### Verdikt
+
+ Pro běžný vývoj a přidávání modulů jsou testy DOSTATEČNÉ. Zajistí, že systém jako celek bude fungovat a nový modul se správně zaregistruje.
+
+ Pokud bys ale chtěl mít projekt na úrovni enterprise/produkční kvality, doporučuji přidat testy zaměřené na logiku (Logic Tests) s využitím mockování.
+
+ Chceš, abych ti ukázal příklad, jak napsat takový "logic test" (např. pro DNS analyzér), který by testoval pravidla bez nutnosti internetového připojení?
+
+
+ napis test dns anlayzeru
+
+
+
+ read src/webmaster_domain_tool/analyzers/dns_analyzer.py
+
+ """DNS analysis module for checking domain DNS records.
+
+ This analyzer performs comprehensive DNS analysis including record lookups,
+ DNSSEC validation, PTR checks, and MX validation. Follows the modular
+ analyzer protocol for self-contained configuration and output.
+ """
+
+ import logging
+ from dataclasses import dataclass, field
+ from typing import Any
+ ... (730 more lines, ctrl+o to expand)
+
+
+
+ write tests/test_dns_analyzer_logic.py
+
+ """Logic tests for DNS analyzer using mocks.
+
+ This module tests the internal business logic of the DNSAnalyzer
+ without making actual network calls.
+ """
+
+ from unittest.mock import MagicMock, patch
+
+ import dns.resolver
+ import pytest
+ ... (133 more lines, 143 total, ctrl+o to expand)
+
+
+
+ $ uv run pytest tests/test_dns_analyzer_logic.py -v
+
+ mise ERROR "/home/michael/work/ai/PROJECTS/webmaster-domain-tools/.venv/bin/pytest" couldn't exec process: No such file or directory
+ mise ERROR Run with --verbose or MISE_VERBOSE=1 for more information
+
+
+ Command exited with code 1
+
+
+
+ $ python3 -m pytest tests/test_dns_analyzer_logic.py -v
+
+ /home/michael/.local/share/mise/installs/python/3.13.11/bin/python3: No module named pytest
+
+
+ Command exited with code 1
+
+
+
+ read pyproject.toml
+
+ [project]
+ name = "webmaster-domain-tool"
+ version = "1.2.0"
+ description = "Comprehensive domain analysis tool for webmasters"
+ readme = "README.md"
+ requires-python = ">=3.13"
+ authors = [
+     { name = "Webmaster Tools", email = "tools@example.com" }
+ ]
+ license = { text = "MIT" }
+ ... (107 more lines, ctrl+o to expand)
+
+
+
+ $ ls -d .venv
+
+ .venv
+
+
+
+ $ ls .venv/bin/pytest
+
+ .venv/bin/pytest
+
+
+
+ $ .venv/bin/python3 -m pytest tests/test_dns_analyzer_logic.py -v
+
+ ... (54 earlier lines, ctrl+o to expand)
+ src/webmaster_domain_tool/utils/debug_stats.py                        112     67    40%   82-83, 87, 91, 95-98, 123-133, 157-176, 189-235
+ src/webmaster_domain_tool/utils/logger.py                              16     12    25%   23-54
+ -------------------------------------------------------------------------------------------------
+ TOTAL                                                                5954   4786    20%
+ ============================== 4 passed in 3.38s ===============================
+
+
+ Vytvořil jsem pro tebe sadu logických testů (tests/test_dns_analyzer_logic.py), které ověřují vnitřní pravidla projektu bez nutnosti připojení k internetu.
+
+ Tyto testy využívají mockování (napodobování) DNS resolveru a pokrývají klíčové edge-cases, které v projektu jsou:
+
+ 1. Pravidlo CNAME vs A: Ověřuje, že pokud doména vrátí CNAME, kód automaticky odstraní A/AAAA záznamy (podle standardu DNS by neměly koexistovat, ale některé CDN je vrací společně).
+ 2. Best Practice pro WWW: Testuje, zda systém správně vygeneruje varování, pokud subdoména www používá A záznam místo doporučeného CNAME.
+ 3. Validace MX záznamů: Simuluje situaci, kdy MX záznam ukazuje na neexistující server (NXDOMAIN), a ověřuje, zda se v reportu objeví varování.
+ 4. Zpracování NXDOMAIN: Ověřuje, že pokud neexistuje hlavní doména, analýza se bezpečně zastaví s chybovou hláškou.
+
+ ### Jak testy spustit:
+
+ Protože tvé prostředí má specifickou konfiguraci, doporučuji je spouštět přímo přes python v tvém venv:
+
+ ```bash
+   .venv/bin/python3 -m pytest tests/test_dns_analyzer_logic.py -v
+ ```
+
+ ### Proč jsou tyto testy důležité?
+
+ - Rychlost: Běží v milisekundách, protože nečekají na síť.
+ - Deterministické výsledky: Vždy vrátí stejný výsledek, i když vypadne internet nebo se změní DNS záznamy skutečných domén.
+ - Pokrytí (Coverage): Jak vidíš ve výstupu, tyto 4 nové testy zvýšily pokrytí kódu v dns_analyzer.py na 51%.
+
+ Chceš, abych podobným způsobem otestoval i další kritický modul, jako je například SSL analyzér nebo Email Security?
+
+
+ testy ted ne.
+
+
+ Rozumím, testy necháme stranou.
+
+ Co tedy budeme dělat dál?
+
+ Můžeme například:
+ 1. Přidat nový analyzér (např. kontrola bezpečnosti WordPressu, hloubková analýza HTTP hlaviček, nebo něco, co ti v nástroji chybí).
+ 2. Upravit GUI (projekt používá Flet pro desktopovou/webovou aplikaci).
+ 3. Změnit logiku některého ze stávajících modulů.
+ 4. Vytvořit exportér do jiného formátu (např. HTML report nebo CSV).
+
+ Dej vědět, co máš v plánu!
+
+─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+
+─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+~/work/ai/PROJECTS/webmaster-domain-tools (dev-pi)
+↑249k ↓9.6k R538k $0.422 (sub) 4.6%/1.0M (auto)                                                                                                                                                        gemini-3-flash
+
+

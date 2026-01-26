@@ -387,9 +387,10 @@ fn render_placeholder<'a>(
         }
         "status_char" => match &agent.status {
             AgentStatus::Idle { .. } => Span::styled("●", Style::default().fg(Color::Green)),
-            AgentStatus::Processing { .. } => {
-                Span::styled(ctx.state.spinner_frame(), Style::default().fg(Color::Yellow))
-            }
+            AgentStatus::Processing { .. } => Span::styled(
+                ctx.state.spinner_frame(),
+                Style::default().fg(Color::Yellow),
+            ),
             AgentStatus::AwaitingApproval { .. } => Span::styled(
                 "⚠",
                 Style::default().fg(Color::Red).add_modifier(Modifier::BOLD),
@@ -619,7 +620,7 @@ fn truncate_str(s: &str, max_len: usize) -> String {
             s.chars()
                 .take(max_len.saturating_sub(2))
                 .collect::<String>()
-            )
+        )
     }
 }
 
