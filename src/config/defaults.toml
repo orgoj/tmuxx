@@ -351,8 +351,6 @@ full_template = '''  {selection}{status_char} {name}
 {subagents}'''
 
 [key_bindings]
-"j" = { navigate = "next_agent" }
-"k" = { navigate = "prev_agent" }
 "Home" = { navigate = "first_agent" }
 "End" = { navigate = "last_agent" }
 "c" = "toggle_pane_tree_mode"

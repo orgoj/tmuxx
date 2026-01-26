@@ -54,35 +54,18 @@ cargo install --path .
 -   **tmux** (must be running)
 -   **Rust** 1.70+ (to build)
 
-### Recommended: Use `txx` Wrapper
-
-To ensure reliable focus switching (`f` key) across sessions, use the included wrapper script. It ensures `tmuxx` always runs inside a dedicated tmux session.
-
-1.  **Install the wrapper as `txx`**:
-    ```bash
-    # Create a symlink in your local bin directory (e.g., ~/.local/bin or ~/bin)
-    ln -s $(pwd)/scripts/tmuxx-wrapper.sh ~/.local/bin/txx
-    ```
-
-2.  **Run**:
-    ```bash
-    txx
-    ```
-
-Using `txx` allows you to launch the dashboard from anywhere (even outside tmux) and have it reliably manage focus switching for all your agents.
-
 ---
 
 ## ⚡ Quick Start
 
 1.  **Start tmux** and run your agents or processes in various panes.
-2.  **Run `tmuxx`** (or `txx`):
+2.  **Run `tmuxx`**:
     ```bash
     tmuxx
     ```
 3.  **Navigate**:
-    -   Use `j`/`k` to move up/down.
-    -   Press `f` to focus the selected pane in tmux.
+    -   Use `Up`/`Down`/`Home`/`End` to move.
+    -   Press `f` to focus the selected pane (if running inside tmux).
     -   Press `m` to open the Command Menu.
 
 ### First Run Configuration
@@ -106,9 +89,9 @@ All bindings are configurable in `config.toml`. Defaults:
 | Key | Action | Description |
 |-----|--------|-------------|
 | **Navigation** | | |
-| `j` / `k` | Next/Prev | Navigate agent list |
+| `Up` / `Down` | Prev/Next | Navigate agent list |
 | `Home` / `End` | First/Last | Jump to start/end of list |
-| `f` | Focus | Switch tmux focus to selected pane |
+| `f` | Focus | Switch tmux focus to selected pane (works if tmuxx is inside tmux) |
 | `Space` | Select | Toggle selection (multiselect) |
 | **Actions** | | |
 | `y` / `n` | Approve/Reject | Confirm agent action (e.g. file edit) |
@@ -117,6 +100,8 @@ All bindings are configurable in `config.toml`. Defaults:
 | `Shift+I` | Editor | Open multiline editor for prompt |
 | `C-l` | Refresh | Force refresh / clear error states |
 | `C-s` | Capture | Capture current pane state for testing |
+| `r` | Rename | Rename current session |
+| `K` | Kill | Kill the process in the selected pane (SIGTERM) |
 | **Views & Menus** | | |
 | `m` | Command Menu | Open fuzzy-searchable command menu |
 | `p` | Prompts Menu | Open tree of saved prompts |
@@ -183,6 +168,34 @@ Define commonly used prompts (`p` key):
   [[prompts.items]]
   name = "Refactor"
   text = "Refactor this code to be more modular."
+```
+
+### Power User Tips
+
+You can define custom keybindings to execute external commands using variables like `${SESSION_DIR}`, `${PANE_TARGET}`, etc.
+
+**Example 1: Open a new terminal window attached to the selected agent**
+Instead of relying on `f` (switch-client), you can spawn a new terminal window (e.g., WezTerm, Alacritty, Ghostty) attached directly to the agent's pane.
+
+```toml
+[key_bindings]
+# Press 't' to open WezTerm attached to the agent's specific pane
+"t" = { execute_command = { command = "wezterm start -- tmux attach -t ${PANE_TARGET}" } }
+
+# Press 'Alt+t' to open Alacritty attached to the session
+"M-t" = { execute_command = { command = "alacritty -e tmux attach -t ${SESSION_NAME}" } }
+```
+
+**Example 2: Open VS Code or Editor in Agent's Directory**
+Quickly jump to the code the agent is working on.
+
+```toml
+[key_bindings]
+# Press 'v' to open VS Code in the agent's working directory
+"v" = { execute_command = { command = "code ${SESSION_DIR}" } }
+
+# Press 'z' to open Zed editor
+"z" = { execute_command = { command = "zed ${SESSION_DIR}" } }
 ```
 
 ---

@@ -1,53 +1,37 @@
-# Example tmuxx Configuration
-# Copy this file to ~/.config/tmuxx/config.toml and customize
-#
-# This example shows custom key bindings:
-# - j/k send arrow keys to agent (instead of navigating in tmuxx)
-# - Use arrow keys ↓/↑ or Tab for navigation in tmuxx
-# - E/C/D send special keys (Escape, Ctrl-C, Ctrl-D)
-# - K kills application in selected pane
+# tmuxx Configuration
+# User: Michael Heca (orgoj)
 
 # Polling interval in milliseconds
-poll_interval_ms = 500
+poll_interval_ms = 2000
 
 # Number of lines to capture from each pane
-capture_lines = 200
+# capture_lines = 100
 
 # Whether to show detached tmux sessions
 show_detached_sessions = true
 
 # Enable debug logging in TUI
-debug_mode = false
+# debug_mode = true
 
-# Line truncation in preview (recommended: true)
+# Line truncation in preview
 truncate_long_lines = true
 
 # Enable TODO file reading from project root
-# todo_from_file = true
-# todo_files = ["TODO.md", "NOTES.md", "README.md", "TASKS.md"]
-
-# Agent patterns - monitor all panes
-[[agent_patterns]]
-pattern = "*"
-agent_type = "All Panes"
+todo_from_file = true
+todo_files = ["TODO.md", "NOTES.md", "README.md", "TASKS.md"]
 
 # Key bindings configuration
 [key_bindings]
-# Approval keys - uppercase only (lowercase commented out)
-# Uncomment lowercase if you want both y/Y to work
+
+# Approval keys (keep defaults)
 # y = "approve"
 Y = "approve"
 # n = "reject"
 N = "reject"
 # a = "approve_all"
-A = "approve_all"
+#A = "approve_all"
 
-# Navigation: j/k send arrow keys to tmux pane instead of navigating
-# Use arrow keys ↓/↑ or Tab for navigation in tmuxx UI
-j = { send_keys = "Down" }
-k = { send_keys = "Up" }
-
-# Number choices - send to agent for menu selection
+# Number choices (defaults)
 "0" = { send_number = 0 }
 "1" = { send_number = 1 }
 "2" = { send_number = 2 }
@@ -59,20 +43,46 @@ k = { send_keys = "Up" }
 "8" = { send_number = 8 }
 "9" = { send_number = 9 }
 
+# Navigation: j/k send arrow keys to tmux pane instead of navigating
+# (use arrow keys ↓/↑ or Tab for navigation in tmuxx)
+i = { send_keys = "Up" }
+k = { send_keys = "Down" }
+j = { send_keys = "Left" }
+l = { send_keys = "Right" }
+
 # Special keys - send to tmux pane (all uppercase for consistency)
-E = { send_keys = "Escape" }
-M = { send_keys = "Enter" }
 C = { send_keys = "C-c" }
 D = { send_keys = "C-d" }
+E = { send_keys = "Escape" }
+G = { send_keys = "C-g" }
+M = { send_keys = "Enter" }
+K = { kill_app = { method = "sigterm" } } # Kill application in pane (SIGTERM)
+T = { send_keys = "Tab" }
+"M-t" = { send_keys = "S-Tab" }
 
-# Kill application in pane (SIGTERM - graceful shutdown)
-K = { kill_app = { method = "sigterm" } }
-# Alternative: forced kill with Ctrl-C + Ctrl-D
-# K = { kill_app = { method = "ctrlc_ctrld" } }
+# commands
+a = { execute_command = { command = "zed -n ${SESSION_DIR}/TODO.md" } }
+A = { execute_command = { command = "zed -n ${SESSION_DIR}/.dippy" } }
+e = { execute_command = { command = "pcmanfm-qt ${SESSION_DIR}" } }
+d = { execute_command = { command = "lazyclaude -m --directory '${SESSION_DIR}'", terminal = true } }
+g = { execute_command = { command = "git gui" } }
+t = { execute_command = { command = "wezterm start -- bash -lc 'tmux attach -t ${PANE_TARGET}'" } }
+v = { execute_command = { command = "code ${SESSION_DIR}" } }
+z = { execute_command = { command = "zed ${SESSION_DIR}" } }
 
-# Session management
-r = "rename_session"
 
-# Screen refresh (Ctrl+L - standard terminal redraw key)
-# Note: Keys with special characters must be quoted in TOML
-"C-l" = "refresh"
+[menu]
+[[menu.items]]
+name = "Main"
+[[menu.items.items]]
+name = "Dippy user dir"
+execute_command = { command = "zed ~/.dippy/" }
+
+[[menu.items]]
+name = "Tmuxx"
+[[menu.items.items]]
+name = "User config zed"
+execute_command = { command = "zed ~/.config/tmuxx/" }
+[[menu.items.items]]
+name = "Src zed"
+execute_command = { command = "zed ~/projects/tmuxx" }
