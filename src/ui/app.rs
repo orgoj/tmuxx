@@ -712,12 +712,10 @@ async fn run_loop(
                                                     if let Some(agent) = state.selected_agent() {
                                                         if let Err(e) = tmux_client.send_keys(&agent.target, &text) {
                                                             state.set_error(format!("Failed to send text: {}", e));
+                                                        } else if let Err(e) = tmux_client.send_keys(&agent.target, "Enter") {
+                                                            state.set_error(format!("Failed to send Enter: {}", e));
                                                         } else {
-                                                            if let Err(e) = tmux_client.send_keys(&agent.target, "Enter") {
-                                                                state.set_error(format!("Failed to send Enter: {}", e));
-                                                            } else {
-                                                                state.set_status(format!("Sent: {}", name));
-                                                            }
+                                                            state.set_status(format!("Sent: {}", name));
                                                         }
                                                     }
                                                 }
