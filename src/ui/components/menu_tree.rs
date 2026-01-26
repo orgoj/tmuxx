@@ -91,6 +91,7 @@ impl MenuTreeWidget {
         state: &mut MenuTreeState,
         config: &MenuConfig,
         app_config: &crate::app::Config,
+        title: &str,
     ) {
         let area = centered_rect(area, 60, 60);
 
@@ -99,7 +100,7 @@ impl MenuTreeWidget {
         let block = Block::default()
             .title(Line::from(vec![
                 Span::styled(
-                    " Command Menu ",
+                    format!(" {} ", title),
                     Style::default()
                         .fg(Color::Cyan)
                         .add_modifier(Modifier::BOLD),

@@ -48,6 +48,8 @@ pub enum KeyAction {
     ExecuteCommand(CommandConfig),
     /// Toggle command menu
     ToggleMenu,
+    /// Toggle prompts menu
+    TogglePrompts,
     /// Toggle subagent log display
     ToggleSubagentLog,
     /// Toggle pane tree mode

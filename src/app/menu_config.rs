@@ -17,6 +17,8 @@ pub struct MenuItem {
 
     pub execute_command: Option<crate::app::key_binding::CommandConfig>,
 
+    pub text: Option<String>,
+
     #[serde(default)]
     pub items: Vec<MenuItem>,
 }

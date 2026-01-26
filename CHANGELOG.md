@@ -29,6 +29,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - `case_processing_*` -> `case_working_*`
   - `case_awaiting_approval_*` -> `case_approval_*`
 
+## [0.1.23] - 2026-01-26
+
+### Added
+- **Prompts Menu**: New "Prompts" tree menu (toggle with `p`) to quickly send pre-defined text snippets.
+  - Load prompts from `~/.config/tmuxcc/prompts/` and `.tmuxcc/prompts/` directories.
+  - Define custom prompts in configuration (`[prompts]` section).
+  - Default prompts: "Continue" and "Internal Tools".
+  - **Edit before send**: Press `Alt+Enter` to verify/edit prompt in a popup before sending.
+  - **Quick Send**: Press `Enter` to send prompt text immediately.
+
+### Fixed
+- **UI Details Rendering**: Fixed bug where the detailed view pane would show stale content even after filters hid all agents.
+  - Now correctly rendering empty details pane when no agents are visible selected.
+
 ## [0.1.22] - 2026-01-25
 
 

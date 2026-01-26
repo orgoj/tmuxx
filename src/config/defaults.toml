@@ -230,6 +230,15 @@ priority = 10
   # Support standard prompts: $, #, %, >, ❯
   pattern = '''(?s).*[$#%>❯]\s*\z'''
 
+[prompts]
+  [[prompts.items]]
+  name = "Continue"
+  text = "continue"
+
+  [[prompts.items]]
+  name = "Internal Tools"
+  text = "use internal tools!"
+
 [pane_tree]
 mode = "full"
 header_template = " ▼ {session}"
@@ -267,6 +276,7 @@ full_template = '''  {selection}{status_char} {name}
 "8" = { send_number = 8 }
 "9" = { send_number = 9 }
 "m" = "toggle_menu"
+"p" = "toggle_prompts"
 "s" = "toggle_filter_selected"
 "x" = "toggle_filter_active"
 "S" = "toggle_subagent_log"

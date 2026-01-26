@@ -1,10 +1,9 @@
 # TODO - tmuxcc
 
+
+
 - [ ] todo na plnou sirku boxu - config option ( pak vubec negenerovat pravou cast boxu)
-
-
-
-- [ ] menu na prompty (stromove) - user a projekt definice, asi nejaky adresar a v nem soubory, v menu jen nazvy
+definice, asi nejaky adresar a v nem soubory, v menu jen nazvy
 - [ ] text do TOTO okna muze generovat externi program (napr. beads)
 - [?] refactor defaults - musi byt vse jen v config a v programu jen neco jako config->get("width", 24), zadne finkce a clasy co vraceli nejake default objekty, co to je za antipatern, mame config ten da vzdy hodnotu funci get a ta se pouziva, KISS
 - [ ] jak poznat commandy co bezi v ssh ?

@@ -28,8 +28,10 @@ pub enum Action {
     ToggleSubagentLog,
     /// Toggle summary detail (TODOs and Tools) view
     ToggleSummaryDetail,
-    /// Toggle command menu
+    /// Toggle commands menu
     ToggleMenu,
+    /// Toggle prompts menu
+    TogglePrompts,
     /// Refresh agent list
     Refresh,
     /// Show help
@@ -149,6 +151,7 @@ impl Action {
             Action::ToggleSubagentLog => "Toggle subagent log",
             Action::ToggleSummaryDetail => "Toggle TODO/Tools display",
             Action::ToggleMenu => "Toggle command menu",
+            Action::TogglePrompts => "Toggle prompts menu",
             Action::Refresh => "Refresh agent list",
             Action::ShowHelp => "Show help",
             Action::HideHelp => "Hide help",

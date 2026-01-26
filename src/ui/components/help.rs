@@ -84,6 +84,9 @@ impl HelpWidget {
                 KeyAction::ToggleMenu => {
                     add_line("View", format!("  {:14} Toggle command menu", keys_str))
                 }
+                KeyAction::TogglePrompts => {
+                    add_line("View", format!("  {:14} Toggle prompts menu", keys_str))
+                }
                 KeyAction::Refresh => {
                     add_line("View", format!("  {:14} Redraw / Clear error", keys_str))
                 }

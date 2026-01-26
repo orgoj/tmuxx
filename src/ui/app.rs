@@ -134,8 +134,15 @@ async fn run_loop(
                         ratatui::layout::Constraint::Length(input_height + 2),
                     ])
                     .split(preview);
-                PanePreviewWidget::render_summary(frame, preview_chunks[0], state);
-                PanePreviewWidget::render_detailed(frame, preview_chunks[1], state);
+                if state.show_summary_detail {
+                    PanePreviewWidget::render_summary(frame, preview_chunks[0], state);
+                }
+                
+                // Only render detailed view if an agent is actually selected/visible
+                if state.selected_agent().is_some() {
+                    PanePreviewWidget::render_detailed(frame, preview_chunks[1], state);
+                }
+                
                 // Only render input if not hidden
                 if !state.config.hide_bottom_input {
                     InputWidget::render(frame, preview_chunks[2], state);
@@ -154,7 +161,9 @@ async fn run_loop(
                     if state.show_summary_detail {
                         PanePreviewWidget::render_summary(frame, summary, state);
                     }
-                    PanePreviewWidget::render_detailed(frame, preview, state);
+                    if state.selected_agent().is_some() {
+                        PanePreviewWidget::render_detailed(frame, preview, state);
+                    }
                 } else {
                     // With input panel
                     let (left, summary, preview, input_area) = Layout::content_layout_with_input(
@@ -167,7 +176,9 @@ async fn run_loop(
                     if state.show_summary_detail {
                         PanePreviewWidget::render_summary(frame, summary, state);
                     }
-                    PanePreviewWidget::render_detailed(frame, preview, state);
+                    if state.selected_agent().is_some() {
+                        PanePreviewWidget::render_detailed(frame, preview, state);
+                    }
                     InputWidget::render(frame, input_area, state);
                 }
             }
@@ -193,6 +204,19 @@ async fn run_loop(
                     &mut state.menu_tree,
                     &state.config.menu,
                     &state.config,
+                    "Command Menu",
+                );
+            }
+
+            // Prompts Menu (before help)
+            if state.show_prompts {
+                MenuTreeWidget::render(
+                    frame,
+                    size,
+                    &mut state.prompts_tree,
+                    &state.config.prompts,
+                    &state.config,
+                    "Prompts Menu",
                 );
             }
 
@@ -576,6 +600,139 @@ async fn run_loop(
                                 }
                                 _ => {}
                             }
+                        } else if state.show_prompts {
+                            use crate::ui::components::menu_tree::{find_flat_menu_item_by_index, get_current_items_count};
+                            use crate::ui::components::ModalTextareaState;
+
+                            match key.code {
+                                KeyCode::Esc => {
+                                    state.toggle_prompts();
+                                }
+                                 KeyCode::Down | KeyCode::Char('j') if state.prompts_tree.filter.is_empty() => {
+                                     let count = get_current_items_count(&state.config.prompts, &state.prompts_tree);
+                                     state.prompts_tree.key_down(count);
+                                 }
+                                 KeyCode::Up | KeyCode::Char('k') if state.prompts_tree.filter.is_empty() => {
+                                     let count = get_current_items_count(&state.config.prompts, &state.prompts_tree);
+                                     state.prompts_tree.key_up(count);
+                                 }
+                                 KeyCode::Down => {
+                                     let count = get_current_items_count(&state.config.prompts, &state.prompts_tree);
+                                     state.prompts_tree.key_down(count);
+                                 }
+                                 KeyCode::Up => {
+                                     let count = get_current_items_count(&state.config.prompts, &state.prompts_tree);
+                                     state.prompts_tree.key_up(count);
+                                 }
+                                 KeyCode::Right | KeyCode::Char('l') if state.prompts_tree.filter.is_empty() => {
+                                      if let Some(index) = state.prompts_tree.list_state.selected() {
+                                          let path = find_flat_menu_item_by_index(&state.config.prompts, &state.prompts_tree, index)
+                                              .filter(|f| !f.item.items.is_empty())
+                                              .map(|f| f.path);
+                                          if let Some(p) = path {
+                                              state.prompts_tree.toggle_expansion(p);
+                                          }
+                                      }
+                                 }
+                                 KeyCode::Char('*') => {
+                                      state.prompts_tree.expand_all = !state.prompts_tree.expand_all;
+                                 }
+                                 KeyCode::Left | KeyCode::Char('h') if state.prompts_tree.filter.is_empty() => {
+                                      if let Some(index) = state.prompts_tree.list_state.selected() {
+                                          let res = find_flat_menu_item_by_index(&state.config.prompts, &state.prompts_tree, index)
+                                              .map(|f| (f.path.clone(), state.prompts_tree.expanded_paths.contains(&f.path)));
+
+                                          if let Some((path, is_expanded)) = res {
+                                              if is_expanded {
+                                                  state.prompts_tree.expanded_paths.remove(&path);
+                                              } else if path.len() > 1 {
+                                                  let parent_path = path[..path.len()-1].to_vec();
+                                                  state.prompts_tree.expanded_paths.remove(&parent_path);
+                                              }
+                                          }
+                                      }
+                                 }
+                                 KeyCode::Right => {
+                                      if let Some(index) = state.prompts_tree.list_state.selected() {
+                                          let path = find_flat_menu_item_by_index(&state.config.prompts, &state.prompts_tree, index)
+                                              .filter(|f| !f.item.items.is_empty())
+                                              .map(|f| f.path);
+                                          if let Some(p) = path {
+                                              state.prompts_tree.expanded_paths.insert(p);
+                                          }
+                                      }
+                                 }
+                                 KeyCode::Left => {
+                                      if let Some(index) = state.prompts_tree.list_state.selected() {
+                                          let path = find_flat_menu_item_by_index(&state.config.prompts, &state.prompts_tree, index)
+                                              .map(|f| f.path);
+                                          if let Some(p) = path {
+                                              state.prompts_tree.expanded_paths.remove(&p);
+                                          }
+                                      }
+                                 }
+                                 KeyCode::PageDown => {
+                                    let count = get_current_items_count(&state.config.prompts, &state.prompts_tree);
+                                    for _ in 0..10 { state.prompts_tree.key_down(count); }
+                                }
+                                KeyCode::PageUp => {
+                                    let count = get_current_items_count(&state.config.prompts, &state.prompts_tree);
+                                    for _ in 0..10 { state.prompts_tree.key_up(count); }
+                                }
+                                 KeyCode::Backspace => {
+                                     if !state.prompts_tree.filter.is_empty() {
+                                         state.prompts_tree.filter.pop();
+                                         state.prompts_tree.list_state.select(Some(0));
+                                     }
+                                 }
+
+                                 KeyCode::Enter => {
+                                     let selection = if let Some(index) = state.prompts_tree.list_state.selected() {
+                                         find_flat_menu_item_by_index(&state.config.prompts, &state.prompts_tree, index)
+                                             .map(|flat| (flat.item.text.clone(), flat.item.name.clone(), flat.path.clone(), !flat.item.items.is_empty()))
+                                     } else {
+                                         None
+                                     };
+
+                                     if let Some((text_opt, name, path, is_submenu)) = selection {
+                                         if let Some(text) = text_opt {
+                                                state.toggle_prompts();
+                                                
+                                                if key.modifiers.contains(KeyModifiers::ALT) {
+                                                    // Open in ModalTextarea
+                                                    state.modal_textarea = Some(ModalTextareaState::new(
+                                                        format!("Edit Prompt: {}", name),
+                                                        "Verify/Edit before sending".to_string(),
+                                                        text.clone(),
+                                                        false, // multiline
+                                                        false, // editable
+                                                    ));
+                                                } else {
+                                                    // Send directly
+                                                    if let Some(agent) = state.selected_agent() {
+                                                        if let Err(e) = tmux_client.send_keys(&agent.target, &text) {
+                                                            state.set_error(format!("Failed to send text: {}", e));
+                                                        } else {
+                                                            if let Err(e) = tmux_client.send_keys(&agent.target, "Enter") {
+                                                                state.set_error(format!("Failed to send Enter: {}", e));
+                                                            } else {
+                                                                state.set_status(format!("Sent: {}", name));
+                                                            }
+                                                        }
+                                                    }
+                                                }
+                                         } else if is_submenu {
+                                             state.prompts_tree.toggle_expansion(path);
+                                         }
+                                     }
+                                 }
+
+                                KeyCode::Char(c) => {
+                                    state.prompts_tree.filter.push(c);
+                                    state.prompts_tree.list_state.select(Some(0)); // Reset to top
+                                }
+                                _ => {}
+                            }
                         } else {
                             // Normal key handling when modal is not active
                             let action = map_key_to_action(key.code, key.modifiers, state, &state.config);
@@ -670,6 +827,9 @@ async fn run_loop(
                                 }
                                 Action::ToggleMenu => {
                                     state.toggle_menu();
+                                }
+                                Action::TogglePrompts => {
+                                    state.toggle_prompts();
                                 }
                                 Action::Refresh => {
                                     state.clear_error();
@@ -1326,6 +1486,7 @@ fn map_key_to_action(
                     terminal: *terminal,
                 },
                 KeyAction::ToggleMenu => Action::ToggleMenu,
+                KeyAction::TogglePrompts => Action::TogglePrompts,
                 KeyAction::ToggleSubagentLog => Action::ToggleSubagentLog,
                 KeyAction::CaptureTestCase => Action::CaptureTestCase,
                 KeyAction::TogglePaneTreeMode => Action::TogglePaneTreeMode,

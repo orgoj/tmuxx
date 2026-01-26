@@ -30,3 +30,9 @@ This project uses **CLAUDE.md** as the canonical source of truth. Always refer t
 1. **tmux capture-pane -pt <target>**: ALWAYS read the raw buffer before diagnosing. 
 2. **Priority Check**: Ensure `generic_shell` has priority 10+ if users have priority 1 catch-alls.
 3. **Rebuild Release**: Changes to `defaults.toml` require `cargo build --release` because it is embedded via `include_str!`.
+
+### 6. Workflow Definitions
+- **Completed**: A task is "Completed" ONLY when:
+    1. It is removed from `TODO.md`.
+    2. It is added to `CHANGELOG.md`.
+    3. The version is incremented in `Cargo.toml`.

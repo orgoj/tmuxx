@@ -164,6 +164,10 @@ pub struct AppState {
     pub show_menu: bool,
     /// State for the command menu widget
     pub menu_tree: MenuTreeState,
+    /// Whether the prompts menu is shown
+    pub show_prompts: bool,
+    /// State for the prompts menu widget
+    pub prompts_tree: MenuTreeState,
     /// Filter: Show only active (non-idle) agents
     pub filter_active: bool,
     /// Filter: Show only selected agents
@@ -211,6 +215,8 @@ impl AppState {
             current_todo: None,
             show_menu: false,
             menu_tree: MenuTreeState::new(),
+            show_prompts: false,
+            prompts_tree: MenuTreeState::new(),
             filter_active: false,
             filter_selected: false,
             visible_indices: Vec::new(),
@@ -336,6 +342,15 @@ impl AppState {
     /// Returns the currently selected agent mutably
     pub fn selected_agent_mut(&mut self) -> Option<&mut MonitoredAgent> {
         self.agents.get_agent_mut(self.selected_index)
+    }
+
+    /// Returns the currently selected agent ONLY if it is currently visible
+    pub fn selected_visible_agent(&self) -> Option<&MonitoredAgent> {
+        if self.visible_indices.contains(&self.selected_index) {
+            self.agents.get_agent(self.selected_index)
+        } else {
+            None
+        }
     }
 
     /// Selects the next visible agent (respects filter)
@@ -495,12 +510,23 @@ impl AppState {
     /// Toggles command menu display
     pub fn toggle_menu(&mut self) {
         self.show_menu = !self.show_menu;
+        // Close prompts if menu opens
         if self.show_menu {
-            // Re-open all items for better UX? Or keep state?
-            // Let's keep state for now.
+            self.show_prompts = false;
         } else {
             // Clear filter when closing?
             self.menu_tree.filter.clear();
+        }
+    }
+
+    /// Toggles prompts menu display
+    pub fn toggle_prompts(&mut self) {
+        self.show_prompts = !self.show_prompts;
+        // Close menu if prompts opens
+        if self.show_prompts {
+             self.show_menu = false;
+        } else {
+             self.prompts_tree.filter.clear();
         }
     }
 

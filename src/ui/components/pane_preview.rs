@@ -117,7 +117,7 @@ pub struct PanePreviewWidget;
 impl PanePreviewWidget {
     /// Render a summary view with TODO (left) and activity (right) in 2-column layout
     pub fn render_summary(frame: &mut Frame, area: Rect, state: &AppState) {
-        let agent = state.selected_agent();
+        let agent = state.selected_visible_agent();
 
         if let Some(agent) = agent {
             let summary = ClaudeCodeSummary::parse(&agent.last_content);
@@ -269,7 +269,7 @@ impl PanePreviewWidget {
     }
 
     pub fn render(frame: &mut Frame, area: Rect, state: &AppState) {
-        let agent = state.selected_agent();
+        let agent = state.selected_visible_agent();
 
         let (title, content) = if let Some(agent) = agent {
             let title = format!(" Preview: {} ({}) ", agent.target, agent.name);
@@ -315,7 +315,7 @@ impl PanePreviewWidget {
 
     /// Renders a detailed preview with syntax highlighting for diffs
     pub fn render_detailed(frame: &mut Frame, area: Rect, state: &AppState) {
-        let agent = state.selected_agent();
+        let agent = state.selected_visible_agent();
 
         // Calculate available lines (area height minus border)
         let available_lines = area.height.saturating_sub(2) as usize;

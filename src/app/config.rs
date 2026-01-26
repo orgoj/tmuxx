@@ -92,6 +92,10 @@ pub struct Config {
     #[serde(default)]
     pub menu: MenuConfig,
 
+    /// Prompts menu configuration
+    #[serde(default)]
+    pub prompts: MenuConfig,
+
     /// Pane tree configuration
     #[serde(default)]
     pub pane_tree: PaneTreeConfig,
@@ -119,7 +123,9 @@ struct PartialConfig {
     todo_from_file: Option<bool>,
     todo_files: Option<Vec<String>>,
     sidebar_width: Option<SidebarWidth>,
+
     menu: Option<MenuConfig>,
+    prompts: Option<MenuConfig>,
     pane_tree: Option<PaneTreeConfig>,
 }
 
@@ -178,6 +184,9 @@ impl PartialConfig {
         }
         if let Some(v) = self.menu {
             config.menu = v;
+        }
+        if let Some(v) = self.prompts {
+            config.prompts = v;
         }
         if let Some(v) = self.pane_tree {
             config.pane_tree = v;
@@ -455,7 +464,100 @@ impl Config {
             config.menu.items.extend(project_menu.items);
         }
 
+        // 4. Merge Project Prompts
+        if let Some(project_prompts) = Self::load_project_prompts_config() {
+            config.prompts.items.extend(project_prompts.items);
+        }
+
+        // 5. Load prompts from directories
+        // User directory: ~/.config/tmuxcc/prompts
+        if let Some(config_dir) = dirs::config_dir() {
+            let user_prompts_dir = config_dir.join("tmuxcc").join("prompts");
+            if let Some(dir_prompts) = Self::load_prompts_from_dir(&user_prompts_dir) {
+                 config.prompts.items.extend(dir_prompts.items);
+            }
+        }
+
+        // Project directory: ./.tmuxcc/prompts
+        let project_prompts_dir = PathBuf::from(".tmuxcc").join("prompts");
+        if let Some(dir_prompts) = Self::load_prompts_from_dir(&project_prompts_dir) {
+             config.prompts.items.extend(dir_prompts.items);
+        }
+
         config
+    }
+
+    /// Attempts to load project-specific prompts configuration
+    fn load_project_prompts_config() -> Option<MenuConfig> {
+        let project_config_path = PathBuf::from(".tmuxcc.toml");
+        if project_config_path.exists() {
+             if let Ok(content) = std::fs::read_to_string(&project_config_path) {
+                #[derive(Deserialize)]
+                struct ProjectConfig {
+                    prompts: Option<MenuConfig>,
+                }
+                if let Ok(proj) = toml::from_str::<ProjectConfig>(&content) {
+                    return proj.prompts;
+                }
+             }
+        }
+        None
+    }
+
+    /// Recursively load prompts from a directory
+    fn load_prompts_from_dir(path: &PathBuf) -> Option<MenuConfig> {
+        if !path.exists() || !path.is_dir() {
+            return None;
+        }
+
+        let mut items = Vec::new();
+        if let Ok(entries) = std::fs::read_dir(path) {
+            let mut entries: Vec<_> = entries.filter_map(Result::ok).collect();
+            // Sort to ensure consistent order
+            entries.sort_by_key(|e| e.path());
+
+            for entry in entries {
+                let path = entry.path();
+                let name = path.file_stem()
+                    .and_then(|s| s.to_str())
+                    .unwrap_or("unknown")
+                    .to_string();
+
+                if path.is_dir() {
+                    if let Some(subdir_config) = Self::load_prompts_from_dir(&path) {
+                        if !subdir_config.items.is_empty() {
+                            items.push(super::menu_config::MenuItem {
+                                name,
+                                description: None,
+                                execute_command: None,
+                                text: None,
+                                items: subdir_config.items,
+                            });
+                        }
+                    }
+                } else if path.is_file() {
+                     if let Ok(content) = std::fs::read_to_string(&path) {
+                         // Only include if content is not empty? Or trim?
+                         let content = content.trim().to_string();
+                         if !content.is_empty() {
+                             items.push(super::menu_config::MenuItem {
+                                 name,
+                                 description: None,
+                                 execute_command: None,
+                                 text: Some(content),
+                                 items: Vec::new(),
+                             });
+                         }
+                     }
+                }
+            }
+        }
+
+        if items.is_empty() {
+            None
+        } else {
+            Some(MenuConfig { items })
+        }
     }
 
     /// Attempts to load project-specific configuration (.tmuxcc.toml)
