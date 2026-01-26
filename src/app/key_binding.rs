@@ -2,7 +2,7 @@ use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
 /// Navigation actions
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub enum NavAction {
     NextAgent,
@@ -10,7 +10,7 @@ pub enum NavAction {
 }
 
 /// Method for killing applications in tmux panes
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub enum KillMethod {
     /// Send SIGTERM to process (graceful shutdown)
@@ -20,7 +20,7 @@ pub enum KillMethod {
 }
 
 /// Actions that can be bound to keys
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
 #[serde(deny_unknown_fields)]
 pub enum KeyAction {
@@ -59,7 +59,7 @@ pub enum KeyAction {
 }
 
 /// Configuration for command execution
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub struct CommandConfig {
     pub command: String,
     #[serde(default)]

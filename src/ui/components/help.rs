@@ -4,164 +4,126 @@ use crate::app::{Config, KeyAction, KillMethod, NavAction};
 pub struct HelpWidget;
 
 impl HelpWidget {
-    /// Generate help text as a single string for modal textarea
+    /// Generate help text as a single string for ModalTextarea
     pub fn generate_help_text(config: &Config) -> String {
         let kb = &config.key_bindings;
-        let mut lines: Vec<String> = Vec::new();
+        let mut sections: std::collections::BTreeMap<&str, Vec<String>> = std::collections::BTreeMap::new();
+        
+        // Helper to add line to section
+        let mut add_line = |section: &'static str, line: String| {
+            sections.entry(section).or_default().push(line);
+        };
 
-        // Navigation - dynamic from config
-        lines.push(String::from("Navigation"));
-        lines.push(String::from(""));
-
-        // Find keys for navigation
-        let next_keys = kb.keys_for_action(&KeyAction::Navigate(NavAction::NextAgent));
-        let prev_keys = kb.keys_for_action(&KeyAction::Navigate(NavAction::PrevAgent));
-
-        if !next_keys.is_empty() {
-            lines.push(format!("  {} / ↓  Next agent", next_keys.join(" / ")));
-        } else {
-            lines.push(String::from("  j / ↓  Next agent"));
-        }
-
-        if !prev_keys.is_empty() {
-            lines.push(format!("  {} / ↑  Previous agent", prev_keys.join(" / ")));
-        } else {
-            lines.push(String::from("  k / ↑  Previous agent"));
-        }
-
-        lines.push(String::from("  Tab      Next agent (cycle)"));
-        lines.push(String::from(""));
-
-        // Selection (hardcoded)
-        lines.push(String::from("Selection"));
-        lines.push(String::from(""));
-        lines.push(String::from("  Space    Toggle selection"));
-        lines.push(String::from("  Ctrl+a   Select all"));
-        lines.push(String::from("  Ctrl+d   Deselect all"));
-        lines.push(String::from(""));
-
-        // Actions (dynamic from config)
-        lines.push(String::from("Actions"));
-        lines.push(String::from(""));
-
-        // Find approval keys
-        let approve_keys = kb.keys_for_action(&KeyAction::Approve);
-        if !approve_keys.is_empty() {
-            lines.push(format!(
-                "  {:9}Approve pending request(s)",
-                approve_keys.join(" / ")
-            ));
-        }
-
-        let reject_keys = kb.keys_for_action(&KeyAction::Reject);
-        if !reject_keys.is_empty() {
-            lines.push(format!(
-                "  {:9}Reject pending request(s)",
-                reject_keys.join(" / ")
-            ));
-        }
-
-        let approve_all_keys = kb.keys_for_action(&KeyAction::ApproveAll);
-        if !approve_all_keys.is_empty() {
-            lines.push(format!(
-                "  {:9}Approve all pending requests",
-                approve_all_keys.join(" / ")
-            ));
-        }
-
-        // Number keys
-        let mut number_keys = Vec::new();
-        for i in 0..=9 {
-            let key_str = i.to_string();
-            if kb.get_action(key_str.as_str()).is_some() {
-                number_keys.push(i);
-            }
-        }
-        if !number_keys.is_empty() {
-            lines.push("  0-9      Quick approve (1=yes, 2=no)".to_string());
-        }
-
-        // SendKeys actions
+        // 1. Process all configured bindings
+        // We want to group by Action, not by Key.
+        // So first, invert the map: Action -> Vec<Key>
+        let mut action_to_keys: std::collections::HashMap<&KeyAction, Vec<&String>> = std::collections::HashMap::new();
+        
         for (key, action) in &kb.bindings {
-            if let KeyAction::SendKeys(keys) = action {
-                lines.push(format!("  {:9}Send {} to agent", key, keys));
+            action_to_keys.entry(action).or_default().push(key);
+        }
+        
+        // Define known actions and their categories/descriptions
+        // We iterate through all known KeyAction variants (conceptually) or handling specific logic
+        // But to be truly config driven, we should iterate what we found in the config.
+        
+        // We will match on the Action references we found in the config map.
+        // To keep order consistent, let's sort the actions by some criteria? 
+        // Or just categorize them into buckets.
+        
+        for (action, keys) in action_to_keys {
+            let mut keys_str: String = keys.iter().map(|k| k.as_str()).collect::<Vec<&str>>().join(" / ");
+            // Sort keys for consistency (e.g. "j" before "Down")
+            let mut sorted_keys = keys.clone();
+            sorted_keys.sort(); 
+            keys_str = sorted_keys.iter().map(|k| k.as_str()).collect::<Vec<&str>>().join(" / ");
+            
+            match action {
+                // Navigation
+                KeyAction::Navigate(NavAction::NextAgent) => add_line("Navigation", format!("  {:14} Select next agent", keys_str)),
+                KeyAction::Navigate(NavAction::PrevAgent) => add_line("Navigation", format!("  {:14} Select previous agent", keys_str)),
+                
+                // Agents / Status
+                KeyAction::Approve => add_line("Actions", format!("  {:14} Approve request(s)", keys_str)),
+                KeyAction::Reject => add_line("Actions", format!("  {:14} Reject request(s)", keys_str)),
+                KeyAction::ApproveAll => add_line("Actions", format!("  {:14} Approve ALL pending", keys_str)),
+                KeyAction::SendNumber(n) => add_line("Actions", format!("  {:14} Send number {}", keys_str, n)),
+                
+                // View / Filters
+                KeyAction::TogglePaneTreeMode => add_line("View", format!("  {:14} Toggle pane tree mode", keys_str)),
+                KeyAction::ToggleSubagentLog => add_line("View", format!("  {:14} Toggle subagent log", keys_str)),
+                KeyAction::ToggleFilterActive => add_line("Filters", format!("  {:14} Toggle active filter (Non-Idle)", keys_str)),
+                KeyAction::ToggleFilterSelected => add_line("Filters", format!("  {:14} Toggle selected filter", keys_str)),
+                KeyAction::ToggleMenu => add_line("View", format!("  {:14} Toggle command menu", keys_str)),
+                KeyAction::Refresh => add_line("View", format!("  {:14} Redraw / Clear error", keys_str)),
+
+                // Commands / Custom
+                KeyAction::RenameSession => add_line("Actions", format!("  {:14} Rename session", keys_str)),
+                KeyAction::CaptureTestCase => add_line("Dev", format!("  {:14} Capture test case", keys_str)),
+                KeyAction::SendKeys(s) => add_line("Actions", format!("  {:14} Send keys: {}", keys_str, s)),
+                KeyAction::KillApp { method } => {
+                     let m = match method {
+                        KillMethod::Sigterm => "SIGTERM",
+                        KillMethod::CtrlCCtrlD => "C-c C-d",
+                     };
+                     add_line("Actions", format!("  {:14} Kill app ({})", keys_str, m));
+                },
+                KeyAction::ExecuteCommand(cmd) => add_line("Commands", format!("  {:14} Run: {}", keys_str, cmd.command)),
             }
         }
 
-        // Kill actions
-        for (key, action) in &kb.bindings {
-            if let KeyAction::KillApp { method } = action {
-                let method_str = match method {
-                    KillMethod::Sigterm => "SIGTERM",
-                    KillMethod::CtrlCCtrlD => "Ctrl-C+Ctrl-D",
-                };
-                lines.push(format!("  {:9}Kill app ({})", key, method_str));
+        // 2. Add hardcoded/system bindings (modifiers etc that aren't in config but handled by App)
+        // Navigation (Arrows)
+        add_line("Navigation", "  Down / ↑       Select next agent".to_string());
+        add_line("Navigation", "  Up / ↓         Select previous agent".to_string());
+        add_line("Navigation", "  Tab            Cycle agents".to_string());
+         
+        // Selection
+        add_line("Selection", "  Space          Toggle selection".to_string());
+        add_line("Selection", "  Ctrl+a         Select all".to_string());
+        
+        // Input
+        add_line("Input", format!("  {:14} Quick Filter (Name/ID)", config.popup_trigger_key));
+        add_line("Input", "  Shift+I        Multi-line input".to_string());
+        add_line("Input", "  ← / →          Focus Sidebar / Input".to_string());
+        
+        // General
+        add_line("General", "  ?              Toggle Help".to_string());
+        add_line("General", "  q              Quit".to_string());
+
+        // 3. Assemble final string in desired order
+        let category_order = vec![
+            "Navigation", 
+            "Selection", 
+            "Filters", 
+            "Actions", 
+            "View", 
+            "Commands", 
+            "Input", 
+            "General",
+            "Dev"
+        ];
+        
+        let mut final_text = String::new();
+        
+        for category in category_order {
+            if let Some(lines) = sections.get(category) {
+                if !lines.is_empty() {
+                     final_text.push_str(&format!("{}\n\n", category));
+                     // Sort lines alphabetically within category for cleanliness? Or keep insertion order?
+                     // KeyAction iteration order is random (HashMap). Sorting is better.
+                     let mut sorted_lines = lines.clone();
+                     sorted_lines.sort();
+                     for line in sorted_lines {
+                         final_text.push_str(&line);
+                         final_text.push('\n');
+                     }
+                     final_text.push('\n');
+                }
             }
         }
 
-        // Rename session
-        let rename_keys = kb.keys_for_action(&KeyAction::RenameSession);
-        if !rename_keys.is_empty() {
-            lines.push(format!(
-                "  {:9}Rename current session",
-                rename_keys.join(" / ")
-            ));
-        }
-
-        // ExecuteCommand actions
-        for (key, action) in &kb.bindings {
-            if let KeyAction::ExecuteCommand(cmd_config) = action {
-                lines.push(format!("  {:9}Execute: {}", key, cmd_config.command));
-            }
-        }
-
-        lines.push(String::from("  ← / →    Switch focus (Sidebar / Input)"));
-        lines.push(String::from(""));
-        lines.push(format!(
-            "  {:9}Show popup input dialog",
-            config.popup_trigger_key
-        ));
-        lines.push(String::from("  Shift+I  Open multi-line input modal"));
-        lines.push(String::from(""));
-
-        // View (hardcoded)
-        lines.push(String::from("View"));
-        lines.push(String::from(""));
-
-        let subagent_keys = kb.keys_for_action(&KeyAction::ToggleSubagentLog);
-        if !subagent_keys.is_empty() {
-            lines.push(format!(
-                "  {:9}Toggle subagent log",
-                subagent_keys.join(" / ")
-            ));
-        }
-
-        lines.push(String::from("  ?        Show/hide help"));
-        lines.push(String::from(""));
-
-        // Refresh - show configured key or default
-        let refresh_keys = kb.keys_for_action(&KeyAction::Refresh);
-        if !refresh_keys.is_empty() {
-            lines.push(format!(
-                "  {:9}Redraw screen / clear error",
-                refresh_keys.join(" / ")
-            ));
-        }
-
-        let menu_keys = kb.keys_for_action(&KeyAction::ToggleMenu);
-        if !menu_keys.is_empty() {
-            lines.push(format!("  {:9}Toggle command menu", menu_keys.join(" / ")));
-        }
-        lines.push(String::from(""));
-
-        // General (hardcoded)
-        lines.push(String::from("General"));
-        lines.push(String::from(""));
-        lines.push(String::from("  q / Esc  Quit"));
-        lines.push(String::from("  /        Toggle filter mode"));
-        lines.push(String::from(""));
-        lines.push(String::from("Press Esc to close help"));
-
-        lines.join("\n")
+        final_text.push_str("\nPress Esc to close help");
+        final_text
     }
 }
