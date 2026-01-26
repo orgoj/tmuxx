@@ -7,6 +7,8 @@ use std::collections::HashMap;
 pub enum NavAction {
     NextAgent,
     PrevAgent,
+    FirstAgent,
+    LastAgent,
 }
 
 /// Method for killing applications in tmux panes

@@ -1,5 +1,6 @@
 # These are loaded first, then overridden by user config.
 poll_interval_ms = 500
+cyclic_navigation = false
 capture_lines = 200
 show_detached_sessions = true
 debug_mode = false
@@ -9,7 +10,7 @@ ignore_self = true
 log_actions = true
 hide_bottom_input = true
 agent_name_color = "#000000"
-current_item_bg_color = "#aaaaaa"
+current_item_bg_color = "#cacaca"
 sidebar_width = 60
 capture_buffer_size = 16384
 
@@ -341,6 +342,8 @@ priority = 10
 [pane_tree]
 mode = "full"
 header_template = " ▼ {session}"
+session_header_fg_color = "white"
+session_header_bg_color = "darkgray"
 compact_template = "  {selection}{window_id}:{window_name} │ {status_char} {name} {status_text}"
 full_template = '''  {selection}{status_char} {name}
     {status_text} | pid:{pid} | {uptime}
@@ -350,6 +353,8 @@ full_template = '''  {selection}{status_char} {name}
 [key_bindings]
 "j" = { navigate = "next_agent" }
 "k" = { navigate = "prev_agent" }
+"Home" = { navigate = "first_agent" }
+"End" = { navigate = "last_agent" }
 "c" = "toggle_pane_tree_mode"
 "y" = "approve"
 "Y" = "approve"

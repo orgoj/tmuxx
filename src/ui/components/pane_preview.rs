@@ -295,7 +295,9 @@ impl PanePreviewWidget {
                 let style = parser.and_then(|p| p.highlight_line(&display_line));
 
                 // If no rule matched, use default behavior (some fallback highlighting)
-                if style.is_none() {
+                if let Some(s) = style {
+                    styled_lines.push(Line::from(vec![Span::styled(display_line, s)]));
+                } else {
                     let spans = if display_line.starts_with('+') && !display_line.starts_with("+++")
                     {
                         vec![Span::styled(
@@ -322,8 +324,6 @@ impl PanePreviewWidget {
                         vec![Span::raw(display_line)]
                     };
                     styled_lines.push(Line::from(spans));
-                } else {
-                    styled_lines.push(Line::from(vec![Span::styled(display_line, style.unwrap())]));
                 }
             }
 

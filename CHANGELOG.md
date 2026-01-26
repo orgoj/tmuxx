@@ -7,10 +7,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.25] - 2026-01-26
+
+### Performance
+- **Optimized Rendering**: Implemented pre-parsing of templates and color caching to eliminate UI lag during navigation, especially with many agents.
+- **Efficient Tree Rendering**: Refactored agent list rendering to use a single `ListItem` per agent, resolving scrolling artifacts and cropping issues.
+
 ### Added
-- **"pi" Agent Definition**: Added a new agent definition for the "pi" coding agent to `defaults.toml`.
-  - Precise detection via command name (`pi`) and pane title prefix (`π`).
-  - Native state rules for "Working..." indicators and approval requests.
+- **Session Header Styling**: Configurable colors for session headers to visually separate groups.
+  - `session_header_fg_color`: Foreground color (default: "cyan")
+  - `session_header_bg_color`: Background color (default: "dark_gray")
+- **Enhanced Navigation**:
+  - **Home/End**: Jump to first/last agent in the list.
+  - **Cyclic Navigation**: Configurable option `cyclic_navigation` (default: true) to enable/disable wrapping from last to first agent.
+
+### Fixed
+- **Mouse Interaction**: Fixed mouse click detection for multi-line agents (previously miscalculated row indices).
 
 ## [0.1.24] - 2026-01-26
 

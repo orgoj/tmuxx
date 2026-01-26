@@ -1,0 +1,170 @@
+  Výborně! Všechno vypadá dobře. Aktualizoval jsem:
+
+  1. ✅ Přidal homepage:: https://buildwithpi.ai/ do properties (řádek 5)
+  2. ✅ Přidal detailní sekci "Context Engineering" (řádky 78-131) s:
+    - AGENTS.md: kde se hledá, k čemu slouží
+    - Skills: kde se hledají, jak fungují, discovery rules, progressive disclosure, struktura, usage
+    - SYSTEM.md, Prompt Templates, Dynamic Context
+  3. ✅ Aktualizoval tags (řádek 14): přidal context-engineering, skills-system
+  4. ✅ Odstranil duplicitní "Development rules (AGENTS.md)" sekci
+  5. ✅ Aktualizoval "Projekt dokumentace" s odkazy na skills.md a session.md
+
+  Stránka nyní obsahuje kompletní informace o:
+  - Co je AGENTS.md a kde se hledá
+  - Jak funguje skills systém v pi
+  - Kde pi hledá skills (multiple locations)
+  - Progressive disclosure mechanism
+  - Cross-harness compatibility (Claude Code, OpenAI Codex)
+
+  Všechny úpravy jsou v TAB indentaci a LogSeq formátu. Uživatel by měl být spokojený.
+
+● ✅ Dokončeno! Aktualizoval jsem pi-mono.md s kompletními informacemi o AGENTS.md a Skills:
+
+  Co jsem přidal:
+
+  1. Homepage URL
+
+  - homepage:: https://buildwithpi.ai/ do properties
+
+  2. Nová sekce: Context Engineering (řádky 78-131)
+
+  AGENTS.md:
+  - Význam: Project-specific instrukce pro LLM agent
+  - Kde se hledá: 3 locations v pořadí:
+    - ~/.pi/agent/AGENTS.md (global)
+    - Parent directories (chází nahoru)
+    - Current directory (aktuální projekt)
+  - Vícenásobné soubory: Všechny AGENTS.md/CLAUDE.md se zkoncentrují
+  - V pi-mono: Development rules - TypeScript standards, git workflow, testing
+
+  Skills:
+  - Standard: https://agentskills.io/specification
+  - Kde se hledají: 5 locations
+    - ~/.pi/agent/skills/ (global)
+    - .pi/skills/ (project-specific)
+    - skills/ v pi packages
+    - pi.skills v package.json
+    - Settings: skills array
+    - CLI: --skill <path>
+  - Discovery: Direct .md files OR recursive SKILL.md
+  - Progressive disclosure: Startup scan → XML seznam v system prompt → On-demand load přes read
+  - Cross-harness: Lze použít skills z Claude Code (~/.claude/skills) a OpenAI Codex
+
+  SYSTEM.md, Prompt Templates, Dynamic Context - vše documented
+
+  3. Aktualizované tags
+
+  - Přidal: context-engineering, skills-system
+
+  Stránka nyní obsahuje kompletní reference jak pi funguje s context engineering, AGENTS.md a skills discovery! 🎯
+
+✻ Sautéed for 2m 31s
+
+❯ k pi mi pridej stanku na extensions a takto se hledaji na npm https://www.npmjs.com/search?q=keywords%3Api-package
+  treba toto https://www.npmjs.com/package/@tmustier/pi-ralph-wiggum propoj s ralph strankami
+  https://www.npmjs.com/package/pi-agentic-compaction
+  https://www.npmjs.com/package/pi-powerline-footer
+  ⎿  UserPromptSubmit hook succeeded: Success
+
+∴ Thinking…
+
+  Uživatel chce:
+  1. Přidat stránku o pi extensions a jak se hledají na npm
+  2. Propojit @tmustier/pi-ralph-wiggum s ralph stránkami
+  3. Přidat pi-agentic-compaction
+  4. Přidat pi-powerline-footer
+
+  Postup:
+  1. Nejdřív najdu zda existují stránky pro tyto packages
+  2. Pokud neexistují, vytvořím je pomocí logseq-add-tool skill
+  3. Vytvořím stránku o pi extensions a npm discovery
+
+  Musím postupovat podle logseq-add-tool workflow:
+  - Parse input URLs
+  - Fetch metadata
+  - Detect types
+  - Check existence
+  - Branch exists/new
+
+  Jakožto jsem už v rámci logseq-notes skill a user říká "přidej", což je příkaz k akci, ne otázka na analýzu.
+
+  Dám si TodoWrite na sledování procesu.
+
+● Ok, přidám stránky pro pi extensions a tyto balíčky. Vytvořím si task list.
+✔ Task #1 created: Vytvořit stránku: pi-extensions
+✔ Task #2 created: Zpracovat: @tmustier/pi-ralph-wiggum
+✔ Task #3 created: Zpracovat: pi-agentic-compaction
+✔ Task #4 created: Zpracovat: pi-powerline-footer
+
+∴ Thinking…
+
+  Teď začnu zpracovávat. První task je pi-extensions - stránka o extensions a jak hledat na npm. To nebude npm package ale spíš dokumentační stránka.
+
+  Pro ostatní three packages potřebuji:
+  1. Zjistit zda už existují stránky (ralph jsem našel v Glob výsledu: pages/pi.md mi dal několik results, ale žádný nebyl ralph)
+  2. Fetch metadata z npm (protože to jsou npm packages, ne GitHub repos)
+  3. Vytvořit stránky s propojením
+
+  Nejdřív zkontroluji zda existují ralph stránky.
+
+● Nejdřív zkontroluji zda už existují stránky pro ralph a tyto packages.
+
+● Search(pattern: "pages/*ralph*.md")
+  ⎿  Found 9 files
+     /home/michael/A/pages/ralph-orchestrator.md
+     /home/michael/A/pages/ralph-wiggum-cursor.md
+     /home/michael/A/pages/ralph-wiggum-extension.md
+     /home/michael/A/pages/ralph-wiggum-marketer.md
+     /home/michael/A/pages/ralph-playbook.md
+     /home/michael/A/pages/ralph-iannuttall.md
+     /home/michael/A/pages/awesome-ralph.md
+     /home/michael/A/pages/ralph-wiggum.md
+     /home/michael/A/pages/ralph.md
+  ⎿  PostToolUse:Callback hook succeeded: Success
+
+● Search(pattern: "pages/*compaction*.md")
+  ⎿  Found 0 files
+  ⎿  PostToolUse:Callback hook succeeded: Success
+
+● Search(pattern: "pages/*powerline*.md")
+  ⎿  Found 0 files
+  ⎿  PostToolUse:Callback hook succeeded: Success
+
+● Search(pattern: "pages/*extensions*.md")
+  ⎿  Found 0 files
+  ⎿  PostToolUse:Callback hook succeeded: Success
+
+∴ Thinking…
+
+  Dobře, takže:
+  - Ralph stránky existují (ralph.md, ralph-wiggum.md, atd.)
+  - Compaction stránka neexistuje
+  - Powerline stránka neexistuje
+  - Extensions stránka neexistuje
+
+  Teď potřebuji:
+  1. Vytvořit stránku pi-extensions.md (documentační)
+  2. Vytvořit stránku pi-ralph-wiggum.md a propojit s ralph stránkami
+  3. Vytvořit stránku pi-agentic-compaction.md
+  4. Vytvořit stránku pi-powerline-footer.md
+
+  Nejdřív si přečtu ralph.md abych pochopil kontext a pak vytvořím stránky. Pro npm packages nepoužiji fetch-stats.sh (to je jen pro GitHub), ale získám info přímo z npm.
+
+● Dobře, mám ralph stránky. Teď je přečtu abych propojil správně, a pak vytvořím všechny nové stránky.
+
+● Reading Plan(/home/michael/A/pages/ralph.md · lines 1-50)
+  ⎿  Read 50 lines
+  ⎿  PostToolUse:Callback hook succeeded: Success
+
+✻ Evaporating… (Esc to interrupt · ctrl+t to hide tasks · 56s · ↑ 769 tokens · thinking)
+  ⎿  ◻ #1 Vytvořit stránku: pi-extensions
+     ◻ #2 Zpracovat: @tmustier/pi-ralph-wiggum
+     ◻ #3 Zpracovat: pi-agentic-compaction
+     ◻ #4 Zpracovat: pi-powerline-footer
+
+───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+❯ 
+───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+  ⏵⏵ accept edits on (shift+Tab to cycle)                                                                                                                                0 tokens
+                                                                                                                                                 current: 2.1.19 · latest: 2.1.19
+

@@ -368,9 +368,12 @@ impl AppState {
             .iter()
             .position(|&idx| idx == self.selected_index)
         {
-            // Move to next visible (wrap around)
-            let next_pos = (current_pos + 1) % self.visible_indices.len();
-            self.selected_index = self.visible_indices[next_pos];
+            // Move to next visible
+            if current_pos < self.visible_indices.len() - 1 {
+                self.selected_index = self.visible_indices[current_pos + 1];
+            } else if self.config.cyclic_navigation {
+                self.selected_index = self.visible_indices[0];
+            }
         } else {
             // Current not visible, jump to first visible
             self.selected_index = self.visible_indices[0];
@@ -389,16 +392,29 @@ impl AppState {
             .iter()
             .position(|&idx| idx == self.selected_index)
         {
-            // Move to previous visible (wrap around)
-            let prev_pos = if current_pos == 0 {
-                self.visible_indices.len() - 1
-            } else {
-                current_pos - 1
-            };
-            self.selected_index = self.visible_indices[prev_pos];
+            // Move to previous visible
+            if current_pos > 0 {
+                self.selected_index = self.visible_indices[current_pos - 1];
+            } else if self.config.cyclic_navigation {
+                self.selected_index = self.visible_indices[self.visible_indices.len() - 1];
+            }
         } else {
             // Current not visible, jump to first visible
             self.selected_index = self.visible_indices[0];
+        }
+    }
+
+    /// Selects the first visible agent
+    pub fn select_first(&mut self) {
+        if let Some(&first) = self.visible_indices.first() {
+            self.selected_index = first;
+        }
+    }
+
+    /// Selects the last visible agent
+    pub fn select_last(&mut self) {
+        if let Some(&last) = self.visible_indices.last() {
+            self.selected_index = last;
         }
     }
 
@@ -668,6 +684,7 @@ impl AppState {
     /// Update the cached projection of visible agents.
     /// This should be called whenever agents or filters change.
     pub fn update_visible_indices(&mut self) {
+        let old_indices = self.visible_indices.clone();
         self.visible_indices = self
             .agents
             .root_agents
@@ -676,6 +693,11 @@ impl AppState {
             .filter(|(idx, agent)| self.matches_filter_impl(*idx, agent))
             .map(|(idx, _)| idx)
             .collect();
+
+        // If newly populated from empty, select first
+        if old_indices.is_empty() && !self.visible_indices.is_empty() {
+            self.selected_index = self.visible_indices[0];
+        }
     }
 
     // ... (rest of methods)

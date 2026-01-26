@@ -51,6 +51,14 @@ impl HelpWidget {
                     "Navigation",
                     format!("  {:14} Select previous agent", keys_str),
                 ),
+                KeyAction::Navigate(NavAction::FirstAgent) => add_line(
+                    "Navigation",
+                    format!("  {:14} Select first agent", keys_str),
+                ),
+                KeyAction::Navigate(NavAction::LastAgent) => add_line(
+                    "Navigation",
+                    format!("  {:14} Select last agent", keys_str),
+                ),
 
                 // Agents / Status
                 KeyAction::Approve => {

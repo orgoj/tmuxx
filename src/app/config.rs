@@ -40,6 +40,10 @@ pub struct Config {
     #[serde(default = "default_buffer_size")]
     pub capture_buffer_size: usize,
 
+    /// Whether navigation in lists is cyclic (default: true)
+    #[serde(default = "default_true")]
+    pub cyclic_navigation: bool,
+
     /// Key bindings configuration
     #[serde(default)]
     pub key_bindings: KeyBindings,
@@ -251,6 +255,8 @@ impl Default for StatusIndicators {
     }
 }
 
+fn default_true() -> bool { true }
+
 fn default_buffer_size() -> usize { 16384 }
 
 #[derive(Deserialize, Default)]
@@ -276,6 +282,7 @@ struct PartialConfig {
     todo_files: Option<Vec<String>>,
     sidebar_width: Option<SidebarWidth>,
     capture_buffer_size: Option<usize>,
+    cyclic_navigation: Option<bool>,
 
     menu: Option<MenuConfig>,
     prompts: Option<MenuConfig>,
@@ -340,6 +347,9 @@ impl PartialConfig {
         }
         if let Some(v) = self.capture_buffer_size {
             config.capture_buffer_size = v;
+        }
+        if let Some(v) = self.cyclic_navigation {
+            config.cyclic_navigation = v;
         }
         if let Some(v) = self.menu {
             config.menu = v;
@@ -606,10 +616,20 @@ pub struct PaneTreeConfig {
 
     #[serde(default)]
     pub header_template: String,
+
+    #[serde(default = "default_header_fg")]
+    pub session_header_fg_color: String,
+
+    #[serde(default)]
+    pub session_header_bg_color: Option<String>,
 }
 
 fn default_pane_tree_mode() -> String {
     "full".to_string()
+}
+
+fn default_header_fg() -> String {
+    "cyan".to_string()
 }
 
 impl Default for PaneTreeConfig {
@@ -619,6 +639,8 @@ impl Default for PaneTreeConfig {
             compact_template: "  {selection}{window_id}:{window_name} │ {status_char} {name} {status_text}".to_string(),
             full_template: "  {selection}{status_char} {name}\n    {status_text} | pid:{pid} | {uptime}\n    {path} {context}\n{subagents}".to_string(),
             header_template: " ▼ {session}".to_string(),
+            session_header_fg_color: "cyan".to_string(),
+            session_header_bg_color: Some("darkgray".to_string()),
         }
     }
 }

@@ -50,7 +50,7 @@ impl<'a> SessionWindowTree<'a> {
 }
 
 /// Context for rendering an agent line
-struct AgentRenderCtx<'a> {
+struct AgentRenderCtx<'a, 'b> {
     state: &'a AppState,
     session: &'a str,
     window_id: u32,
@@ -58,7 +58,10 @@ struct AgentRenderCtx<'a> {
     available_width: usize,
     is_cursor: bool,
     is_selected: bool,
+    color_cache: &'b mut HashMap<String, Color>,
 }
+
+use std::collections::HashMap;
 
 impl AgentTreeWidget {
     pub fn render(frame: &mut Frame, area: Rect, state: &AppState) {
@@ -117,7 +120,26 @@ impl AgentTreeWidget {
         } else {
             &state.config.pane_tree.full_template
         };
+        // Pre-parse template to avoid parsing in loop
+        let parsed_template = parse_template(template);
+
         let header_template = &state.config.pane_tree.header_template;
+
+        let selected_bg = Styles::parse_color(&state.config.current_item_bg_color);
+        let multi_select_bg = state
+            .config
+            .multi_selection_bg_color
+            .as_ref()
+            .map(|c| Styles::parse_color(c));
+        let header_fg = Styles::parse_color(&state.config.pane_tree.session_header_fg_color);
+        let header_bg = state
+            .config
+            .pane_tree
+            .session_header_bg_color
+            .as_ref()
+            .map(|c| Styles::parse_color(c));
+
+        let mut color_cache: HashMap<String, Color> = HashMap::new();
 
         for (session, windows) in tree.sessions.iter() {
             // Render Session Header (once per session)
@@ -126,19 +148,27 @@ impl AgentTreeWidget {
             } else {
                 header_template.replace("{session}", session)
             };
+            
+            // Text style (FG only)
+            let text_style = Style::default().fg(header_fg).add_modifier(Modifier::BOLD);
+            
+            // Item style (BG applies to full width)
+            let mut item_style = Style::default();
+            if let Some(bg) = header_bg {
+                item_style = item_style.bg(bg);
+            }
+
             items.push(ListItem::new(Line::from(vec![Span::styled(
                 header_str,
-                Style::default()
-                    .fg(Color::Cyan)
-                    .add_modifier(Modifier::BOLD),
-            )])));
+                text_style,
+            )])).style(item_style));
 
             for ((window_num, window_name), window_agents) in windows.iter() {
                 for (original_idx, agent) in window_agents.iter() {
                     let is_cursor = *original_idx == state.selected_index;
                     let is_selected = state.is_multi_selected(*original_idx);
 
-                    let ctx = AgentRenderCtx {
+                    let mut ctx = AgentRenderCtx {
                         state,
                         session,
                         window_id: *window_num,
@@ -146,35 +176,29 @@ impl AgentTreeWidget {
                         available_width,
                         is_cursor,
                         is_selected,
+                        color_cache: &mut color_cache,
                     };
 
-                    // Render agent using template
-                    let rendered_lines = render_agent(template, agent, &ctx);
+                    // Render agent using pre-parsed template
+                    let rendered_lines = render_parsed_template(&parsed_template, agent, &mut ctx);
 
-                    for (i, line) in rendered_lines.into_iter().enumerate() {
-                        let style = if i == 0 {
-                            // Apply selection background only to the first line (main line)
-                            if is_cursor {
-                                Style::default()
-                                    .bg(Styles::parse_color(&state.config.current_item_bg_color))
-                            } else if is_selected {
-                                if let Some(bg) = &state.config.multi_selection_bg_color {
-                                    Style::default().bg(Styles::parse_color(bg))
-                                } else if let Some(bg_color) = &agent.background_color {
-                                    Style::default().bg(Styles::parse_color(bg_color))
-                                } else {
-                                    Style::default()
-                                }
-                            } else if let Some(bg_color) = &agent.background_color {
-                                Style::default().bg(Styles::parse_color(bg_color))
-                            } else {
-                                Style::default()
-                            }
-                        } else {
-                            Style::default()
-                        };
-                        items.push(ListItem::new(line).style(style));
+                    // Create ONE ListItem for the whole agent (fixes cropping)
+                    let mut item = ListItem::new(rendered_lines);
+
+                    // Apply style to the whole item
+                    if is_cursor {
+                        item = item.style(Style::default().bg(selected_bg));
+                    } else if is_selected {
+                        if let Some(bg) = multi_select_bg {
+                            item = item.style(Style::default().bg(bg));
+                        } else if let Some(bg_color) = &agent.background_color {
+                            item = item.style(Style::default().bg(Styles::parse_color(bg_color)));
+                        }
+                    } else if let Some(bg_color) = &agent.background_color {
+                        item = item.style(Style::default().bg(Styles::parse_color(bg_color)));
                     }
+
+                    items.push(item);
                 }
             }
         }
@@ -187,29 +211,17 @@ impl AgentTreeWidget {
         let mut found = false;
 
         // Re-traverse to find visual index
-        'outer: for (session, windows) in tree.sessions.iter() {
+        'outer: for (_session, windows) in tree.sessions.iter() {
             visual_index += 1; // Header
 
-            for ((window_num, window_name), window_agents) in windows.iter() {
-                for (original_idx, agent) in window_agents.iter() {
+            for ((_window_num, _window_name), window_agents) in windows.iter() {
+                for (original_idx, _agent) in window_agents.iter() {
                     if *original_idx == state.selected_index {
                         found = true;
                         break 'outer;
                     }
 
-                    let ctx = AgentRenderCtx {
-                        state,
-                        session,
-                        window_id: *window_num,
-                        window_name,
-                        available_width,
-                        is_cursor: false,
-                        is_selected: false,
-                    };
-
-                    // Count lines this agent takes
-                    let lines = render_agent(template, agent, &ctx).len();
-                    visual_index += lines;
+                    visual_index += 1; // Each agent is now 1 item
                 }
             }
         }
@@ -235,6 +247,8 @@ impl AgentTreeWidget {
         } else {
             &state.config.pane_tree.full_template
         };
+        let parsed_template = parse_template(template);
+        let mut color_cache = HashMap::new();
 
         // Re-traverse to find agent at row
         let mut visual_index = 0;
@@ -249,7 +263,7 @@ impl AgentTreeWidget {
 
             for ((window_num, window_name), window_agents) in windows.iter() {
                 for (original_idx, agent) in window_agents.iter() {
-                    let ctx = AgentRenderCtx {
+                    let mut ctx = AgentRenderCtx {
                         state,
                         session,
                         window_id: *window_num,
@@ -257,17 +271,18 @@ impl AgentTreeWidget {
                         available_width: width,
                         is_cursor: false,
                         is_selected: false,
+                        color_cache: &mut color_cache,
                     };
 
-                    // Calculate height of this agent
-                    let lines = render_agent(template, agent, &ctx).len();
+                    // Calculate height by rendering (fast enough for click handling)
+                    let height = render_parsed_template(&parsed_template, agent, &mut ctx).len();
 
-                    // Check if row falls within this agent's block
-                    if row >= visual_index && row < visual_index + lines {
+                    // Check if row matches this agent item block
+                    if row >= visual_index && row < visual_index + height {
                         return Some(*original_idx);
                     }
 
-                    visual_index += lines;
+                    visual_index += height;
                 }
             }
         }
@@ -276,39 +291,72 @@ impl AgentTreeWidget {
     }
 }
 
-/// Renders a single agent based on the template
-fn render_agent<'a>(
-    template: &str,
+enum TemplatePart {
+    Text(String),
+    Placeholder(String),
+}
+
+fn parse_template(template: &str) -> Vec<Vec<TemplatePart>> {
+    template
+        .lines()
+        .map(|line| {
+            let mut parts = Vec::new();
+            let mut last_end = 0;
+            while let Some(start) = line[last_end..].find('{') {
+                let abs_start = last_end + start;
+                if abs_start > last_end {
+                    parts.push(TemplatePart::Text(line[last_end..abs_start].to_string()));
+                }
+                if let Some(end) = line[abs_start..].find('}') {
+                    let abs_end = abs_start + end;
+                    parts.push(TemplatePart::Placeholder(
+                        line[abs_start + 1..abs_end].to_string(),
+                    ));
+                    last_end = abs_end + 1;
+                } else {
+                    parts.push(TemplatePart::Text("{".to_string()));
+                    last_end = abs_start + 1;
+                }
+            }
+            if last_end < line.len() {
+                parts.push(TemplatePart::Text(line[last_end..].to_string()));
+            }
+            parts
+        })
+        .collect()
+}
+
+fn render_parsed_template<'a, 'b>(
+    parsed_lines: &[Vec<TemplatePart>],
     agent: &'a MonitoredAgent,
-    ctx: &AgentRenderCtx<'a>,
+    ctx: &mut AgentRenderCtx<'a, 'b>,
 ) -> Vec<Line<'a>> {
-    let mut lines = Vec::new();
+    let mut lines = Vec::with_capacity(parsed_lines.len());
 
-    // Default template if empty
-    let effective_template = if template.is_empty() {
-        "{selection} {status_char} {name} {uptime}"
-    } else {
-        template
-    };
-
-    // Split template by newlines
-    for tmpl_line in effective_template.lines() {
+    for line_parts in parsed_lines {
         // Special case: {subagents} placeholder expands to multiple lines
-        if tmpl_line.contains("{subagents}") && tmpl_line.trim() == "{subagents}" {
-            // Standalone subagents placeholder - render proper subagent lines
-            lines.extend(render_subagents(agent, ctx.state, ctx.available_width));
-            continue;
+        if line_parts.len() == 1 {
+            if let TemplatePart::Placeholder(p) = &line_parts[0] {
+                if p == "subagents" {
+                    lines.extend(render_subagents(agent, ctx.state, ctx.available_width));
+                    continue;
+                }
+            }
         }
-        // If mixed with other text, handle it (though usually it should be on its own line)
 
-        let rendered_line = render_template_line(tmpl_line, agent, ctx);
-        lines.push(rendered_line);
+        let mut spans = Vec::with_capacity(line_parts.len());
+        for part in line_parts {
+            match part {
+                TemplatePart::Text(t) => spans.push(Span::raw(t.clone())),
+                TemplatePart::Placeholder(name) => {
+                    spans.push(render_placeholder(name, agent, ctx))
+                }
+            }
+        }
+        lines.push(Line::from(spans));
     }
 
     // Auto-append status details (approval/questions) if not explicitly handled
-    // The previous implementation always showed them. We should probably keep showing them
-    // unless we add specific placeholders for them.
-    // For now, let's append them at the end if the status requires attention.
     if agent.status.needs_attention() {
         lines.extend(render_status_details(agent, ctx.available_width));
     }
@@ -316,42 +364,10 @@ fn render_agent<'a>(
     lines
 }
 
-fn render_template_line<'a>(
-    tmpl_line: &str,
-    agent: &'a MonitoredAgent,
-    ctx: &AgentRenderCtx<'a>,
-) -> Line<'a> {
-    let mut spans = Vec::new();
-    let chars: Vec<char> = tmpl_line.chars().collect();
-    let mut i = 0;
-
-    while i < chars.len() {
-        if chars[i] == '{' {
-            // Find closing '}'
-            if let Some(end) = chars[i..].iter().position(|&c| c == '}') {
-                let end_idx = i + end;
-                let placeholder: String = chars[i + 1..end_idx].iter().collect();
-
-                // Render placeholder
-                spans.push(render_placeholder(&placeholder, agent, ctx));
-
-                i = end_idx + 1;
-                continue;
-            }
-        }
-
-        // Regular char
-        spans.push(Span::raw(chars[i].to_string()));
-        i += 1;
-    }
-
-    Line::from(spans)
-}
-
-fn render_placeholder<'a>(
+fn render_placeholder<'a, 'b>(
     name: &str,
     agent: &'a MonitoredAgent,
-    ctx: &AgentRenderCtx<'a>,
+    ctx: &mut AgentRenderCtx<'a, 'b>,
 ) -> Span<'a> {
     match name {
         "session" => Span::styled(ctx.session.to_string(), Style::default().fg(Color::Cyan)),
@@ -409,11 +425,20 @@ fn render_placeholder<'a>(
             ),
         },
         "name" => {
-            let color = agent
+            let color_name = agent
                 .color
                 .as_deref()
                 .unwrap_or(&ctx.state.config.agent_name_color);
-            Span::styled(&agent.name, Style::default().fg(Styles::parse_color(color)))
+            
+            let color = if let Some(c) = ctx.color_cache.get(color_name) {
+                *c
+            } else {
+                let c = Styles::parse_color(color_name);
+                ctx.color_cache.insert(color_name.to_string(), c);
+                c
+            };
+            
+            Span::styled(&agent.name, Style::default().fg(color))
         }
         "pid" => Span::styled(agent.pid.to_string(), Style::default().fg(Color::DarkGray)),
         "uptime" => Span::styled(agent.uptime_str(), Style::default().fg(Color::DarkGray)),

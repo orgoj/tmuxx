@@ -750,6 +750,14 @@ async fn run_loop(
                                     state.select_prev();
                                     state.refresh_project_todo();
                                 }
+                                Action::FirstAgent => {
+                                    state.select_first();
+                                    state.refresh_project_todo();
+                                }
+                                Action::LastAgent => {
+                                    state.select_last();
+                                    state.refresh_project_todo();
+                                }
                                 Action::ToggleSelection => {
                                     state.toggle_selection();
                                 }
@@ -1453,6 +1461,8 @@ fn map_key_to_action(
             return match action {
                 KeyAction::Navigate(NavAction::NextAgent) => Action::NextAgent,
                 KeyAction::Navigate(NavAction::PrevAgent) => Action::PrevAgent,
+                KeyAction::Navigate(NavAction::FirstAgent) => Action::FirstAgent,
+                KeyAction::Navigate(NavAction::LastAgent) => Action::LastAgent,
                 KeyAction::Approve => Action::Approve,
                 KeyAction::Reject => Action::Reject,
                 KeyAction::ApproveAll => Action::ApproveAll,
@@ -1500,6 +1510,8 @@ fn map_key_to_action(
     match code {
         KeyCode::Down => return Action::NextAgent,
         KeyCode::Up => return Action::PrevAgent,
+        KeyCode::Home => return Action::FirstAgent,
+        KeyCode::End => return Action::LastAgent,
         _ => {}
     }
 

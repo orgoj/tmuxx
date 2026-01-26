@@ -126,7 +126,7 @@ impl Styles {
             "white" => Color::White,
             "black" => Color::Rgb(0, 0, 0),
             "gray" | "grey" => Color::Gray,
-            "darkgray" | "darkgrey" => Color::DarkGray,
+            "darkgray" | "darkgrey" | "dark_gray" => Color::DarkGray,
             "lightmagenta" => Color::LightMagenta,
             "lightblue" => Color::LightBlue,
             "lightgreen" => Color::LightGreen,

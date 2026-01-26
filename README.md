@@ -210,6 +210,8 @@ tcc
 |-----|--------|
 | `j` / `Down` | Next agent |
 | `k` / `Up` | Previous agent |
+| `Home` | First agent |
+| `End` | Last agent |
 | `Tab` | Cycle through agents |
 
 ### Selection
@@ -352,6 +354,10 @@ truncate_long_lines = true
 # Trigger key for popup input dialog (default: "/")
 popup_trigger_key = "/"
 
+# Whether navigation in lists is cyclic (default: true)
+# If true, pressing 'j' on last item jumps to first, and 'k' on first jumps to last.
+cyclic_navigation = true
+
 # Hide bottom input buffer (use modal textarea instead, default: true)
 # When true, the bottom input box is hidden - use Shift+I for multi-line input
 # When false, the bottom input box is always visible at the bottom of screen
@@ -452,6 +458,8 @@ mode = "full"
 
 # Session header template
 header_template = " ▼ {session}"
+session_header_fg_color = "cyan"
+session_header_bg_color = "dark_gray"
 
 # Compact mode template (single line per agent)
 compact_template = "  {selection}{window_id}:{window_name} │ {status_char} {name} {status_text}"

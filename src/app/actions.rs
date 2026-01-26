@@ -10,6 +10,10 @@ pub enum Action {
     NextAgent,
     /// Navigate to previous agent
     PrevAgent,
+    /// Navigate to first agent
+    FirstAgent,
+    /// Navigate to last agent
+    LastAgent,
     /// Toggle selection of current agent
     ToggleSelection,
     /// Select all agents
@@ -141,6 +145,8 @@ impl Action {
             Action::Quit => "Quit application",
             Action::NextAgent => "Select next agent",
             Action::PrevAgent => "Select previous agent",
+            Action::FirstAgent => "Select first agent",
+            Action::LastAgent => "Select last agent",
             Action::ToggleSelection => "Toggle selection",
             Action::SelectAll => "Select all agents",
             Action::ClearSelection => "Clear selection",
