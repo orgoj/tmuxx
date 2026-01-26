@@ -39,7 +39,7 @@ priority = 100
   status = "idle"
   type = "idle"
   # Capture everything up to the separator as indicator. Handle optional │ in separators.
-  pattern = '''(?ms)(?P<indicator>.*)(?:^|\n)[ \t]*[│]*[─╌]{10,}.*?(?:$|\n)(?P<body>.*?)(?:^|\n)[ \t]*[│]*[^\n]*❯(?P<suffix>.*)$'''
+  pattern = '''(?ms)(?P<indicator>.*)(?:^|\n)[ \t]*[│]*[─╌]{10,}.*?(?:$|\n)(?P<body>.*?)(?:^|\n)[ \t]*[│]*[^\n]*?❯(?P<suffix>.*)$'''
 
   # Refinement: Detect questions in the body to switch to awaiting_approval
   [[agents.state_rules.refinements]]
@@ -49,9 +49,14 @@ priority = 100
   type = "approval"
   [[agents.state_rules.refinements]]
   group = "indicator"
-  pattern = '''(?is)(?:Mulling|Thinking|Esc to interrupt|✢|∴)[^\n]*(?:\n[^\n]*){0,3}\s*\z'''
+  pattern = '''(?is)(?:Mulling|Thinking|Esc to interrupt|✢|∴)[^\n]*(?:\n[^\n]*){0,1}\s*\z'''
   status = "Thinking"
   type = "working"
+  [[agents.state_rules.refinements]]
+  group = "suffix"
+  pattern = "(?i)Enter to select"
+  status = "approval"
+  type = "approval"
 
 
   # 2. Specialized Approvals
@@ -100,6 +105,7 @@ priority = 100
   [[agents.state_rules]]
   status = "Thinking"
   type = "working"
+  last_lines = 20
   pattern = '''(?mx)
     (?:
       ^[ \t]*[✽⎿✻✢*∴]\s+.*   # Spinner or continuation (Added ✢, *, ∴)
