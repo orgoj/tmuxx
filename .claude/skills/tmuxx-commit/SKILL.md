@@ -1,9 +1,9 @@
 ---
-name: tmuxcc-commit
-description: Pre-commit checklist and git workflow for tmuxcc project
+name: tmuxx-commit
+description: Pre-commit checklist and git workflow for tmuxx project
 ---
 
-# Pre-Commit Workflow for tmuxcc
+# Pre-Commit Workflow for tmuxx
 
 **Use this skill before EVERY commit!**
 
@@ -58,9 +58,9 @@ Co-Authored-By: Claude Sonnet 4.5 <noreply@anthropic.com>
 
 ## Git Remotes
 
-- `origin` - git@github.com:orgoj/tmuxcc.git (main fork)
-- `original` - git@github.com:nyanko3141592/tmuxcc.git (upstream)
-- `neon` - git@github.com:frantisek-heca/tmuxcc-neon.git (tracking)
+- `origin` - git@github.com:orgoj/tmuxx.git (main fork)
+- `original` - git@github.com:nyanko3141592/tmuxx.git (upstream)
+- `neon` - git@github.com:frantisek-heca/tmuxx-neon.git (tracking)
 
 ## Important Notes
 

@@ -1,7 +1,7 @@
 #!/bin/bash
-# Start ct-test session for testing tmuxcc
+# Start ct-test session for testing tmuxx
 SESSION="ct-test"
-PROJECT_DIR="/home/michael/work/ai/TOOLS/tmuxcc"
+PROJECT_DIR="/home/michael/work/ai/TOOLS/tmuxx"
 ATTACH=false
 
 # Parse arguments
@@ -18,8 +18,8 @@ tmux has-session -t "$SESSION" 2>/dev/null && tmux kill-session -t "$SESSION"
 # Create new session in project directory
 tmux new-session -d -s "$SESSION" -c "$PROJECT_DIR"
 
-# Start tmuxcc
-tmux send-keys -t "$SESSION" './target/release/tmuxcc' Enter
+# Start tmuxx
+tmux send-keys -t "$SESSION" './target/release/tmuxx' Enter
 
 if [ "$ATTACH" = true ]; then
     exec tmux attach -t "$SESSION"

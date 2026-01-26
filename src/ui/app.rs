@@ -1051,7 +1051,7 @@ async fn run_loop(
                                                          if let Ok(mut file) = std::fs::OpenOptions::new()
                                                             .create(true)
                                                             .append(true)
-                                                            .open(".tmuxcc.log")
+                                                            .open(".tmuxx.log")
                                                         {
                                                             let _ = writeln!(file, "--- Command: {} ---", expanded);
                                                             let _ = file.write_all(&output.stdout);
@@ -1619,11 +1619,11 @@ fn expand_command_variables(template: &str, agent: &crate::agents::MonitoredAgen
 /// Helper to get stdio for logging (debug mode) or null
 fn get_log_stdio(debug_mode: bool) -> std::process::Stdio {
     if debug_mode {
-        // Try to open .tmuxcc.log in current directory
+        // Try to open .tmuxx.log in current directory
         if let Ok(file) = std::fs::OpenOptions::new()
             .create(true)
             .append(true)
-            .open(".tmuxcc.log")
+            .open(".tmuxx.log")
         {
             return std::process::Stdio::from(file);
         }

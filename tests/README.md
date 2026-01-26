@@ -1,4 +1,4 @@
-# TmuxCC Regression Tests
+# Tmuxx Regression Tests
 
 Directory: `tests/fixtures/<agent_id>/`
 
@@ -15,7 +15,7 @@ This will create a file like `case_idle_main_menu.txt` in `tests/fixtures/claude
 
 ### Naming Convention
 
-The test runner (`tmuxcc test`) uses the filename to determine the expected state.
+The test runner (`tmuxx test`) uses the filename to determine the expected state.
 Format: `case_<STATUS>_<DESC>.txt`
 
 **Valid STATUS values** (must match strings in `defaults.toml`):

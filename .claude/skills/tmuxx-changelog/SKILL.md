@@ -1,6 +1,6 @@
 ---
-name: tmuxcc-changelog
-description: TODO.md and CHANGELOG.md management workflow for tmuxcc
+name: tmuxx-changelog
+description: TODO.md and CHANGELOG.md management workflow for tmuxx
 ---
 
 # TODO.md and CHANGELOG.md Management

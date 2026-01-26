@@ -240,8 +240,8 @@ impl TmuxClient {
         // Check if inside tmux
         if !Self::is_inside_tmux() {
             anyhow::bail!(
-                "Cannot focus pane: tmuxcc is not running inside tmux.\n\
-                 Run tmuxcc in a tmux pane to use focus (f key)"
+                "Cannot focus pane: tmuxx is not running inside tmux.\n\
+                 Run tmuxx in a tmux pane to use focus (f key)"
             );
         }
 

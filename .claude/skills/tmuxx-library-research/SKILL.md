@@ -1,6 +1,6 @@
 ---
-name: tmuxcc-library-research
-description: Library research workflow for tmuxcc - NEVER write functionality from scratch!
+name: tmuxx-library-research
+description: Library research workflow for tmuxx - NEVER write functionality from scratch!
 ---
 
 # Library Research Workflow
@@ -58,7 +58,7 @@ mcp__rtfmbro__get_documentation_tree package="ratatui/ratatui" version="==0.29" 
 mcp__rtfmbro__read_files package="ratatui/ratatui" version="==0.29" ecosystem="gh" requests='[{"relative_path":"docs/widgets.md"}]'
 ```
 
-## Selected Libraries for tmuxcc
+## Selected Libraries for tmuxx
 
 - **Text editing:** tui-textarea (rhysd) - supports ratatui 0.29, has popup example
 

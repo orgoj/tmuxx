@@ -46,13 +46,13 @@ sed -i 's/^[ \t]*│//' "$OUTPATH.tmp"
 sed -i "s|$HOME|/home/user|g" "$OUTPATH.tmp"
 sed -i "s|$(whoami)|user|g" "$OUTPATH.tmp"
 
-# Optional: Add custom strings from .tmuxcc_scrub if it exists
-if [ -f "${SCRIPT_DIR}/.tmuxcc_scrub" ]; then
+# Optional: Add custom strings from .tmuxx_scrub if it exists
+if [ -f "${SCRIPT_DIR}/.tmuxx_scrub" ]; then
     while IFS='=' read -r key value; do
         if [[ ! $key =~ ^# && -n $key ]]; then
             sed -i "s|$key|$value|g" "$OUTPATH.tmp"
         fi
-    done < "${SCRIPT_DIR}/.tmuxcc_scrub"
+    done < "${SCRIPT_DIR}/.tmuxx_scrub"
 fi
 
 mv "$OUTPATH.tmp" "$OUTPATH"

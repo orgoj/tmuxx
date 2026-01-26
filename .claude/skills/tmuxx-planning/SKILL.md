@@ -1,9 +1,9 @@
 ---
-name: tmuxcc-planning
-description: Implementation planning workflow for tmuxcc features - use BEFORE writing code
+name: tmuxx-planning
+description: Implementation planning workflow for tmuxx features - use BEFORE writing code
 ---
 
-# Implementation Planning for tmuxcc
+# Implementation Planning for tmuxx
 
 **Use this skill BEFORE implementing any feature or fix!**
 
@@ -150,7 +150,7 @@ state.set_error("✗ Failed to execute command");
 echo "Opening ${SESSION_DIR}/file.txt"
 
 // ✅ CORRECT - shows actual path
-echo "Opening /home/user/projects/tmuxcc/file.txt"
+echo "Opening /home/user/projects/tmuxx/file.txt"
 ```
 
 ## Common Planning Mistakes

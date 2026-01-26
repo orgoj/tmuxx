@@ -1,10 +1,10 @@
 #!/bin/bash
-# Install tmuxcc binaries to ~/bin
+# Install tmuxx binaries to ~/bin
 set -e
 
 declare -A FILES=(
-    ["target/release/tmuxcc"]="$HOME/bin/tmuxcc"
-    ["scripts/tmuxcc-wrapper.sh"]="$HOME/bin/tcc"
+    ["target/release/tmuxx"]="$HOME/bin/tmuxx"
+    ["scripts/tmuxx-wrapper.sh"]="$HOME/bin/tcc"
 )
 
 for src in "${!FILES[@]}"; do

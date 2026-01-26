@@ -1,8 +1,10 @@
-# TmuxCC
+# Tmuxx
 
-**AI Agent Dashboard for tmux** - Monitor and manage multiple AI coding agents from a single terminal interface.
+**Tmux config driven dashboard with CLI Agents support** - Monitor and manage any process or AI coding agents from a single terminal interface.
 
-TmuxCC is a TUI (Terminal User Interface) application that provides centralized monitoring and control of AI coding assistants running in tmux panes. It supports Claude Code, OpenCode, Codex CLI, and Gemini CLI.
+Tmuxx is a TUI (Terminal User Interface) application that provides centralized monitoring and control of tmux panes. While it has native support for AI agents like Claude Code, OpenCode, Codex CLI, and Gemini CLI, it is designed to be a universal dashboard driven by configuration.
+
+It is a hard fork and total rewrite of `tmuxcc`.
 
 ---
 
@@ -11,7 +13,7 @@ TmuxCC is a TUI (Terminal User Interface) application that provides centralized 
 <!-- TODO: Add actual screenshot -->
 ```
 +------------------------------------------------------------------+
-|  TmuxCC - AI Agent Dashboard                   Agents: 3 Active: 1|
+|  Tmuxx - AI Agent Dashboard                    Agents: 3 Active: 1|
 +------------------------------------------------------------------+
 | main (Session)                    | Preview: main:0.0             |
 | +-- 0: code                       |                               |
@@ -71,14 +73,14 @@ TmuxCC is a TUI (Terminal User Interface) application that provides centralized 
 ### From crates.io
 
 ```bash
-cargo install tmuxcc
+cargo install tmuxx
 ```
 
 ### From Source
 
 ```bash
-git clone https://github.com/nyanko3141592/tmuxcc.git
-cd tmuxcc
+git clone https://github.com/orgoj/tmuxx.git
+cd tmuxx
 cargo build --release
 cargo install --path .
 ```
@@ -95,37 +97,37 @@ cargo install --path .
 ### Quick Start
 
 1. Start tmux and run AI agents in different panes
-2. Launch TmuxCC from any terminal:
+2. Launch Tmuxx from any terminal:
 
 ```bash
-tmuxcc
+tmuxx
 ```
 
 **Monitor ALL tmux panes:**
 
 ```bash
 # Create config with wildcard pattern
-tmuxcc --init-config
+tmuxx --init-config
 echo '
 [[agent_patterns]]
 pattern = "*"
 agent_type = "All Panes"
-' >> ~/.config/tmuxcc/config.toml
+' >> ~/.config/tmuxx/config.toml
 
-# Run tmuxcc - now shows every tmux pane
-tmuxcc
+# Run tmuxx - now shows every tmux pane
+tmuxx
 ```
 
 ### Command Line Options
 
 ```
-tmuxcc [OPTIONS]
+tmuxx [OPTIONS]
 
 Options:
   -p, --poll-interval <MS>      Polling interval in milliseconds [default: 500]
   -l, --capture-lines <LINES>   Lines to capture from each pane [default: 100]
   -f, --config <FILE>           Path to config file
-  -d, --debug                   Enable debug logging to tmuxcc.log
+  -d, --debug                   Enable debug logging to tmuxx.log
       --show-config-path        Show config file path and exit
       --init-config             Create default config file and exit
   -h, --help                    Print help
@@ -136,37 +138,37 @@ Options:
 
 ```bash
 # Run with default settings
-tmuxcc
+tmuxx
 
 # Set polling interval to 1 second
-tmuxcc -p 1000
+tmuxx -p 1000
 
 # Capture more lines for better context
-tmuxcc -l 200
+tmuxx -l 200
 
 # Use custom config file
-tmuxcc -f ~/.config/tmuxcc/custom.toml
+tmuxx -f ~/.config/tmuxx/custom.toml
 
-# Enable debug logging to tmuxcc.log
-tmuxcc --debug
+# Enable debug logging to tmuxx.log
+tmuxx --debug
 
 # Enable debug mode in TUI (via config)
-tmuxcc --set debug_mode=true
+tmuxx --set debug_mode=true
 
 # Initialize default config file
-tmuxcc --init-config
+tmuxx --init-config
 
 # Run regression tests (see tests/README.md for details)
-tmuxcc test --dir tests/fixtures/claude
+tmuxx test --dir tests/fixtures/claude
 ```
 
 ### Regression Testing
 
-TmuxCC includes a built-in regression testing suite to verify agent state detection logic against captured pane content.
+Tmuxx includes a built-in regression testing suite to verify agent state detection logic against captured pane content.
 
 ```bash
 # Run tests for a specific agent
-tmuxcc test --dir tests/fixtures/claude
+tmuxx test --dir tests/fixtures/claude
 
 # Capture a new test fixture from a running tmux pane
 ./tests/capture.sh claude cc-ai-maestro idle "my_description"
@@ -176,19 +178,19 @@ See [tests/README.md](tests/README.md) for more details.
 
 ### Wrapper Script for Reliable Focus (Recommended)
 
-The `f` key (focus pane) works best when tmuxcc runs **inside tmux**. Use the wrapper script to ensure tmuxcc always runs in a dedicated tmux session:
+The `f` key (focus pane) works best when tmuxx runs **inside tmux**. Use the wrapper script to ensure tmuxx always runs in a dedicated tmux session:
 
 ```bash
 # Install wrapper to ~/bin for quick access
-ln -sf "$(pwd)/scripts/tmuxcc-wrapper.sh" ~/bin/tcc
+ln -sf "$(pwd)/scripts/tmuxx-wrapper.sh" ~/bin/tcc
 
-# Now use 'tcc' instead of 'tmuxcc'
+# Now use 'tcc' instead of 'tmuxx'
 tcc
 ```
 
 **What the wrapper does:**
-- Creates/reuses a tmux session named `tmuxcc`
-- Launches tmuxcc inside that session
+- Creates/reuses a tmux session named `tmuxx`
+- Launches tmuxx inside that session
 - Enables reliable cross-session focus with `f` key
 - Works whether you start it inside or outside tmux
 
@@ -265,7 +267,7 @@ tcc
 
 ## Summary View
 
-TmuxCC can display a structured summary of Claude Code activity in a two-column layout (toggle with `s` key):
+Tmuxx can display a structured summary of Claude Code activity in a two-column layout (toggle with `s` key):
 
 ### Left Column - TODOs
 
@@ -274,7 +276,7 @@ Shows task checkboxes created by Claude Code's built-in task management system:
 - `☐` Task title - Pending task
 - `☑` Task title - Completed task
 
-**How tasks are created:** When Claude Code uses its `TaskCreate`, `TaskList`, or `TaskUpdate` tools during a session, it displays task markers in the terminal output. TmuxCC parses these markers from the pane content and displays them in the summary view.
+**How tasks are created:** When Claude Code uses its `TaskCreate`, `TaskList`, or `TaskUpdate` tools during a session, it displays task markers in the terminal output. Tmuxx parses these markers from the pane content and displays them in the summary view.
 
 **Example:** If you ask Claude Code to "Create tasks to track implementation steps", it will use TaskCreate and display:
 ```
@@ -283,7 +285,7 @@ Shows task checkboxes created by Claude Code's built-in task management system:
 ☐ Add tests
 ```
 
-TmuxCC automatically captures and displays these in the TODO column.
+Tmuxx automatically captures and displays these in the TODO column.
 
 ### Right Column - Activity
 
@@ -304,28 +306,28 @@ Press `s` or `S` to toggle between:
 
 ## Configuration
 
-TmuxCC uses a TOML configuration file.
+Tmuxx uses a TOML configuration file.
 
 ### Initialize Config
 
 ```bash
 # Option 1: Create default config file
-tmuxcc --init-config
+tmuxx --init-config
 
 # Option 2: Copy example config and customize
-cp config.example.toml ~/.config/tmuxcc/config.toml
+cp config.example.toml ~/.config/tmuxx/config.toml
 
 # Show config file location
-tmuxcc --show-config-path
+tmuxx --show-config-path
 ```
 
 ### Config File Location
 
 | OS | Path |
 |----|------|
-| Linux | `~/.config/tmuxcc/config.toml` |
-| macOS | `~/Library/Application Support/tmuxcc/config.toml` |
-| Windows | `%APPDATA%\tmuxcc\config.toml` |
+| Linux | `~/.config/tmuxx/config.toml` |
+| macOS | `~/Library/Application Support/tmuxx/config.toml` |
+| Windows | `%APPDATA%\tmuxx\config.toml` |
 
 ### Configuration Options
 
@@ -372,8 +374,8 @@ log_actions = true
 default_type = "working"
 
 # Session Filtering
-# Auto-ignore the session where tmuxcc runs (default: true)
-# This prevents tmuxcc from showing itself in the dashboard
+# Auto-ignore the session where tmuxx runs (default: true)
+# This prevents tmuxx from showing itself in the dashboard
 ignore_self = true
 
 # Ignore specific sessions by pattern (optional)
@@ -551,7 +553,7 @@ m = { execute_command = { command = "lazyclaude -m", terminal = true } }
 ### Stdio Redirection
 - **Terminal Apps** (`terminal = true`): Inherit stdio (fully visible and interactive).
 - **Background Apps** (`blocking = false`): Output is silenced (`/dev/null`) to prevent UI corruption.
-- **Debug Mode**: If `debug_mode = true` in config, background output and full results of blocking tasks are written to `.tmuxcc.log` for troubleshooting.
+- **Debug Mode**: If `debug_mode = true` in config, background output and full results of blocking tasks are written to `.tmuxx.log` for troubleshooting.
 
 ### Modifier Key Syntax
 
@@ -646,7 +648,7 @@ execute_command = { command = "cargo run", terminal = true }
 - `execute_command`: (For terminal/background tasks)
   - `command`: The shell command to run (supports variable expansion like `${SESSION_DIR}`).
   - `blocking`: If true, shows output in a subshell and waits for Enter.
-  - `terminal`: If true, suspends tmuxcc and gives full control to the command (useful for `top`, `vim`, etc.).
+  - `terminal`: If true, suspends tmuxx and gives full control to the command (useful for `top`, `vim`, etc.).
 - `items`: (For submenus) A list of nested menu items.
 
 ### CLI Config Overrides
@@ -655,13 +657,13 @@ Override any config option via command line using `--set KEY=VALUE`:
 
 ```bash
 # Hide detached sessions (full name)
-tmuxcc --set show_detached_sessions=false
+tmuxx --set show_detached_sessions=false
 
 # Hide detached sessions (short alias)
-tmuxcc --set showdetached=0
+tmuxx --set showdetached=0
 
 # Multiple overrides
-tmuxcc --set poll_interval=1000 --set showdetached=false
+tmuxx --set poll_interval=1000 --set showdetached=false
 
 # Supported value formats
 --set showdetached=true     # true/false
@@ -687,28 +689,28 @@ tmuxcc --set poll_interval=1000 --set showdetached=false
 **Session filtering examples:**
 ```bash
 # Ignore specific sessions (comma-separated patterns)
-tmuxcc --set ignore_sessions=prod-*,ssh-tunnel,/^vpn-\d+$/
+tmuxx --set ignore_sessions=prod-*,ssh-tunnel,/^vpn-\d+$/
 
 # Show your own session (disable ignore_self)
-tmuxcc --set ignore_self=false
+tmuxx --set ignore_self=false
 ```
 
 **Key binding overrides:**
 ```bash
 # Change E key to send Escape
-tmuxcc --set kb.E=send_keys:Escape
+tmuxx --set kb.E=send_keys:Escape
 
 # Change K key to kill with SIGTERM
-tmuxcc --set kb.K=kill_app:sigterm
+tmuxx --set kb.K=kill_app:sigterm
 
 # Change K key to kill with Ctrl-C+Ctrl-D
-tmuxcc --set kb.K=kill_app:ctrlc_ctrld
+tmuxx --set kb.K=kill_app:ctrlc_ctrld
 
 # Remap y key to reject
-tmuxcc --set kb.y=reject
+tmuxx --set kb.y=reject
 
 # Send custom key sequence
-tmuxcc --set kb.X=send_keys:C-z
+tmuxx --set kb.X=send_keys:C-z
 ```
 
 **Valid action formats:**
@@ -748,7 +750,7 @@ tmuxcc --set kb.X=send_keys:C-z
 
 ## How It Works
 
-1. **Discovery**: TmuxCC scans all tmux sessions, windows, and panes
+1. **Discovery**: Tmuxx scans all tmux sessions, windows, and panes
 2. **Detection**: Identifies AI agents by process name, window title, and command line
 3. **Parsing**: Agent-specific parsers analyze pane content for status and approvals
 4. **Monitoring**: Continuously polls panes at configurable intervals
@@ -759,7 +761,7 @@ tmuxcc --set kb.X=send_keys:C-z
 ## Project Structure
 
 ```
-tmuxcc/
+tmuxx/
 ├── src/
 │   ├── main.rs           # Entry point
 │   ├── lib.rs            # Library root
@@ -804,6 +806,14 @@ tmuxcc/
 ## License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+---
+
+## Credits
+
+This project is a hard fork and total rewrite of `tmuxcc`, originally created by [TmuxCC Contributors](https://github.com/nyanko3141592/tmuxcc). We thank the original authors for their pioneering work in AI agent monitoring for tmux.
+
+While `tmuxx` has evolved into a distinct project with its own goals and architecture, it stands on the shoulders of the original concept.
 
 ---
 

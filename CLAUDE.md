@@ -4,7 +4,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-TmuxCC is a Rust TUI (Terminal User Interface) application that monitors multiple AI coding agents (Claude Code, OpenCode, Codex CLI, Gemini CLI) running in tmux panes. It provides a centralized dashboard for tracking agent status, managing approvals, and viewing subagents.
+Tmuxx is a Rust TUI (Terminal User Interface) application that monitors tmux panes based on configuration. It features native support for AI coding agents (Claude Code, OpenCode, Codex CLI, Gemini CLI) but serves as a general-purpose dashboard for monitoring any process.
+
+It is a hard fork and total rewrite of `tmuxcc`.
 
 ## Build and Development Commands
 
@@ -131,7 +133,7 @@ Parsers check ALL detection strings to handle various detection scenarios.
 
 ### Configuration System
 
-- Uses TOML format (`~/.config/tmuxcc/config.toml` on Linux)
+- Uses TOML format (`~/.config/tmuxx/config.toml` on Linux)
 - `Config::load()` merges CLI args > config file > defaults
 - Custom agent patterns can be added via `[[agent_patterns]]` sections
 - `--init-config` creates default config, `--show-config-path` shows location
@@ -145,22 +147,22 @@ Parsers check ALL detection strings to handle various detection scenarios.
 
 ### Testing Discipline
 
-- **INVOKE tmuxcc-testing skill**: MANDATORY before ANY testing - contains session structure, send-keys rules, tmux safety
-- See tmuxcc-testing skill for complete testing workflow and safety rules
+- **INVOKE tmuxx-testing skill**: MANDATORY before ANY testing - contains session structure, send-keys rules, tmux safety
+- See tmuxx-testing skill for complete testing workflow and safety rules
 
 ## Common Pitfalls
 
-1. **Regex Performance**: Parsers run on every poll cycle. Keep regex patterns efficient.
-2. **Unicode Safety**: Use `unicode-width` crate for text truncation (paths, titles)
-3. **tmux Escaping**: Pane content may contain ANSI codes - parsers handle raw text
-4. **Child Process Detection**: Agents run in shells need child process scanning
-5. **Multi-byte Characters**: Use `safe_tail()` helper for safe string slicing; always use `.chars()` for character indexing, never byte slicing
-6. **Upstream Data Problems**: When a feature "doesn't work", check if upstream data exists FIRST (e.g., agent detection before testing focus functionality)
-7. **Config Integration Completeness**: When adding config options, verify they're actually used in implementation code, not just defined in Config struct
-8. **Ratatui Paragraph Wrapping**: To disable wrapping, omit `.wrap()` call entirely; don't use `Wrap { trim: true }` which controls trimming, not wrapping
-9. **HashMap Display Order**: HashMap iteration is non-deterministic - ALWAYS sort keys explicitly for UI consistency
+1.  **Regex Performance**: Parsers run on every poll cycle. Keep regex patterns efficient.
+2.  **Unicode Safety**: Use `unicode-width` crate for text truncation (paths, titles)
+3.  **tmux Escaping**: Pane content may contain ANSI codes - parsers handle raw text
+4.  **Child Process Detection**: Agents run in shells need child process scanning
+5.  **Multi-byte Characters**: Use `safe_tail()` helper for safe string slicing; always use `.chars()` for character indexing, never byte slicing
+6.  **Upstream Data Problems**: When a feature "doesn't work", check if upstream data exists FIRST (e.g., agent detection before testing focus functionality)
+7.  **Config Integration Completeness**: When adding config options, verify they're actually used in implementation code, not just defined in Config struct
+8.  **Ratatui Paragraph Wrapping**: To disable wrapping, omit `.wrap()` call entirely; don't use `Wrap { trim: true }` which controls trimming, not wrapping
+9.  **HashMap Display Order**: HashMap iteration is non-deterministic - ALWAYS sort keys explicitly for UI consistency
 10. **Trailing Content in UI**: When displaying "last N lines", trim trailing empty content first to ensure actual data is visible
-11. **Skipping Skills**: Attempting tasks without invoking relevant skills leads to mistakes - check `.claude/skills/` first
+11. **Skipping Skills**: Attempting tasks without invoking relevant skills leads to mistakes - check `.pi/skills/` first
 12. **Batch Operations Without Verification**: Sending multiple commands at once can cause destructive failures - verify each step
 13. **View/Model Index Mismatch**: When filtering affects display, navigation MUST use filtered indices - otherwise cursor lands on hidden items or skips erratically
 14. **Single Method Fix Tunnel Vision**: When fixing one method, audit entire API for same pattern - often multiple methods have the same issue
@@ -171,8 +173,8 @@ Parsers check ALL detection strings to handle various detection scenarios.
 
 ### Skill-First Development
 
-- **Check skills BEFORE starting**: Search `.claude/skills/` for relevant skills before implementing
-- **INVOKE skills matching task type**: Testing? → tmuxcc-testing. Commit? → tmuxcc-commit. Config? → tmuxcc-adding-config-option
+- **Check skills BEFORE starting**: Search `.pi/skills/` for relevant skills before implementing
+- **INVOKE skills matching task type**: Testing? → tmuxx-testing. Commit? → tmuxx-commit. Config? → tmuxx-adding-config-option
 - **Create skills for repetitive workflows**: If explaining same process twice → create skill
 - **Documentation extraction**: Keep CLAUDE.md under 300 lines - extract repetitive workflows into skills
 
@@ -180,44 +182,44 @@ Parsers check ALL detection strings to handle various detection scenarios.
 
 **CRITICAL: Project-specific skills have PRIORITY over generic skills!**
 
-- **Project skills FIRST**: tmuxcc-testing, tmuxcc-commit, etc. take precedence
+- **Project skills FIRST**: tmuxx-testing, tmuxx-commit, etc. take precedence
 - **Generic skills (tmux-automation, etc.)**: Only if no project skill exists for the task
 - **Skill obligation applies to PROJECT skills**: The "must use skills" rule refers to these project skills
 
-All skills are in `.claude/skills/`:
+All skills are in `.pi/skills/`:
 
-1. **`tmuxcc-adding-config-option`** - Pattern for adding new config options with CLI override support
+1. **`tmuxx-adding-config-option`** - Pattern for adding new config options with CLI override support
    - Use when adding bool, string, or number config options
    - Files: config.rs, config_override.rs, README.md, CHANGELOG.md
 
-2. **`tmuxcc-testing`** - Testing workflow and tmux safety rules
+2. **`tmuxx-testing`** - Testing workflow and tmux safety rules
    - **INVOKE before testing!**
    - Test session structure, send-keys rules, tmux safety
    - Scripts: reload-test.sh, start-test-session.sh, setup-multi-test.sh
 
-3. **`tmuxcc-commit`** - Pre-commit checklist and git workflow
+3. **`tmuxx-commit`** - Pre-commit checklist and git workflow
    - **INVOKE before every commit!**
    - CHANGELOG.md updates, README.md updates, cargo build/clippy/fmt
    - Commit message format, git remotes
 
-4. **`tmuxcc-library-research`** - Library research workflow
+4. **`tmuxx-library-research`** - Library research workflow
    - **INVOKE before implementing features!**
    - WebSearch for libraries, rtfmbro MCP for docs
    - Ratatui 0.29 documentation via MCP
    - Check trait implementations, verify method existence
 
-5. **`tmuxcc-changelog`** - TODO.md and CHANGELOG.md management
+5. **`tmuxx-changelog`** - TODO.md and CHANGELOG.md management
    - **INVOKE when completing tasks!**
    - Move completed work from TODO.md to CHANGELOG.md
    - Keep TODO.md clean and focused
 
-6. **`tmuxcc-planning`** - Implementation planning workflow
+6. **`tmuxx-planning`** - Implementation planning workflow
    - **INVOKE before writing code!**
    - Ask clarifying questions, explore codebase
    - Expect 5-7 corrections in review
    - Integration philosophy: coexistence over replacement
 
-7. **`tmuxcc-gemini-review`** - Gemini CLI code review
+7. **`tmuxx-gemini-review`** - Gemini CLI code review
    - Use for AI-powered code review before commits
 
 ### Problem Diagnosis
@@ -228,10 +230,10 @@ All skills are in `.claude/skills/`:
 
 ### Plan Review and Correction Cycles
 
-- **INVOKE tmuxcc-planning skill** before writing implementation plans
+- **INVOKE tmuxx-planning skill** before writing implementation plans
 - User provides precise corrections with exact code examples - apply them before implementation
 - For complex bugs/features: use Task tool Explore → Plan workflow, expect user review phase before implementation begins
-- See tmuxcc-planning skill for complete planning workflow and common mistakes
+- See tmuxx-planning skill for complete planning workflow and common mistakes
 
 ### Key Principles
 
@@ -242,7 +244,7 @@ All skills are in `.claude/skills/`:
 - **Clean up warnings**: Run `cargo clippy` and fix all warnings
 - **Ratatui dynamic UI**: Prefer dynamic generation from config over hardcoded text - enables runtime customization
 - **User feedback validation**: Runtime testing reveals UX issues code review misses - visual verification is CRITICAL
-- **Implementation from memory**: Research current docs, don't guess (use `tmuxcc-library-research` skill!)
+- **Implementation from memory**: Research current docs, don't guess (use `tmuxx-library-research` skill!)
 - **Testing environment**: Use ct-multi (5 windows) for multi-window features
 - **### CRITICAL SAFETY (NON-NEGOTIABLE)
 
@@ -319,15 +321,13 @@ All skills are in `.claude/skills/`:
 
 ## Project Context
 
-**tmuxcc** - AI Agent Dashboard for tmux (fork of nyanko3141592/tmuxcc)
+**tmuxx** - AI Agent Dashboard for tmux (originally tmuxcc)
 
-- **Origins**: Fork of tmuxcc, inspired by tmuxclai vision
-- **Repository**: This is a fork - only push to `orgoj` branch, NO publishing to crates.io
+- **Origins**: Hard fork and total rewrite of `tmuxcc`, inspired by `tmuxclai` vision
+- **Repository**: `https://github.com/orgoj/tmuxx`
 - **Vision**: See IDEAS.md for roadmap and future features
 
 ## Version and Publishing
 
-- Version in `Cargo.toml`: Semantic versioning (currently 0.1.7)
-- This is a FORK - changes pushed to `orgoj` branch only
-- NO publishing to crates.io (that's upstream's job)
-- Git workflow: Work on `orgoj` branch, allow dirty publish for Cargo.lock changes
+- Version in `Cargo.toml`: Semantic versioning
+- **Publishing**: Ready for crates.io release under `tmuxx` name

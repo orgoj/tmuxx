@@ -291,7 +291,7 @@ impl MonitoredAgent {
             .to_string()
     }
 
-    /// Returns an abbreviated path like /U/t/D/H/TmuxCC
+    /// Returns an abbreviated path like /U/t/D/H/Tmuxx
     pub fn abbreviated_path(&self) -> String {
         if self.path.is_empty() {
             return "~".to_string();

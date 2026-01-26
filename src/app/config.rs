@@ -56,7 +56,7 @@ pub struct Config {
     #[serde(default)]
     pub ignore_sessions: Vec<String>,
 
-    /// Auto-ignore the session where tmuxcc itself runs (default: true)
+    /// Auto-ignore the session where tmuxx itself runs (default: true)
     #[serde(default)]
     pub ignore_self: bool,
 
@@ -175,7 +175,7 @@ fn default_approval_msg() -> String {
     "⚠ {agent_type} wants: {approval_type}\n\nDetails: {details}\n\nPress {approve_key} to approve or {reject_key} to reject".to_string()
 }
 fn default_welcome_msg() -> String {
-    "tmuxcc v{version} [{color_mode}] - Press ? for help".to_string()
+    "tmuxx v{version} [{color_mode}] - Press ? for help".to_string()
 }
 fn default_label_todo() -> String { "Project TODO:".to_string() }
 fn default_label_tasks() -> String { "Tasks:".to_string() }
@@ -684,16 +684,16 @@ impl Config {
         }
 
         // 5. Load prompts from directories
-        // User directory: ~/.config/tmuxcc/prompts
+        // User directory: ~/.config/tmuxx/prompts
         if let Some(config_dir) = dirs::config_dir() {
-            let user_prompts_dir = config_dir.join("tmuxcc").join("prompts");
+            let user_prompts_dir = config_dir.join("tmuxx").join("prompts");
             if let Some(dir_prompts) = Self::load_prompts_from_dir(&user_prompts_dir) {
                 config.prompts.items.extend(dir_prompts.items);
             }
         }
 
-        // Project directory: ./.tmuxcc/prompts
-        let project_prompts_dir = PathBuf::from(".tmuxcc").join("prompts");
+        // Project directory: ./.tmuxx/prompts
+        let project_prompts_dir = PathBuf::from(".tmuxx").join("prompts");
         if let Some(dir_prompts) = Self::load_prompts_from_dir(&project_prompts_dir) {
             config.prompts.items.extend(dir_prompts.items);
         }
@@ -703,7 +703,7 @@ impl Config {
 
     /// Attempts to load project-specific prompts configuration
     fn load_project_prompts_config() -> Option<MenuConfig> {
-        let project_config_path = PathBuf::from(".tmuxcc.toml");
+        let project_config_path = PathBuf::from(".tmuxx.toml");
         if project_config_path.exists() {
             if let Ok(content) = std::fs::read_to_string(&project_config_path) {
                 #[derive(Deserialize)]
@@ -775,12 +775,12 @@ impl Config {
         }
     }
 
-    /// Attempts to load project-specific configuration (.tmuxcc.toml)
+    /// Attempts to load project-specific configuration (.tmuxx.toml)
     fn load_project_menu_config() -> Option<MenuConfig> {
-        // Look for .tmuxcc.toml in current directory (where tmuxcc is running)
+        // Look for .tmuxx.toml in current directory (where tmuxx is running)
         // Ideally this should be the session root, but for now current dir is a good proxy if run from root.
         // We can also check specific paths if needed.
-        let project_config_path = PathBuf::from(".tmuxcc.toml");
+        let project_config_path = PathBuf::from(".tmuxx.toml");
         if project_config_path.exists() {
             if let Ok(content) = std::fs::read_to_string(&project_config_path) {
                 #[derive(Deserialize)]
@@ -797,7 +797,7 @@ impl Config {
                         return Some(MenuConfig { items });
                     }
                 } else {
-                    eprintln!("Warning: Failed to parse .tmuxcc.toml");
+                    eprintln!("Warning: Failed to parse .tmuxx.toml");
                 }
             }
         }
@@ -816,7 +816,7 @@ impl Config {
 
     /// Returns the default config file path
     pub fn default_path() -> Option<PathBuf> {
-        dirs::config_dir().map(|p| p.join("tmuxcc").join("config.toml"))
+        dirs::config_dir().map(|p| p.join("tmuxx").join("config.toml"))
     }
 
     /// Loads config from the default path or returns defaults
@@ -881,7 +881,7 @@ impl Config {
     ///
     /// # Arguments
     /// * `session` - The session name to check
-    /// * `current_session` - The session where tmuxcc is running (for ignore_self)
+    /// * `current_session` - The session where tmuxx is running (for ignore_self)
     pub fn should_ignore_session(&self, session: &str, current_session: Option<&str>) -> bool {
         // Check ignore_self
         if self.ignore_self {
@@ -1033,9 +1033,9 @@ mod tests {
         config.ignore_sessions = vec!["test-*".to_string()];
 
         // Both ignore_self and patterns work together
-        assert!(config.should_ignore_session("tmuxcc", Some("tmuxcc"))); // ignore_self
-        assert!(config.should_ignore_session("test-1", Some("tmuxcc"))); // pattern
-        assert!(!config.should_ignore_session("dev", Some("tmuxcc"))); // neither
+        assert!(config.should_ignore_session("tmuxx", Some("tmuxx"))); // ignore_self
+        assert!(config.should_ignore_session("test-1", Some("tmuxx"))); // pattern
+        assert!(!config.should_ignore_session("dev", Some("tmuxx"))); // neither
     }
 
     #[test]

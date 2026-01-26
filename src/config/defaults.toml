@@ -30,7 +30,7 @@ tick_interval_ms = 80
 hysteresis_ms = 2000
 
 [messages]
-welcome = "tmuxcc v{version} [{color_mode}] - Press ? for help"
+welcome = "tmuxx v{version} [{color_mode}] - Press ? for help"
 approval_prompt = "⚠ {agent_type} wants: {approval_type}\n\nDetails: {details}\n\nPress {approve_key} to approve or {reject_key} to reject"
 label_todo = "Project TODO:"
 label_tasks = "Tasks:"

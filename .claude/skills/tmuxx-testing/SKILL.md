@@ -1,11 +1,11 @@
 ---
-name: tmuxcc-testing
-description: Testing workflow and tmux safety rules for tmuxcc development
+name: tmuxx-testing
+description: Testing workflow and tmux safety rules for tmuxx development
 ---
 
-# Testing Workflow for tmuxcc
+# Testing Workflow for tmuxx
 
-**CRITICAL: Always use this skill when testing tmuxcc!**
+**CRITICAL: Always use this skill when testing tmuxx!**
 
 ## META RULE: WRITE FIRST, DO LATER!
 
@@ -18,14 +18,14 @@ description: Testing workflow and tmux safety rules for tmuxcc development
 
 ## Test Sessions Structure
 
-- `ct-test` - Session where tmuxcc runs and DISPLAYS other sessions
+- `ct-test` - Session where tmuxx runs and DISPLAYS other sessions
 - `ct-multi` - Test session with 5 windows for multi-window testing
-- Other sessions: `cc-test`, `cc-tmuxcc`, `cc-MOP`, `cc-tmp`
+- Other sessions: `cc-test`, `cc-tmuxx`, `cc-MOP`, `cc-tmp`
 
 ## ONLY Session for send-keys: `ct-test`
 
 - This is THE ONLY session where you send keys for testing
-- ct-test is where you create test content that tmuxcc monitors
+- ct-test is where you create test content that tmuxx monitors
 - ❌ WRONG: `tmux send-keys -t ct-test:0 "command"`
 - ✅ CORRECT: `tmux send-keys -t ct-test "command"`
 - **NEVER add :0 or :1 or any window number!**
@@ -35,7 +35,7 @@ description: Testing workflow and tmux safety rules for tmuxcc development
 **NEVER send multiple keys without checking between each one!**
 
 ```bash
-# ❌ WRONG - multiple keys in loop, if tmuxcc crashes keys go to bash and delete things!
+# ❌ WRONG - multiple keys in loop, if tmuxx crashes keys go to bash and delete things!
 for i in {1..30}; do
   tmux send-keys -t ct-test "" Enter
 done
@@ -51,19 +51,19 @@ sleep 0.5
 tmux capture-pane -t ct-test -p  # CHECK again!
 ```
 
-**Why:** If tmuxcc crashes/exits, subsequent keys go to bash and can execute destructive commands!
+**Why:** If tmuxx crashes/exits, subsequent keys go to bash and can execute destructive commands!
 
 ## Test Scripts
 
-- `scripts/reload-test.sh` - Reload tmuxcc in ct-test session **(USE THIS)**
+- `scripts/reload-test.sh` - Reload tmuxx in ct-test session **(USE THIS)**
 - `scripts/start-test-session.sh` - Start ct-test session
 - `scripts/setup-multi-test.sh` - Setup ct-multi session with multiple windows
-- `scripts/cp-bin.sh` - Install tmuxcc to ~/bin (DON'T USE - user has working version!)
+- `scripts/cp-bin.sh` - Install tmuxx to ~/bin (DON'T USE - user has working version!)
 
 ## Testing Workflow
 
-1. Use `./target/release/tmuxcc` for testing (never cp-bin.sh)
-2. Use `scripts/reload-test.sh` to reload tmuxcc in ct-test session
+1. Use `./target/release/tmuxx` for testing (never cp-bin.sh)
+2. Use `scripts/reload-test.sh` to reload tmuxx in ct-test session
 3. **INVOKE tmux-automation skill with Skill tool** - don't skip this step!
 4. Use tmux-automation skill to interact with TUI and verify behavior
 5. **NEVER ask user to test** - testing is YOUR responsibility
@@ -120,8 +120,8 @@ cargo test  # Tests pass, but config.toml silently fails!
 #[serde(deny_unknown_fields)]
 pub struct Config { ... }
 
-# 2. Test with actual ~/.config/tmuxcc/config.toml
-./target/release/tmuxcc --debug-config  # Shows loaded config
+# 2. Test with actual ~/.config/tmuxx/config.toml
+./target/release/tmuxx --debug-config  # Shows loaded config
 
 # 3. Verify config parsing works, not just unit tests
 ```
@@ -134,12 +134,12 @@ pub struct Config { ... }
 
 ```bash
 # ❌ WRONG - direct execution fails if tool not in PATH
-tmux new-session -d -s name "/path/to/tmuxcc"
+tmux new-session -d -s name "/path/to/tmuxx"
 # Session dies immediately if tool exits!
 
 # ✅ CORRECT - bash session + send-keys
 tmux new-session -d -s "$SESSION" bash
-FULL_PATH=$(command -v tmuxcc)  # Resolve full path
+FULL_PATH=$(command -v tmuxx)  # Resolve full path
 tmux send-keys -t "$SESSION" "$FULL_PATH" Enter
 tmux attach-session -t "$SESSION"
 ```
@@ -149,9 +149,9 @@ tmux attach-session -t "$SESSION"
 - Full path prevents PATH issues inside tmux
 - Allows error inspection after tool exits
 
-### 8. NEVER send keys to session where tmuxcc is RUNNING!
+### 8. NEVER send keys to session where tmuxx is RUNNING!
 
-- ❌ FATAL: `tmux send-keys -t ct-test "y"` when tmuxcc runs there
-- **Why:** tmuxcc forwards keys to monitored sessions → unintended approvals!
-- ✅ CORRECT: Use dedicated test session WITHOUT tmuxcc for interactive testing
-- **Testing tmuxcc:** Only capture output, NEVER send keys to ct-test!
+- ❌ FATAL: `tmux send-keys -t ct-test "y"` when tmuxx runs there
+- **Why:** tmuxx forwards keys to monitored sessions → unintended approvals!
+- ✅ CORRECT: Use dedicated test session WITHOUT tmuxx for interactive testing
+- **Testing tmuxx:** Only capture output, NEVER send keys to ct-test!

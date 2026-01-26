@@ -1,14 +1,14 @@
 [package]
-name = "tmuxcc"
+name = "tmuxx"
 version = "0.1.25"
 edition = "2021"
-description = "AI Agent Dashboard for tmux - Monitor Claude Code, OpenCode, Codex CLI, and Gemini CLI"
-authors = ["TmuxCC Contributors"]
+description = "Tmux config driven dashboard with native support for CLI AI Agents (TmuxCC rewritten)"
+authors = ["Michael Heca <michael@heca.cz>", "Original TmuxCC Contributors"]
 license = "MIT"
-repository = "https://github.com/nyanko3141592/tmuxcc"
-homepage = "https://github.com/nyanko3141592/tmuxcc"
+repository = "https://github.com/orgoj/tmuxx"
+homepage = "https://github.com/orgoj/tmuxx"
 readme = "README.md"
-keywords = ["tmux", "ai", "dashboard", "terminal", "cli"]
+keywords = ["tmux", "dashboard", "cli", "terminal", "ai"]
 categories = ["command-line-utilities", "development-tools"]
 
 [dependencies]

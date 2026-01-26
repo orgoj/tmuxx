@@ -1,9 +1,9 @@
-# Example tmuxcc Configuration
-# Copy this file to ~/.config/tmuxcc/config.toml and customize
+# Example tmuxx Configuration
+# Copy this file to ~/.config/tmuxx/config.toml and customize
 #
 # This example shows custom key bindings:
-# - j/k send arrow keys to agent (instead of navigating in tmuxcc)
-# - Use arrow keys ↓/↑ or Tab for navigation in tmuxcc
+# - j/k send arrow keys to agent (instead of navigating in tmuxx)
+# - Use arrow keys ↓/↑ or Tab for navigation in tmuxx
 # - E/C/D send special keys (Escape, Ctrl-C, Ctrl-D)
 # - K kills application in selected pane
 
@@ -39,7 +39,7 @@ N = "reject"
 A = "approve_all"
 
 # Navigation: j/k send arrow keys to tmux pane instead of navigating
-# Use arrow keys ↓/↑ or Tab for navigation in tmuxcc UI
+# Use arrow keys ↓/↑ or Tab for navigation in tmuxx UI
 j = { send_keys = "Down" }
 k = { send_keys = "Up" }
 

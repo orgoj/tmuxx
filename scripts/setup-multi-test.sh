@@ -1,7 +1,7 @@
 #!/bin/bash
-# Setup ct-multi session with multiple windows for testing tmuxcc session preview
+# Setup ct-multi session with multiple windows for testing tmuxx session preview
 SESSION="ct-multi"
-PROJECT_DIR="/home/michael/work/ai/TOOLS/tmuxcc"
+PROJECT_DIR="/home/michael/work/ai/TOOLS/tmuxx"
 
 # Check if session exists
 if tmux has-session -t "$SESSION" 2>/dev/null; then

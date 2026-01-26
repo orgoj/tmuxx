@@ -1,9 +1,9 @@
 ---
-name: tmuxcc-adding-config-option
-description: Use when adding a new config option to tmuxcc (bool, string, number)
+name: tmuxx-adding-config-option
+description: Use when adding a new config option to tmuxx (bool, string, number)
 ---
 
-# Adding Config Option to TmuxCC
+# Adding Config Option to Tmuxx
 
 Pattern for adding new config options with --set CLI override support.
 
@@ -109,11 +109,11 @@ status_collor = "blue"  # Typo!
 **Testing:**
 ```bash
 # Add typo to config.toml
-echo "wrong_field = true" >> ~/.config/tmuxcc/config.toml
+echo "wrong_field = true" >> ~/.config/tmuxx/config.toml
 
 # Test with deny_unknown_fields
-./target/release/tmuxcc  # Should error: "unknown field `wrong_field`"
+./target/release/tmuxx  # Should error: "unknown field `wrong_field`"
 
 # Remove typo
-sed -i '/wrong_field/d' ~/.config/tmuxcc/config.toml
+sed -i '/wrong_field/d' ~/.config/tmuxx/config.toml
 ```

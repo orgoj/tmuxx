@@ -19,7 +19,7 @@ impl HeaderWidget {
 
         let mut spans = vec![
             Span::styled(
-                " TmuxCC ",
+                " Tmuxx ",
                 Style::default()
                     .fg(Color::Cyan)
                     .add_modifier(Modifier::BOLD),

@@ -35,7 +35,7 @@ impl FooterWidget {
             } else {
                 spans.push(Span::styled(
                     truncate_error(msg, area.width as usize - 2),
-                    Style::default().fg(if msg.starts_with("tmuxcc ") {
+                    Style::default().fg(if msg.starts_with("tmuxx ") {
                         Color::Gray
                     } else {
                         Color::Red

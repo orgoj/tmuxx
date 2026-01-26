@@ -3,11 +3,11 @@ use clap::Parser;
 use std::path::PathBuf;
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 
-use tmuxcc::app::Config;
-use tmuxcc::ui::run_app;
+use tmuxx::app::Config;
+use tmuxx::ui::run_app;
 
 #[derive(Parser)]
-#[command(name = "tmuxcc")]
+#[command(name = "tmuxx")]
 #[command(author, version, about, long_about = None)]
 #[command(
     about = "AI Agent Dashboard for tmux - manage Claude Code, OpenCode, Codex CLI, Gemini CLI in one place"
@@ -25,7 +25,7 @@ struct Cli {
     #[arg(short = 'f', long, value_name = "FILE")]
     config: Option<PathBuf>,
 
-    /// Output debug logs to tmuxcc.log
+    /// Output debug logs to tmuxx.log
     #[arg(short, long)]
     debug: bool,
 
@@ -78,7 +78,7 @@ async fn main() -> Result<()> {
 
     // Handle Subcommands
     if let Some(Commands::Learn { pane, name }) = cli.command {
-        return tmuxcc::cmd::learn::run_learn(tmuxcc::cmd::learn::LearnArgs {
+        return tmuxx::cmd::learn::run_learn(tmuxx::cmd::learn::LearnArgs {
             target_pane: pane,
             agent_name: name,
         })
@@ -86,7 +86,7 @@ async fn main() -> Result<()> {
     }
 
     if let Some(Commands::Test { dir }) = cli.command {
-        return tmuxcc::cmd::test::run_test(tmuxcc::cmd::test::TestArgs { dir }).await;
+        return tmuxx::cmd::test::run_test(tmuxx::cmd::test::TestArgs { dir }).await;
     }
 
     // Show config path and exit
@@ -114,7 +114,7 @@ async fn main() -> Result<()> {
 
     // Setup logging
     if cli.debug {
-        let log_file = std::fs::File::create("tmuxcc.log")?;
+        let log_file = std::fs::File::create("tmuxx.log")?;
         let file_layer = tracing_subscriber::fmt::layer()
             .with_writer(log_file)
             .with_ansi(false);
