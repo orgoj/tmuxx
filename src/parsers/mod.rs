@@ -24,6 +24,13 @@ pub enum MatchStrength {
     Strong = 2, // Command/Ancestor/Process-tree match
 }
 
+#[derive(Debug, Clone, Default)]
+pub struct AgentSummary {
+    pub current_activity: Option<String>,
+    pub tasks: Vec<(bool, String)>,
+    pub tools: Vec<String>,
+}
+
 /// Trait for parsing agent output
 pub trait AgentParser: Send + Sync {
     /// Returns the name of the agent
@@ -59,6 +66,17 @@ pub trait AgentParser: Send + Sync {
     fn parse_context_remaining(&self, content: &str) -> Option<u8> {
         let _ = content;
         None
+    }
+
+    /// Parses summary info from content
+    fn parse_summary(&self, content: &str) -> AgentSummary {
+        let _ = content;
+        AgentSummary::default()
+    }
+
+    /// Returns highlighting rules for this agent
+    fn highlight_rules(&self) -> &[crate::app::config::HighlightRule] {
+        &[]
     }
 
     /// Returns the key(s) to send for approval

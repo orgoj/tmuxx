@@ -111,6 +111,8 @@ pub async fn run_learn(args: LearnArgs) -> Result<()> {
             reject: Some("n".to_string()),
         },
         layout: None,
+        summary_rules: None,
+        highlight_rules: Vec::new(),
     };
 
     // Output TOML

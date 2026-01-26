@@ -84,4 +84,56 @@ impl Styles {
     pub fn footer_text() -> Style {
         Style::default().fg(Color::White)
     }
+
+    pub fn parse_color(name: &str) -> Color {
+        let name = name.trim().to_lowercase();
+
+        // Hex support (#RRGGBB)
+        if name.starts_with('#') && name.len() == 7 {
+            if let (Ok(r), Ok(g), Ok(b)) = (
+                u8::from_str_radix(&name[1..3], 16),
+                u8::from_str_radix(&name[3..5], 16),
+                u8::from_str_radix(&name[5..7], 16),
+            ) {
+                return Color::Rgb(r, g, b);
+            }
+        }
+
+        // RGB support (rgb(r,g,b))
+        if name.starts_with("rgb(") && name.ends_with(')') {
+            let parts: Vec<&str> = name[4..name.len() - 1]
+                .split(',')
+                .map(|s| s.trim())
+                .collect();
+            if parts.len() == 3 {
+                if let (Ok(r), Ok(g), Ok(b)) = (
+                    parts[0].parse::<u8>(),
+                    parts[1].parse::<u8>(),
+                    parts[2].parse::<u8>(),
+                ) {
+                    return Color::Rgb(r, g, b);
+                }
+            }
+        }
+
+        match name.as_str() {
+            "magenta" => Color::Magenta,
+            "blue" => Color::Blue,
+            "green" => Color::Green,
+            "yellow" => Color::Yellow,
+            "cyan" => Color::Cyan,
+            "red" => Color::Red,
+            "white" => Color::White,
+            "black" => Color::Rgb(0, 0, 0),
+            "gray" | "grey" => Color::Gray,
+            "darkgray" | "darkgrey" => Color::DarkGray,
+            "lightmagenta" => Color::LightMagenta,
+            "lightblue" => Color::LightBlue,
+            "lightgreen" => Color::LightGreen,
+            "lightyellow" => Color::LightYellow,
+            "lightcyan" => Color::LightCyan,
+            "lightred" => Color::LightRed,
+            _ => Color::Gray, // Safer fallback than bright cyan
+        }
+    }
 }

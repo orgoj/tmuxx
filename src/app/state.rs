@@ -111,8 +111,6 @@ impl AgentTree {
     }
 }
 
-/// Spinner frames for animation
-const SPINNER_FRAMES: &[&str] = &["⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"];
 
 /// Main application state
 #[derive(Debug)]
@@ -187,6 +185,12 @@ impl AppState {
                 .unwrap_or(false);
 
         let sidebar_width = config.sidebar_width.clone();
+        let version = env!("CARGO_PKG_VERSION");
+        let color_mode = if truecolor_supported { "tc" } else { "256" };
+        let welcome = config.messages.welcome
+            .replace("{version}", version)
+            .replace("{color_mode}", color_mode);
+
         Self {
             config,
             agents: AgentTree::new(),
@@ -202,11 +206,7 @@ impl AppState {
             show_subagent_log: false,
             show_summary_detail: true,
             should_quit: false,
-            last_error: Some(format!(
-                "tmuxcc v{} [{}] - Press ? for help",
-                env!("CARGO_PKG_VERSION"),
-                if truecolor_supported { "tc" } else { "256" }
-            )),
+            last_error: Some(welcome),
             sidebar_width,
             tick: 0,
             last_tick: Instant::now(),
@@ -225,16 +225,19 @@ impl AppState {
 
     /// Advance the animation tick (throttled to ~10fps for spinner)
     pub fn tick(&mut self) {
-        const TICK_INTERVAL_MS: u128 = 80; // ~12fps for smooth spinner
-        if self.last_tick.elapsed().as_millis() >= TICK_INTERVAL_MS {
+        let interval = self.config.timing.tick_interval_ms as u128;
+        if self.last_tick.elapsed().as_millis() >= interval {
             self.tick = self.tick.wrapping_add(1);
             self.last_tick = Instant::now();
         }
     }
 
-    /// Get the current spinner frame
-    pub fn spinner_frame(&self) -> &'static str {
-        SPINNER_FRAMES[self.tick % SPINNER_FRAMES.len()]
+    pub fn spinner_frame(&self) -> &str {
+        let frames = &self.config.indicators.spinner;
+        if frames.is_empty() {
+            return "";
+        }
+        &frames[self.tick % frames.len()]
     }
 
     /// Check if input panel is focused

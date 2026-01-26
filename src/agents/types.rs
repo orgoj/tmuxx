@@ -137,17 +137,6 @@ impl AgentStatus {
         )
     }
 
-    /// Returns a short status indicator for UI
-    pub fn indicator(&self) -> &str {
-        match self {
-            AgentStatus::Idle { .. } => "●",
-            AgentStatus::Processing { .. } => "◐",
-            AgentStatus::AwaitingApproval { .. } => "⚠",
-            AgentStatus::Error { .. } => "✗",
-            AgentStatus::Unknown => "?",
-        }
-    }
-
     /// Returns a short status text
     pub fn short_text(&self) -> String {
         match self {
@@ -170,7 +159,7 @@ impl AgentStatus {
 
 impl fmt::Display for AgentStatus {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{} {}", self.indicator(), self.short_text())
+        write!(f, "{}", self.short_text())
     }
 }
 

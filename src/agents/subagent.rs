@@ -54,15 +54,6 @@ pub enum SubagentStatus {
 }
 
 impl SubagentStatus {
-    /// Returns a status indicator character
-    pub fn indicator(&self) -> &str {
-        match self {
-            SubagentStatus::Running => "▶",
-            SubagentStatus::Completed => "✓",
-            SubagentStatus::Failed => "✗",
-            SubagentStatus::Unknown => "?",
-        }
-    }
 }
 
 impl fmt::Display for SubagentStatus {
@@ -73,7 +64,7 @@ impl fmt::Display for SubagentStatus {
             SubagentStatus::Failed => "Failed",
             SubagentStatus::Unknown => "Unknown",
         };
-        write!(f, "{} {}", self.indicator(), text)
+        write!(f, "{}", text)
     }
 }
 
@@ -138,13 +129,6 @@ mod tests {
             SubagentType::parse("custom-agent"),
             SubagentType::Custom("custom-agent".to_string())
         );
-    }
-
-    #[test]
-    fn test_subagent_status_indicator() {
-        assert_eq!(SubagentStatus::Running.indicator(), "▶");
-        assert_eq!(SubagentStatus::Completed.indicator(), "✓");
-        assert_eq!(SubagentStatus::Failed.indicator(), "✗");
     }
 
     #[test]

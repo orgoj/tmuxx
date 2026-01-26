@@ -10,6 +10,7 @@ use ratatui::{
 
 use crate::agents::{AgentStatus, ApprovalType, MonitoredAgent, SubagentStatus};
 use crate::app::AppState;
+use crate::ui::Styles;
 
 /// Widget for displaying agents in a tree organized by session/window
 pub struct AgentTreeWidget;
@@ -70,13 +71,13 @@ impl AgentTreeWidget {
 
         // Build title
         let title = if selected_count > 0 {
-            format!(" {} sel │ {} pending ", selected_count, active_count)
+            format!(" {} {} │ {} {} ", selected_count, state.config.messages.label_sel, active_count, state.config.messages.label_pending)
         } else if subagent_count > 0 {
-            format!(" {} pending │ {} subs ", active_count, subagent_count)
+            format!(" {} {} │ {} {} ", active_count, state.config.messages.label_pending, subagent_count, state.config.messages.label_subs)
         } else if active_count > 0 {
-            format!(" ⚠ {} pending ", active_count)
+            format!(" ⚠ {} {} ", active_count, state.config.messages.label_pending)
         } else {
-            format!(" {} agents ", filtered_agents.len())
+            format!(" {} {} ", filtered_agents.len(), state.config.messages.label_agents)
         };
 
         let border_color = if !state.is_input_focused() {
@@ -155,17 +156,17 @@ impl AgentTreeWidget {
                             // Apply selection background only to the first line (main line)
                             if is_cursor {
                                 Style::default()
-                                    .bg(parse_color(&state.config.current_item_bg_color))
+                                    .bg(Styles::parse_color(&state.config.current_item_bg_color))
                             } else if is_selected {
                                 if let Some(bg) = &state.config.multi_selection_bg_color {
-                                    Style::default().bg(parse_color(bg))
+                                    Style::default().bg(Styles::parse_color(bg))
                                 } else if let Some(bg_color) = &agent.background_color {
-                                    Style::default().bg(parse_color(bg_color))
+                                    Style::default().bg(Styles::parse_color(bg_color))
                                 } else {
                                     Style::default()
                                 }
                             } else if let Some(bg_color) = &agent.background_color {
-                                Style::default().bg(parse_color(bg_color))
+                                Style::default().bg(Styles::parse_color(bg_color))
                             } else {
                                 Style::default()
                             }
@@ -386,24 +387,33 @@ fn render_placeholder<'a>(
             }
         }
         "status_char" => match &agent.status {
-            AgentStatus::Idle { .. } => Span::styled("●", Style::default().fg(Color::Green)),
+            AgentStatus::Idle { .. } => Span::styled(
+                &ctx.state.config.indicators.idle,
+                Style::default().fg(Color::Green),
+            ),
             AgentStatus::Processing { .. } => Span::styled(
                 ctx.state.spinner_frame(),
                 Style::default().fg(Color::Yellow),
             ),
             AgentStatus::AwaitingApproval { .. } => Span::styled(
-                "⚠",
+                &ctx.state.config.indicators.approval,
                 Style::default().fg(Color::Red).add_modifier(Modifier::BOLD),
             ),
-            AgentStatus::Error { .. } => Span::styled("✗", Style::default().fg(Color::Red)),
-            AgentStatus::Unknown => Span::styled("○", Style::default().fg(Color::DarkGray)),
+            AgentStatus::Error { .. } => Span::styled(
+                &ctx.state.config.indicators.error,
+                Style::default().fg(Color::Red),
+            ),
+            AgentStatus::Unknown => Span::styled(
+                &ctx.state.config.indicators.unknown,
+                Style::default().fg(Color::DarkGray),
+            ),
         },
         "name" => {
             let color = agent
                 .color
                 .as_deref()
                 .unwrap_or(&ctx.state.config.agent_name_color);
-            Span::styled(&agent.name, Style::default().fg(parse_color(color)))
+            Span::styled(&agent.name, Style::default().fg(Styles::parse_color(color)))
         }
         "pid" => Span::styled(agent.pid.to_string(), Style::default().fg(Color::DarkGray)),
         "uptime" => Span::styled(agent.uptime_str(), Style::default().fg(Color::DarkGray)),
@@ -451,9 +461,18 @@ fn render_subagents<'a>(
     for subagent in &agent.subagents {
         let (sub_char, sub_style) = match subagent.status {
             SubagentStatus::Running => (state.spinner_frame(), Style::default().fg(Color::Cyan)),
-            SubagentStatus::Completed => ("✓", Style::default().fg(Color::Green)),
-            SubagentStatus::Failed => ("✗", Style::default().fg(Color::Red)),
-            SubagentStatus::Unknown => ("?", Style::default().fg(Color::DarkGray)),
+            SubagentStatus::Completed => (
+                state.config.indicators.subagent_completed.as_str(),
+                Style::default().fg(Color::Green),
+            ),
+            SubagentStatus::Failed => (
+                state.config.indicators.subagent_failed.as_str(),
+                Style::default().fg(Color::Red),
+            ),
+            SubagentStatus::Unknown => (
+                state.config.indicators.unknown.as_str(),
+                Style::default().fg(Color::DarkGray),
+            ),
         };
 
         let duration = if matches!(subagent.status, SubagentStatus::Running) {
@@ -557,58 +576,6 @@ fn render_status_details<'a>(agent: &'a MonitoredAgent, width: usize) -> Vec<Lin
         _ => {}
     }
     lines
-}
-
-fn parse_color(name: &str) -> Color {
-    let name = name.trim().to_lowercase();
-
-    // Hex support (#RRGGBB)
-    if name.starts_with('#') && name.len() == 7 {
-        if let (Ok(r), Ok(g), Ok(b)) = (
-            u8::from_str_radix(&name[1..3], 16),
-            u8::from_str_radix(&name[3..5], 16),
-            u8::from_str_radix(&name[5..7], 16),
-        ) {
-            return Color::Rgb(r, g, b);
-        }
-    }
-
-    // RGB support (rgb(r,g,b))
-    if name.starts_with("rgb(") && name.ends_with(')') {
-        let parts: Vec<&str> = name[4..name.len() - 1]
-            .split(',')
-            .map(|s| s.trim())
-            .collect();
-        if parts.len() == 3 {
-            if let (Ok(r), Ok(g), Ok(b)) = (
-                parts[0].parse::<u8>(),
-                parts[1].parse::<u8>(),
-                parts[2].parse::<u8>(),
-            ) {
-                return Color::Rgb(r, g, b);
-            }
-        }
-    }
-
-    match name.as_str() {
-        "magenta" => Color::Magenta,
-        "blue" => Color::Blue,
-        "green" => Color::Green,
-        "yellow" => Color::Yellow,
-        "cyan" => Color::Cyan,
-        "red" => Color::Red,
-        "white" => Color::White,
-        "black" => Color::Rgb(0, 0, 0),
-        "gray" | "grey" => Color::Gray,
-        "darkgray" | "darkgrey" => Color::DarkGray,
-        "lightmagenta" => Color::LightMagenta,
-        "lightblue" => Color::LightBlue,
-        "lightgreen" => Color::LightGreen,
-        "lightyellow" => Color::LightYellow,
-        "lightcyan" => Color::LightCyan,
-        "lightred" => Color::LightRed,
-        _ => Color::Gray, // Safer fallback than bright cyan
-    }
 }
 
 fn truncate_str(s: &str, max_len: usize) -> String {

@@ -11,6 +11,33 @@ hide_bottom_input = true
 agent_name_color = "#000000"
 current_item_bg_color = "#aaaaaa"
 sidebar_width = 60
+capture_buffer_size = 16384
+
+[indicators]
+idle = "●"
+processing = "◐"
+approval = "⚠"
+error = "✗"
+unknown = "?"
+subagent_running = "▶"
+subagent_completed = "✓"
+subagent_failed = "✗"
+spinner = ["⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"]
+
+[timing]
+tick_interval_ms = 80
+hysteresis_ms = 2000
+
+[messages]
+welcome = "tmuxcc v{version} [{color_mode}] - Press ? for help"
+approval_prompt = "⚠ {agent_type} wants: {approval_type}\n\nDetails: {details}\n\nPress {approve_key} to approve or {reject_key} to reject"
+label_todo = "Project TODO:"
+label_tasks = "Tasks:"
+label_tools = "Tools:"
+label_sel = "sel"
+label_pending = "pending"
+label_subs = "subs"
+label_agents = "agents"
 
 # Display TODO from project files (TODO.md, etc.)
 todo_from_file = true
@@ -127,6 +154,36 @@ priority = 100
   start = '''(?m)[⏺⠿⠇⠋⠙⠸⠴⠦⠧⠖⠏]\s*Task\s*\([^)]*subagent_type\s*[:=]\s*["']?(\w[\w-]*)["']?[^)]*description\s*[:=]\s*["']([^"']+)["']'''
   running = '''(?m)^[^│]*[▶►⠿⠇⠋⠙⠸⠴⠦⠧⠖⠏]\s*(\w+)(?:\s*agent)?:?\s*(.*)$'''
   complete = '''(?m)[✓✔]\s*(\w+).*?(?:completed|finished|done|returned)'''
+
+  [agents.summary_rules]
+  activity = '''(?m)^[ \t]*[│]*[ \t]*[✽·][ \t]*(.*?)(?:[ \t]*\(.*?\))?[ \t]*$'''
+  task_pending = '''(?m)^[ \t]*[│]*[ \t]*☐[ \t]*(.*)$'''
+  task_completed = '''(?m)^[ \t]*[│]*[ \t]*[☑✓][ \t]*(.*)$'''
+  tool_use = '''(?m)^[ \t]*[│]*[ \t]*⏺[ \t]*(?:[Cc]ompleted[ \t]+)?(.*?)(?:[ \t]*\(.*?\))?[ \t]*$'''
+
+  [[agents.highlight_rules]]
+  pattern = '''^\+.*'''
+  color = "green"
+
+  [[agents.highlight_rules]]
+  pattern = '''^-.*'''
+  color = "red"
+
+  [[agents.highlight_rules]]
+  pattern = '''^@@.*'''
+  color = "cyan"
+
+  [[agents.highlight_rules]]
+  pattern = '''(?i)\[y/n\]'''
+  color = "yellow"
+
+  [[agents.highlight_rules]]
+  pattern = '''(?i)⚠|error'''
+  color = "red"
+
+  [[agents.highlight_rules]]
+  pattern = '''^[❯>].*'''
+  color = "cyan"
 
   [agents.keys]
   approve = "y"
@@ -270,11 +327,15 @@ priority = 10
 
 [prompts]
   [[prompts.items]]
-  name = "Continue"
+  name = "commit"
+  text = "commit"
+
+  [[prompts.items]]
+  name = "continue"
   text = "continue"
 
   [[prompts.items]]
-  name = "Internal Tools"
+  name = "use internal tools!"
   text = "use internal tools!"
 
 [pane_tree]

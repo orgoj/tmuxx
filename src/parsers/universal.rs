@@ -10,6 +10,8 @@ pub struct UniversalParser {
     matchers: Vec<CompiledMatcher>,
     state_rules: Vec<CompiledStateRule>,
     subagent_rules: Option<CompiledSubagentRules>,
+    summary_rules: Option<CompiledSummaryRules>,
+    highlight_rules: Vec<CompiledHighlightRule>,
     layout_rules: Option<CompiledLayoutRules>,
 }
 
@@ -40,6 +42,19 @@ struct CompiledSubagentRules {
     start: Regex,
     running: Regex,
     complete: Regex,
+}
+
+struct CompiledSummaryRules {
+    activity: Option<Regex>,
+    task_pending: Option<Regex>,
+    task_completed: Option<Regex>,
+    tool_use: Option<Regex>,
+}
+
+struct CompiledHighlightRule {
+    re: Regex,
+    color: String,
+    modifiers: Vec<String>,
 }
 
 struct CompiledLayoutRules {
@@ -130,6 +145,25 @@ impl UniversalParser {
             }
         });
 
+        let summary_rules = config.summary_rules.as_ref().map(|rules| CompiledSummaryRules {
+            activity: rules.activity.as_ref().and_then(|p| Regex::new(p).ok()),
+            task_pending: rules.task_pending.as_ref().and_then(|p| Regex::new(p).ok()),
+            task_completed: rules.task_completed.as_ref().and_then(|p| Regex::new(p).ok()),
+            tool_use: rules.tool_use.as_ref().and_then(|p| Regex::new(p).ok()),
+        });
+
+        let highlight_rules = config
+            .highlight_rules
+            .iter()
+            .filter_map(|rule| {
+                Regex::new(&rule.pattern).ok().map(|re| CompiledHighlightRule {
+                    re,
+                    color: rule.color.clone(),
+                    modifiers: rule.modifiers.clone(),
+                })
+            })
+            .collect();
+
         let layout_rules = config.layout.as_ref().map(|rules| CompiledLayoutRules {
             footer_separator: rules
                 .footer_separator
@@ -146,6 +180,8 @@ impl UniversalParser {
             matchers,
             state_rules,
             subagent_rules,
+            summary_rules,
+            highlight_rules,
             layout_rules,
         }
     }
@@ -247,7 +283,7 @@ impl AgentParser for UniversalParser {
     fn parse_status(&self, content: &str) -> AgentStatus {
         // Look at a large enough chunk to see prompts and context.
         // For prompts anchored to the absolute end, we MUST include the end.
-        let raw_content = safe_tail(content, 16384); // Increased buffer for safer context
+        let raw_content = safe_tail(content, self.config.capture_buffer_size.unwrap_or(16384));
 
         // 1. Isolate Body (strip header/footer if configured)
         let body_content = self.extract_body(raw_content);
@@ -425,6 +461,56 @@ impl AgentParser for UniversalParser {
         }
 
         subagents
+    }
+
+    fn parse_summary(&self, content: &str) -> crate::parsers::AgentSummary {
+        let mut summary = crate::parsers::AgentSummary::default();
+        let rules = match &self.summary_rules {
+            Some(r) => r,
+            None => return summary,
+        };
+
+        for line in content.lines() {
+            let trimmed = line.trim();
+
+            if let Some(re) = &rules.activity {
+                if let Some(cap) = re.captures(trimmed) {
+                    if let Some(m) = cap.get(1) {
+                        summary.current_activity = Some(m.as_str().to_string());
+                    }
+                }
+            }
+
+            if let Some(re) = &rules.task_pending {
+                if let Some(cap) = re.captures(trimmed) {
+                    if let Some(m) = cap.get(1) {
+                        summary.tasks.push((false, m.as_str().to_string()));
+                    }
+                }
+            }
+
+            if let Some(re) = &rules.task_completed {
+                if let Some(cap) = re.captures(trimmed) {
+                    if let Some(m) = cap.get(1) {
+                        summary.tasks.push((true, m.as_str().to_string()));
+                    }
+                }
+            }
+
+            if let Some(re) = &rules.tool_use {
+                if let Some(cap) = re.captures(trimmed) {
+                    if let Some(m) = cap.get(1) {
+                        summary.tools.push(m.as_str().to_string());
+                    }
+                }
+            }
+        }
+
+        summary
+    }
+
+    fn highlight_rules(&self) -> &[crate::app::config::HighlightRule] {
+        &self.config.highlight_rules
     }
 
     fn approval_keys(&self) -> &str {

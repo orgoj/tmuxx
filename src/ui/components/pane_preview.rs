@@ -9,6 +9,8 @@ use unicode_width::{UnicodeWidthChar, UnicodeWidthStr};
 
 use crate::agents::AgentStatus;
 use crate::app::AppState;
+use crate::parsers::ParserRegistry;
+use crate::ui::Styles;
 
 /// Truncate a line to fit within max_width
 /// Returns (truncated_string, was_truncated)
@@ -38,79 +40,6 @@ fn truncate_line(line: &str, max_width: usize) -> (String, bool) {
     (format!("{}…", truncated), true)
 }
 
-/// Parsed summary info from Claude Code content
-struct ClaudeCodeSummary {
-    /// Current status/activity line (✽ ...)
-    current_activity: Option<String>,
-    /// TODO items: (is_completed, text)
-    todos: Vec<(bool, String)>,
-    /// Recent tool executions (⏺ ...)
-    recent_tools: Vec<String>,
-}
-
-impl ClaudeCodeSummary {
-    fn parse(content: &str) -> Self {
-        let mut current_activity = None;
-        let mut todos = Vec::new();
-        let mut recent_tools = Vec::new();
-
-        for line in content.lines() {
-            let trimmed = line.trim();
-
-            // Current activity: ✽ text... or · text...
-            if trimmed.starts_with('✽') || trimmed.starts_with('·') {
-                let activity = trimmed
-                    .trim_start_matches('✽')
-                    .trim_start_matches('·')
-                    .trim();
-                // Extract just the main part (before parentheses with timing info)
-                let main_part = activity.split('(').next().unwrap_or(activity).trim();
-                if !main_part.is_empty() {
-                    current_activity = Some(main_part.to_string());
-                }
-            }
-
-            // TODOs: ☐ (pending) or ☑/✓ (completed)
-            if trimmed.starts_with('☐') {
-                let text = trimmed.trim_start_matches('☐').trim();
-                todos.push((false, text.to_string()));
-            } else if trimmed.starts_with('☑') || trimmed.starts_with('✓') {
-                let text = trimmed
-                    .trim_start_matches('☑')
-                    .trim_start_matches('✓')
-                    .trim();
-                todos.push((true, text.to_string()));
-            }
-
-            // Tool executions: ⏺ Tool(...) or ⏺ text
-            if trimmed.starts_with('⏺') {
-                let tool_text = trimmed.trim_start_matches('⏺').trim();
-                // Only keep recent non-completed ones, or limit to last few
-                if !tool_text.contains("completed")
-                    && !tool_text.contains("finished")
-                    && recent_tools.len() < 3
-                {
-                    // Truncate long tool lines (character-based for UTF-8 safety)
-                    let char_count = tool_text.chars().count();
-                    let short = if char_count > 60 {
-                        let truncated: String = tool_text.chars().take(57).collect();
-                        format!("{}...", truncated)
-                    } else {
-                        tool_text.to_string()
-                    };
-                    recent_tools.push(short);
-                }
-            }
-        }
-
-        Self {
-            current_activity,
-            todos,
-            recent_tools,
-        }
-    }
-}
-
 /// Widget for previewing the selected pane content
 pub struct PanePreviewWidget;
 
@@ -120,7 +49,13 @@ impl PanePreviewWidget {
         let agent = state.selected_visible_agent();
 
         if let Some(agent) = agent {
-            let summary = ClaudeCodeSummary::parse(&agent.last_content);
+            // Use config-driven parser summary
+            let registry = ParserRegistry::with_config(&state.config);
+            let summary = if let Some(parser) = registry.all_parsers().find(|p| p.agent_name() == agent.name) {
+                parser.parse_summary(&agent.last_content)
+            } else {
+                crate::parsers::AgentSummary::default()
+            };
 
             // Outer block for the entire summary area
             let outer_block = Block::default()
@@ -138,12 +73,12 @@ impl PanePreviewWidget {
                 .constraints([Constraint::Percentage(50), Constraint::Percentage(50)])
                 .split(inner_area);
 
-            // Left column: TODOs (from file or from Claude Code parsing)
+            // Left column: TODOs (from file or from agent parsing)
             let mut todo_lines: Vec<Line> = Vec::new();
             if state.config.todo_from_file {
                 if let Some(todo) = &state.current_todo {
                     todo_lines.push(Line::from(vec![Span::styled(
-                        "Project TODO:",
+                        &state.config.messages.label_todo,
                         Style::default()
                             .fg(Color::Gray)
                             .add_modifier(Modifier::BOLD),
@@ -160,16 +95,16 @@ impl PanePreviewWidget {
                         Style::default().fg(Color::DarkGray),
                     )]));
                 }
-            } else if !summary.todos.is_empty() {
+            } else if !summary.tasks.is_empty() {
                 todo_lines.push(Line::from(vec![Span::styled(
-                    "TODOs:",
+                    &state.config.messages.label_tasks,
                     Style::default()
                         .fg(Color::Gray)
                         .add_modifier(Modifier::BOLD),
                 )]));
-                for (completed, text) in &summary.todos {
+                for (completed, text) in &summary.tasks {
                     let (icon, style) = if *completed {
-                        ("☑ ", Style::default().fg(Color::DarkGray))
+                        (state.config.indicators.subagent_completed.as_str(), Style::default().fg(Color::DarkGray))
                     } else {
                         ("☐ ", Style::default().fg(Color::White))
                     };
@@ -180,7 +115,7 @@ impl PanePreviewWidget {
                 }
             } else {
                 todo_lines.push(Line::from(vec![Span::styled(
-                    "No TODOs",
+                    "No Tasks",
                     Style::default().fg(Color::DarkGray),
                 )]));
             }
@@ -207,14 +142,14 @@ impl PanePreviewWidget {
             }
 
             // Running tools
-            if !summary.recent_tools.is_empty() {
+            if !summary.tools.is_empty() {
                 activity_lines.push(Line::from(vec![Span::styled(
-                    "Tools:",
+                    &state.config.messages.label_tools,
                     Style::default()
                         .fg(Color::Gray)
                         .add_modifier(Modifier::BOLD),
                 )]));
-                for tool in &summary.recent_tools {
+                for tool in &summary.tools {
                     activity_lines.push(Line::from(vec![
                         Span::styled(" ⏺ ", Style::default().fg(Color::Cyan)),
                         Span::styled(tool.clone(), Style::default().fg(Color::White)),
@@ -274,16 +209,26 @@ impl PanePreviewWidget {
         let (title, content) = if let Some(agent) = agent {
             let title = format!(" Preview: {} ({}) ", agent.target, agent.name);
 
+            // Use config-driven parser for approval keys
+            let registry = ParserRegistry::with_config(&state.config);
+            let (approve_key, reject_key) = if let Some(parser) = registry.all_parsers().find(|p| p.agent_name() == agent.name) {
+                (parser.approval_keys(), parser.rejection_keys())
+            } else {
+                ("y", "n")
+            };
+
             // Show approval details if awaiting
             let content = if let AgentStatus::AwaitingApproval {
                 approval_type,
                 details,
             } = &agent.status
             {
-                format!(
-                    "⚠ {} wants: {}\n\nDetails: {}\n\nPress [Y] to approve or [N] to reject",
-                    agent.agent_type, approval_type, details
-                )
+                state.config.messages.approval_prompt
+                    .replace("{agent_type}", &agent.agent_type.to_string())
+                    .replace("{approval_type}", &approval_type.to_string())
+                    .replace("{details}", details)
+                    .replace("{approve_key}", approve_key)
+                    .replace("{reject_key}", reject_key)
             } else {
                 // Show last portion of pane content
                 // First trim trailing empty lines
@@ -340,37 +285,69 @@ impl PanePreviewWidget {
             }
             let start = content_lines.len().saturating_sub(available_lines);
 
+            let registry = ParserRegistry::with_config(&state.config);
+            let highlight_rules =
+                if let Some(parser) = registry.all_parsers().find(|p| p.agent_name() == agent.name) {
+                    parser.highlight_rules()
+                } else {
+                    &[]
+                };
+
             for line in &content_lines[start..] {
                 // Always truncate lines to fit display width (no wrapping)
                 let (display_line, _was_truncated) = truncate_line(line, max_line_width);
 
-                // Apply syntax highlighting to the display line
-                let spans = if display_line.starts_with('+') && !display_line.starts_with("+++") {
-                    vec![Span::styled(
-                        display_line,
-                        Style::default().fg(Color::Green),
-                    )]
-                } else if display_line.starts_with('-') && !display_line.starts_with("---") {
-                    vec![Span::styled(display_line, Style::default().fg(Color::Red))]
-                } else if display_line.starts_with("@@") {
-                    vec![Span::styled(display_line, Style::default().fg(Color::Cyan))]
-                } else if display_line.contains("[y/n]") || display_line.contains("[Y/n]") {
-                    vec![Span::styled(
-                        display_line,
-                        Style::default().fg(Color::Yellow),
-                    )]
-                } else if display_line.contains("⚠")
-                    || display_line.contains("Error")
-                    || display_line.contains("error")
-                {
-                    vec![Span::styled(display_line, Style::default().fg(Color::Red))]
-                } else if display_line.starts_with("❯") || display_line.starts_with(">") {
-                    vec![Span::styled(display_line, Style::default().fg(Color::Cyan))]
-                } else {
-                    vec![Span::raw(display_line)]
-                };
+                // Apply syntax highlighting based on config rules
+                let mut style = Style::default();
+                for rule in highlight_rules {
+                    // Check if rule pattern matches this line
+                    if let Ok(re) = regex::Regex::new(&rule.pattern) {
+                        if re.is_match(&display_line) {
+                            style = style.fg(Styles::parse_color(&rule.color));
+                            for modifier in &rule.modifiers {
+                                match modifier.to_lowercase().as_str() {
+                                    "bold" => style = style.add_modifier(Modifier::BOLD),
+                                    "italic" => style = style.add_modifier(Modifier::ITALIC),
+                                    "dim" => style = style.add_modifier(Modifier::DIM),
+                                    _ => {}
+                                }
+                            }
+                            break;
+                        }
+                    }
+                }
 
-                styled_lines.push(Line::from(spans));
+                // If no rule matched, use default behavior (some fallback highlighting)
+                if style == Style::default() {
+                    let spans = if display_line.starts_with('+') && !display_line.starts_with("+++")
+                    {
+                        vec![Span::styled(
+                            display_line,
+                            Style::default().fg(Color::Green),
+                        )]
+                    } else if display_line.starts_with('-') && !display_line.starts_with("---") {
+                        vec![Span::styled(display_line, Style::default().fg(Color::Red))]
+                    } else if display_line.starts_with("@@") {
+                        vec![Span::styled(display_line, Style::default().fg(Color::Cyan))]
+                    } else if display_line.contains("[y/n]") || display_line.contains("[Y/n]") {
+                        vec![Span::styled(
+                            display_line,
+                            Style::default().fg(Color::Yellow),
+                        )]
+                    } else if display_line.contains("⚠")
+                        || display_line.contains("Error")
+                        || display_line.contains("error")
+                    {
+                        vec![Span::styled(display_line, Style::default().fg(Color::Red))]
+                    } else if display_line.starts_with("❯") || display_line.starts_with(">") {
+                        vec![Span::styled(display_line, Style::default().fg(Color::Cyan))]
+                    } else {
+                        vec![Span::raw(display_line)]
+                    };
+                    styled_lines.push(Line::from(spans));
+                } else {
+                    styled_lines.push(Line::from(vec![Span::styled(display_line, style)]));
+                }
             }
 
             (title, styled_lines)

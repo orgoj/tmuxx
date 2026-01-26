@@ -10,9 +10,6 @@ use crate::app::{AgentTree, Config};
 use crate::parsers::ParserRegistry;
 use crate::tmux::{refresh_process_cache, TmuxClient};
 
-/// Hysteresis duration - keep "Processing" status for this long after last active detection
-const STATUS_HYSTERESIS_MS: u64 = 2000;
-
 /// Update message sent from monitor to UI
 #[derive(Debug, Clone)]
 pub struct MonitorUpdate {
@@ -122,7 +119,8 @@ impl MonitorTask {
                 } else if matches!(status, AgentStatus::Idle { .. }) {
                     // Check if we were recently active
                     if let Some(last) = self.last_active.get(&target) {
-                        if now.duration_since(*last) < Duration::from_millis(STATUS_HYSTERESIS_MS) {
+                        let hysteresis = Duration::from_millis(self.config.timing.hysteresis_ms);
+                        if now.duration_since(*last) < hysteresis {
                             // Keep as Processing to avoid flicker
                             status = AgentStatus::Processing {
                                 activity: "Working...".to_string(),

@@ -36,6 +36,10 @@ pub struct Config {
     #[serde(default)]
     pub max_line_width: Option<u16>,
 
+    /// Size of the buffer to capture from pane (default: 16384)
+    #[serde(default = "default_buffer_size")]
+    pub capture_buffer_size: usize,
+
     /// Key bindings configuration
     #[serde(default)]
     pub key_bindings: KeyBindings,
@@ -99,7 +103,155 @@ pub struct Config {
     /// Pane tree configuration
     #[serde(default)]
     pub pane_tree: PaneTreeConfig,
+
+    /// Global status indicators
+    #[serde(default)]
+    pub indicators: StatusIndicators,
+
+    /// Animation and polling settings
+    #[serde(default)]
+    pub timing: TimingConfig,
+
+    /// UI message templates
+    #[serde(default)]
+    pub messages: MessageConfig,
 }
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct TimingConfig {
+    /// Animation tick interval in milliseconds
+    #[serde(default = "default_tick_interval")]
+    pub tick_interval_ms: u64,
+    /// Status hysteresis in milliseconds
+    #[serde(default = "default_hysteresis")]
+    pub hysteresis_ms: u64,
+}
+
+fn default_tick_interval() -> u64 { 80 }
+fn default_hysteresis() -> u64 { 2000 }
+
+impl Default for TimingConfig {
+    fn default() -> Self {
+        Self {
+            tick_interval_ms: default_tick_interval(),
+            hysteresis_ms: default_hysteresis(),
+        }
+    }
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct MessageConfig {
+    /// Message shown when awaiting approval
+    #[serde(default = "default_approval_msg")]
+    pub approval_prompt: String,
+    /// Welcome message shown in status bar
+    #[serde(default = "default_welcome_msg")]
+    pub welcome: String,
+
+    /// UI Labels
+    #[serde(default = "default_label_todo")]
+    pub label_todo: String,
+    #[serde(default = "default_label_tasks")]
+    pub label_tasks: String,
+    #[serde(default = "default_label_tools")]
+    pub label_tools: String,
+
+    /// Agent Tree Header Labels
+    #[serde(default = "default_label_sel")]
+    pub label_sel: String,
+    #[serde(default = "default_label_pending")]
+    pub label_pending: String,
+    #[serde(default = "default_label_subs")]
+    pub label_subs: String,
+    #[serde(default = "default_label_agents")]
+    pub label_agents: String,
+}
+
+fn default_approval_msg() -> String {
+    "⚠ {agent_type} wants: {approval_type}\n\nDetails: {details}\n\nPress {approve_key} to approve or {reject_key} to reject".to_string()
+}
+fn default_welcome_msg() -> String {
+    "tmuxcc v{version} [{color_mode}] - Press ? for help".to_string()
+}
+fn default_label_todo() -> String { "Project TODO:".to_string() }
+fn default_label_tasks() -> String { "Tasks:".to_string() }
+fn default_label_tools() -> String { "Tools:".to_string() }
+fn default_label_sel() -> String { "sel".to_string() }
+fn default_label_pending() -> String { "pending".to_string() }
+fn default_label_subs() -> String { "subs".to_string() }
+fn default_label_agents() -> String { "agents".to_string() }
+
+impl Default for MessageConfig {
+    fn default() -> Self {
+        Self {
+            approval_prompt: default_approval_msg(),
+            welcome: default_welcome_msg(),
+            label_todo: default_label_todo(),
+            label_tasks: default_label_tasks(),
+            label_tools: default_label_tools(),
+            label_sel: default_label_sel(),
+            label_pending: default_label_pending(),
+            label_subs: default_label_subs(),
+            label_agents: default_label_agents(),
+        }
+    }
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct StatusIndicators {
+    #[serde(default = "default_idle_indicator")]
+    pub idle: String,
+    #[serde(default = "default_processing_indicator")]
+    pub processing: String,
+    #[serde(default = "default_approval_indicator")]
+    pub approval: String,
+    #[serde(default = "default_error_indicator")]
+    pub error: String,
+    #[serde(default = "default_unknown_indicator")]
+    pub unknown: String,
+    #[serde(default = "default_subagent_running_indicator")]
+    pub subagent_running: String,
+    #[serde(default = "default_subagent_completed_indicator")]
+    pub subagent_completed: String,
+    #[serde(default = "default_subagent_failed_indicator")]
+    pub subagent_failed: String,
+    /// Animation frames for processing status
+    #[serde(default = "default_spinner_frames")]
+    pub spinner: Vec<String>,
+}
+
+fn default_idle_indicator() -> String { "●".to_string() }
+fn default_processing_indicator() -> String { "◐".to_string() }
+fn default_approval_indicator() -> String { "⚠".to_string() }
+fn default_error_indicator() -> String { "✗".to_string() }
+fn default_unknown_indicator() -> String { "?".to_string() }
+fn default_subagent_running_indicator() -> String { "▶".to_string() }
+fn default_subagent_completed_indicator() -> String { "✓".to_string() }
+fn default_subagent_failed_indicator() -> String { "✗".to_string() }
+fn default_spinner_frames() -> Vec<String> {
+    vec!["⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"]
+        .into_iter()
+        .map(|s| s.to_string())
+        .collect()
+}
+
+impl Default for StatusIndicators {
+    fn default() -> Self {
+        Self {
+            idle: default_idle_indicator(),
+            processing: default_processing_indicator(),
+            approval: default_approval_indicator(),
+            error: default_error_indicator(),
+            unknown: default_unknown_indicator(),
+            subagent_running: default_subagent_running_indicator(),
+            subagent_completed: default_subagent_completed_indicator(),
+            subagent_failed: default_subagent_failed_indicator(),
+            spinner: default_spinner_frames(),
+        }
+    }
+}
+
+fn default_buffer_size() -> usize { 16384 }
 
 #[derive(Deserialize, Default)]
 #[serde(default)]
@@ -123,10 +275,14 @@ struct PartialConfig {
     todo_from_file: Option<bool>,
     todo_files: Option<Vec<String>>,
     sidebar_width: Option<SidebarWidth>,
+    capture_buffer_size: Option<usize>,
 
     menu: Option<MenuConfig>,
     prompts: Option<MenuConfig>,
     pane_tree: Option<PaneTreeConfig>,
+    indicators: Option<StatusIndicators>,
+    timing: Option<TimingConfig>,
+    messages: Option<MessageConfig>,
 }
 
 impl PartialConfig {
@@ -182,6 +338,9 @@ impl PartialConfig {
         if let Some(v) = self.sidebar_width {
             config.sidebar_width = v;
         }
+        if let Some(v) = self.capture_buffer_size {
+            config.capture_buffer_size = v;
+        }
         if let Some(v) = self.menu {
             config.menu = v;
         }
@@ -190,6 +349,15 @@ impl PartialConfig {
         }
         if let Some(v) = self.pane_tree {
             config.pane_tree = v;
+        }
+        if let Some(v) = self.indicators {
+            config.indicators = v;
+        }
+        if let Some(v) = self.timing {
+            config.timing = v;
+        }
+        if let Some(v) = self.messages {
+            config.messages = v;
         }
 
         if !self.agents.is_empty() {
@@ -327,9 +495,33 @@ pub struct AgentConfig {
     #[serde(default)]
     pub layout: Option<LayoutConfig>,
 
+    /// Rules for generating summary view
+    #[serde(default)]
+    pub summary_rules: Option<SummaryRules>,
+
+    /// Rules for syntax highlighting in detailed preview
+    #[serde(default)]
+    pub highlight_rules: Vec<HighlightRule>,
+
     /// Key bindings
     #[serde(default)]
     pub keys: AgentKeys,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct SummaryRules {
+    pub activity: Option<String>,
+    pub task_pending: Option<String>,
+    pub task_completed: Option<String>,
+    pub tool_use: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct HighlightRule {
+    pub pattern: String,
+    pub color: String,
+    #[serde(default)]
+    pub modifiers: Vec<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
