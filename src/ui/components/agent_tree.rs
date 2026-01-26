@@ -195,6 +195,48 @@ impl AgentTreeWidget {
 
         frame.render_stateful_widget(list, area, &mut list_state);
     }
+
+    /// Maps a visual row index (relative to list content) to an agent index
+    pub fn get_agent_index_at_row(row: usize, state: &AppState, width: usize) -> Option<usize> {
+        let filtered_agents = state.filtered_agents();
+        
+        let tree = SessionWindowTree::new(&filtered_agents);
+        
+        let mode = state.config.pane_tree.mode.as_str();
+        let template = if mode == "compact" {
+             &state.config.pane_tree.compact_template
+        } else {
+             &state.config.pane_tree.full_template
+        };
+
+        // Re-traverse to find agent at row
+        let mut visual_index = 0;
+        
+        for (session, windows) in tree.sessions.iter() {
+             // Header takes 1 line
+             if visual_index == row {
+                 // Clicked on session header - maybe in future this can collapse select session etc.
+                 return None;
+             }
+             visual_index += 1; 
+
+             for ((window_num, window_name), window_agents) in windows.iter() {
+                 for (original_idx, agent) in window_agents.iter() {
+                     // Calculate height of this agent
+                     let lines = render_agent(template, agent, state, false, false, width, session, *window_num, window_name).len();
+                     
+                     // Check if row falls within this agent's block
+                     if row >= visual_index && row < visual_index + lines {
+                         return Some(*original_idx);
+                     }
+                     
+                     visual_index += lines;
+                 }
+             }
+        }
+        
+        None
+    }
 }
 
 /// Renders a single agent based on the template

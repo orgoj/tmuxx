@@ -26,6 +26,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Visual indentation and state indicators (`▶`/`▼`) for clear hierarchy.
 
 ### Fixed
+- **Mouse Selection**: Fixed inaccurate mouse click selection in the agent tree.
+  - Replaced rough "lines per agent" heuristic with precise coordinate mapping.
+  - Correctly handles variable-height items (compact vs full mode, subagents).
+  - Works correctly with session headers and complex layouts.
 - **Menu Merging**: Fixed issue where custom menu items from `config.toml` were not correctly merged with `defaults.toml`.
 - **Borrow Checker**: Resolved multiple immutable/mutable borrow conflicts in `app.rs` during state mutation.
 

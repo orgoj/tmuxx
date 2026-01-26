@@ -1,6 +1,6 @@
 # TODO - tmuxcc
 
-- [ ] kdyz kliknu mysi v listu windows, tak se oznaci uplne jiny windows, kontrola oprava!
+- [ ] rychly filtr na ty co nejsou idle - toogle - standardni binding v default.toml melo by to zobrazovat stav filtru v top baru
 
 - [ ] menu na prompty (stromove) - user a projekt definice, asi nejaky adresar a v nem soubory, v menu jen nazvy
 - [ ] text do TOTO okna muze generovat externi program (napr. beads)

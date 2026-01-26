@@ -244,25 +244,21 @@ async fn run_loop(
                                 let x = mouse.column;
                                 let y = mouse.row;
 
-                                // Check if click is in sidebar - try to select agent
-                                if x >= sidebar.x && x < sidebar.x + sidebar.width
-                                    && y >= sidebar.y && y < sidebar.y + sidebar.height
-                                {
-                                    state.focus_sidebar();
-                                    // Calculate which agent was clicked based on row
-                                    // Each agent takes ~4 lines in the tree view (varies)
-                                    // Simple heuristic: use relative row position
-                                    let rel_y = (y - sidebar.y).saturating_sub(1) as usize;
-                                    let agents_count = state.agents.root_agents.len();
-                                    if agents_count > 0 {
-                                        // Estimate ~4 lines per agent (header + info + status)
-                                        let estimated_idx = rel_y / 4;
-                                        if estimated_idx < agents_count {
-                                            state.select_agent(estimated_idx);
+                                    // Check if click is in sidebar - try to select agent
+                                    if x >= sidebar.x && x < sidebar.x + sidebar.width
+                                        && y >= sidebar.y && y < sidebar.y + sidebar.height
+                                    {
+                                        state.focus_sidebar();
+                                        // Calculate which agent was clicked based on row
+                                        // Use precise logic from AgentTreeWidget
+                                        let rel_y = (y - sidebar.y).saturating_sub(1) as usize;
+                                        let width = sidebar.width.saturating_sub(2) as usize; // inside borders
+                                        
+                                        if let Some(idx) = AgentTreeWidget::get_agent_index_at_row(rel_y, state, width) {
+                                            state.select_agent(idx);
                                             state.refresh_project_todo();
                                         }
                                     }
-                                }
                                 // Check if click is in input area
                                 else if x >= input_area.x && x < input_area.x + input_area.width
                                     && y >= input_area.y && y < input_area.y + input_area.height
