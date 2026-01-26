@@ -1,174 +1,35 @@
 # TODO - tmuxcc
 
+## 🛠 Opravy (Fixes)
+- [ ] **Logika Session Tree**:
+    - [ ] Opravit ořezávání zobrazení u posledního agenta v seznamu (musí být vidět všechny řádky window/pane, nejen první).
+    - [ ] Přidat možnost zakázat cyklické procházení (z poslední položky na první a naopak) v `defaults.toml`.
+    - [ ] Zpřesnit chování při filtrování: pokud se objeví noví agenti, první musí být automaticky označen. Pokud není vidět nic, pravý panel musí být prázdný.
+    - [ ] Implementovat funkční klávesy Home/End pro skok na začátek/konec seznamu.
+- [ ] **Správa Session**:
+    - [ ] Implementovat funkci pro přejmenování aktuální tmux session.
+    - [ ] Prověřit a opravit logiku "Kill Session" (vykazuje nestabilní chování).
+    - [ ] Přidat příkaz pro uzavření celé session (vhodné zejména pro úklid po SSH připojeních).
+- [ ] **Modal/Help Scrolling**: Opravit zavírání Help okna šipkami. V readonly režimu šipky nesmí hýbat kurzorem, ale pouze scrollovat text.
+- [ ] **Preview Scrolling**: Implementovat plynulý scroll v preview oblasti s automatickým scrollováním na konec po zalomení textu.
 
+## 💡 Drobnosti (Tweaks)
+- [ ] **TODO Layout**: Přidat možnost zobrazit TODO sekci na plnou šířku (pokud je aktivní, pravý panel s aktivitou se nebude vykreslovat).
+- [ ] **Session Collapse**: Možnost sbalit session v tree view (ponechat jen indikátory stavu). Vyžaduje logiku pro výběr celého session uzlu.
+- [ ] **CLI Argumenty**: Přidat přímý argument `--filter <PATTERN>` (nyní nutno přes `--set filter_pattern=...`).
+- [ ] **SSH Detection**: Výzkum spolehlivé detekce AI agentů běžících uvnitř SSH session.
 
-- [ ] todo na plnou sirku boxu - config option ( pak vubec negenerovat pravou cast boxu)
-definice, asi nejaky adresar a v nem soubory, v menu jen nazvy
-- [ ] text do TOTO okna muze generovat externi program (napr. beads)
-- [?] refactor defaults - musi byt vse jen v config a v programu jen neco jako config->get("width", 24), zadne finkce a clasy co vraceli nejake default objekty, co to je za antipatern, mame config ten da vzdy hodnotu funci get a ta se pouziva, KISS
-- [ ] jak poznat commandy co bezi v ssh ?
-- [ ] proc se help editor zavira na jine klavesy nez esc? treba na doprav a doleva. klavesy nahoru a dolu funguji ale divne text skace u toho doleva a doprava, jako by kurzor chodil po texdu, to ma delat jen scroll v readonly. pgup/down je ok. esc funguje.
-- [ ] colapse session v tree a jen idikator error/reguired action
-
-## Priority Tasks
-
-### Notification System for Action-Required Events
-**Status:** 💡 Feature Request
-**Problem:** No alerts when agent needs user action → user must constantly watch tmuxcc
-**Use case:** Agent awaits approval → terminal bell + desktop notification + custom command
-**Solution:**
-- Notification system with multiple channels (terminal, command, hooks)
-- Only notify for actionable events (approval, error, question)
-- Do NOT notify for informational events (subagent done, idle, processing)
-- Configurable via TOML (enable/disable, channels, custom commands)
-
-**Actions:**
-- [ ] Design notification architecture (event detection, channel dispatch)
-- [ ] Implement terminal notifications (visual bell/flash)
-- [ ] Implement command execution (`notify-send`, `osascript`, custom)
-- [ ] Implement hook system (callback scripts per event type)
-- [ ] Add config options to Config struct and TOML
-- [ ] Event filtering: only approval_needed, agent_error, user_question
-- [ ] Test: agent approval → notification fires
-- [ ] Test: subagent done → NO notification
-- [ ] Document in README.md and config reference
-
-**Config example:**
-```toml
-[notifications]
-enabled = true
-channels = ["terminal", "command"]
-command = "notify-send 'tmuxcc' '{message}'"
-
-[[notifications.hook]]
-event = "approval_needed"
-script = "/path/to/notify.sh"
-```
-
-### Enhanced Process Detection (Parent + Tree + Content)
-**Status:** 💡 Feature Request
-**Problem:** Current detection only checks process command → misses agents in wrappers/shells
-**Use case:** Agent launched via wrapper script → current detection fails
-**Solution:**
-- Multi-strategy detection with fallback chain
-- Detect parent process (agent wrapper)
-- Scan process tree (entire hierarchy)
-- Content-based AI type detection (parse output for Claude/Gemini/Codex patterns)
-
-**Actions:**
-- [x] Research: how to get parent PID and process tree on Linux/macOS
-- [x] Implement parent process detection in PaneInfo
-- [x] Implement process tree scanning (recursive parent/child)
-- [x] Implement content-based AI type detection (regex patterns per AI)
-- [x] Update ParserRegistry to use enhanced detection
-- [x] Add detection strategy config (enable/disable strategies)
-- [x] Recover all deleted hardcoded agent definitions into defaults.toml
-- [x] Enhance UniversalParser to support subagents and approval types
-- [x] Restore catch-all behavior to ensure no sessions are lost
-- [x] Migrate user config to new format-based detection → correct AI type identified
-- [x] Added "pi" agent definition to `defaults.toml`
-- [ ] Document detection strategies in README.md
-
-### AI-Specific Control Configuration
-**Status:** 💡 Feature Request
-**Problem:** All AI agents use same key bindings (Y/N) → not flexible for different AI types
-**Use case:** Claude uses Y/N, Gemini uses A/R, custom AI uses different workflow
-**Solution:**
-- Define AI profiles in config with custom key bindings
-- Per-AI approval workflows (single-key vs confirmation)
-- Custom actions/commands per AI type
-
-**Actions:**
-- [ ] Design AI profile config schema (TOML format)
-- [ ] Add `ai_profiles` to Config struct
-- [ ] Implement AI profile matching (agent type → profile)
-- [ ] Update key handling to use AI-specific bindings
-- [ ] Support custom approval workflows per AI
-- [ ] Add AI-specific action definitions
-- [ ] Test: Claude agent → Y/N keys work
-- [ ] Test: Gemini agent → A/R keys work (if configured)
-- [ ] Document AI profiles in config reference
-
-**Config example:**
-```toml
-[[ai_profile]]
-name = "claude-code"
-approval_keys = { yes = "y", no = "n" }
-requires_confirmation = false
-
-[[ai_profile]]
-name = "gemini"
-approval_keys = { approve = "a", reject = "r" }
-requires_confirmation = true
-```
-
-### Configurable Action Menus per Session
-**Status:** 💡 Feature Request - COMPLEX SYSTEM (See TODO-MENU.md)
-
-**Problem:** No way to define custom actions/workflows for specific sessions
-
-**Vision:** Powerful action system with variables, inputs, screen capture, editor, and bash pipelines
-
-**Full specification:** See [TODO-MENU.md](TODO-MENU.md) for complete details including:
-- Variable system (`${SESSION_DIR}`, `${TMP}`, etc.)
-- Input mechanisms (`@{INPUT_LINE}`, `@{SCREEN}`, `@{EDITOR}`)
-- Pipeline execution with bash support
-- 5 implementation phases
-- Config examples and technical challenges
-
-### CLI --filter argument for session filtering - NOTE: toto je snad hotovo jen to nema --filter ale standardni --set ...
-**Status:** 💡 Missing CLI option
-**What works:** Runtime `/` filter, config `ignore_sessions`
-**What's missing:** CLI `--filter` argument for startup filtering
-
-**Actions:**
-- [ ] Add `--filter <PATTERN>` argument to CLI (main.rs)
-- [ ] Document in README.md and --help
-
-### Focus key 'f' - Outside Tmux Support
-**Status:** ⚠️ WORKAROUND IMPLEMENTED - Needs proper solution
-
-**Current status:**
-- ✅ Inside tmux, same session - works
-- ✅ Inside tmux, cross-session - works (switch-client)
-- ⚠️ Outside tmux - **temporary workaround** with wrapper script
-- dalsi workaround mam v user config start terminalu s attach session
-
-**Temporary solution:** Wrapper script `scripts/tmuxcc-wrapper.sh`
-- Automatically ensures tmuxcc ALWAYS runs inside tmux session `tmuxcc`
-- If session doesn't exist, creates it
-- If running inside tmux: switch-client to tmuxcc session
-- If running outside tmux: attach to tmuxcc session
-- Eliminates "outside tmux" problem but is not elegant
-
-**Proper solution needed:**
-- Detect terminal emulator (kitty, alacritty, etc.)
-- Launch platform-specific command to open new terminal
-- Attach to target tmux session in that new terminal
-- Eliminate need for wrapper script
-
-**Why wrapper is provisional:**
-- User must remember to use `tcc` instead of `tmuxcc`
-- Not intuitive for new users
-- Better: `tmuxcc` detects outside-tmux and launches terminal automatically
-
-**Files:**
-- `scripts/tmuxcc-wrapper.sh` - temporary wrapper script
-- `README.md` - documents workaround usage
-
+## 🚀 Větší funkce (Features)
+- [ ] **Notifikační systém**: Desktopové a terminálové upozornění na události vyžadující pozornost (approval, error).
+- [ ] **Externí TODO Generátor**: Podpora pro externí programy (např. `beads`), které budou generovat obsah TODO okna dynamicky.
+- [ ] **Focus (f) - Outside Tmux**: Automatické otevírání nového okna terminálu (Kitty, Alacritty) s připojením k session, pokud `tmuxcc` běží mimo tmux.
+- [ ] **Action Menu**: Komplexní systém konfigurovatelných akcí (proměnné, bash pipeline). Viz [TODO-MENU.md](TODO-MENU.md).
 
 ---
 
-## Other
-
-- Fix unnecessary | in session tree display - check tmux with project skill
-- collapse session? - needs select on session and session menu
-- preview preserver important lines, wrap, must scroll to end after wrap
-- scroll in preview area?
-
----
-
-## Notes
-- Before implementation ALWAYS search for existing libraries via web search
-- Use rtfmbro MCP for library documentation
-- Don't write things from scratch when quality libraries exist
+## ✅ Hotovo (Completed)
+- [x] **Plně modulární konfigurace**: Všechny defaulty jsou v `defaults.toml`, žádné hardcoded ikony v kódu.
+- [x] **Univerzální Summary Parser**: Plně konfigurovatelné parsování výstupu pomocí regexů.
+- [x] **Konfigurovatelný Highlight**: Syntax highlighting v náhledu definovaný v TOML.
+- [x] **Rozšířená detekce procesů**: Detekce přes procesní strom a obsah paneu.
+- [x] **Per-agent Keybindings**: Vlastní klávesy pro akce definované u každého agenta.
