@@ -23,6 +23,9 @@ This project uses **CLAUDE.md** as the canonical source of truth. Always refer t
 - **Generic Handling**: Use generic systems that interpret the configuration at runtime. Avoid `match agent_id` or similar patterns.
 - **Agent Names**: Always use the `name` field from the configuration for display, never hardcoded enum values.
 
+### 5. Core Purpose
+- **Status Visibility**: The main purpose of this tool is to visualize the status (Idle/Working/Error) of all tmux panes at a glance. Visuals should prioritize status clarity.
+
 ## Testing Checklist
 1. **tmux capture-pane -pt <target>**: ALWAYS read the raw buffer before diagnosing. 
 2. **Priority Check**: Ensure `generic_shell` has priority 10+ if users have priority 1 catch-alls.

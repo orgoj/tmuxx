@@ -124,6 +124,8 @@ pub enum Action {
     CaptureTestCase,
     /// No action (used for unbound keys)
     None,
+    /// Toggle pane tree display mode (compact/full)
+    TogglePaneTreeMode,
 }
 
 impl Action {
@@ -182,6 +184,7 @@ impl Action {
             Action::HideModalTextarea => "Hide modal textarea",
             Action::ModalTextareaSubmit => "Submit modal textarea",
             Action::CaptureTestCase => "Capture test case",
+            Action::TogglePaneTreeMode => "Toggle pane tree mode (compact/full)",
             Action::None => "",
         }
     }

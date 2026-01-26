@@ -50,6 +50,8 @@ pub enum KeyAction {
     ToggleMenu,
     /// Toggle subagent log display
     ToggleSubagentLog,
+    /// Toggle pane tree mode
+    TogglePaneTreeMode,
 }
 
 /// Configuration for command execution

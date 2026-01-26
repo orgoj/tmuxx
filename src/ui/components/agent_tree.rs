@@ -50,14 +50,14 @@ impl<'a> SessionWindowTree<'a> {
 
 impl AgentTreeWidget {
     pub fn render(frame: &mut Frame, area: Rect, state: &AppState) {
-        // Get filtered agents (returns Vec<&MonitoredAgent>)
+        // Get filtered agents
         let filtered_agents = state.filtered_agents();
         let _agents = &state.agents.root_agents; // Keep for counts
         let active_count = state.agents.active_count();
         let subagent_count = state.agents.running_subagent_count();
         let selected_count = state.selected_agents.len();
 
-        // Build title (show filtered count)
+        // Build title
         let title = if selected_count > 0 {
             format!(" {} sel │ {} pending ", selected_count, active_count)
         } else if subagent_count > 0 {
@@ -99,343 +99,359 @@ impl AgentTreeWidget {
         let mut items: Vec<ListItem> = Vec::new();
         let available_width = area.width.saturating_sub(4) as usize;
 
+        let mode = state.config.pane_tree.mode.as_str();
+        let template = if mode == "compact" {
+             &state.config.pane_tree.compact_template
+        } else {
+             &state.config.pane_tree.full_template
+        };
+        let header_template = &state.config.pane_tree.header_template;
+
         for (session, windows) in tree.sessions.iter() {
-            // Session header
-            let session_line = Line::from(vec![
-                Span::styled("▼ ", Style::default().fg(Color::Cyan)),
-                Span::styled(
-                    *session,
-                    Style::default()
-                        .fg(Color::Cyan)
-                        .add_modifier(Modifier::BOLD),
-                ),
-            ]);
-            items.push(ListItem::new(session_line));
+            // Render Session Header (once per session)
+            let header_str = if header_template.is_empty() {
+                format!("▼ {}", session)
+            } else {
+                header_template.replace("{session}", session)
+            };
+            items.push(ListItem::new(Line::from(vec![
+                Span::styled(header_str, Style::default().fg(Color::Cyan).add_modifier(Modifier::BOLD))
+            ])));
 
-            for (window_idx, ((window_num, window_name), window_agents)) in
-                windows.iter().enumerate()
-            {
-                let is_last_window = window_idx == windows.len() - 1;
-                let window_prefix = if is_last_window { "└─" } else { "├─" };
+            for ((window_num, window_name), window_agents) in windows.iter() {
+                for (original_idx, agent) in window_agents.iter() {
+                     let is_cursor = *original_idx == state.selected_index;
+                     let is_selected = state.is_multi_selected(*original_idx);
 
-                // Window header
-                let window_line = Line::from(vec![
-                    Span::styled(
-                        format!(" {} ", window_prefix),
-                        Style::default().fg(Color::DarkGray),
-                    ),
-                    Span::styled(
-                        format!("{}: {}", window_num, window_name),
-                        Style::default().fg(Color::White),
-                    ),
-                ]);
-                items.push(ListItem::new(window_line));
+                     // Render agent using template
+                     let rendered_lines = render_agent(
+                         template,
+                         agent,
+                         state,
+                         is_cursor,
+                         is_selected,
+                         available_width,
+                         session,
+                         *window_num,
+                         window_name
+                     );
 
-                for (agent_idx, (original_idx, agent)) in window_agents.iter().enumerate() {
-                    let is_cursor = *original_idx == state.selected_index;
-                    let is_selected = state.is_multi_selected(*original_idx);
-                    let is_last_agent = agent_idx == window_agents.len() - 1;
-
-                    let cont_prefix = if is_last_window { "    " } else { " │  " };
-
-                    let tree_prefix = if is_last_window {
-                        if is_last_agent && agent.subagents.is_empty() {
-                            "    └─"
-                        } else {
-                            "    ├─"
-                        }
-                    } else if is_last_agent && agent.subagents.is_empty() {
-                        " │  └─"
-                    } else {
-                        " │  ├─"
-                    };
-
-                    let select_indicator = if is_selected && is_cursor {
-                        "▶☑" // Cursor + multi-selected
-                    } else if is_selected {
-                        "  ☑"
-                    } else if is_cursor {
-                        "▶ " // Cursor indicator
-                    } else {
-                        "   "
-                    };
-
-                    // Status indicator and text
-                    let (status_char, status_text, status_style) = match &agent.status {
-                        AgentStatus::Idle => ("●", "Idle", Style::default().fg(Color::Green)),
-                        AgentStatus::Processing { .. } => (
-                            state.spinner_frame(),
-                            "Working",
-                            Style::default().fg(Color::Yellow),
-                        ),
-                        AgentStatus::AwaitingApproval { .. } => (
-                            "⚠",
-                            "Waiting",
-                            Style::default().fg(Color::Red).add_modifier(Modifier::BOLD),
-                        ),
-                        AgentStatus::Error { .. } => {
-                            ("✗", "Error", Style::default().fg(Color::Red))
-                        }
-                        AgentStatus::Tui { name } => {
-                            ("○", name.as_str(), Style::default().fg(Color::Blue))
-                        }
-                        AgentStatus::Unknown => {
-                            ("○", "Unknown", Style::default().fg(Color::DarkGray))
-                        }
-                    };
-
-                    let type_style = if let Some(c) = &agent.color {
-                        Style::default().fg(parse_color(c))
-                    } else {
-                        Style::default().fg(parse_color(&state.config.agent_name_color))
-                    };
-
-                    let path_style = Style::default().fg(Color::Cyan);
-                    let divider_style = Style::default().fg(Color::DarkGray);
-
-                    let item_style = if is_cursor {
-                        Style::default()
-                            .bg(parse_color(&state.config.current_item_bg_color))
-                            .add_modifier(Modifier::BOLD)
-                    } else if is_selected {
-                        if let Some(bg) = &state.config.multi_selection_bg_color {
-                            Style::default().bg(parse_color(bg))
-                        } else if let Some(bg_color) = &agent.background_color {
-                            Style::default().bg(parse_color(bg_color))
-                        } else {
-                            Style::default()
-                        }
-                    } else if let Some(bg_color) = &agent.background_color {
-                        Style::default().bg(parse_color(bg_color))
-                    } else {
-                        Style::default()
-                    };
-
-                    // Main line: status + path
-                    let line = Line::from(vec![
-                        Span::styled(
-                            select_indicator,
-                            if is_cursor {
-                                Style::default()
-                                    .fg(Color::Rgb(0, 100, 200))
-                                    .add_modifier(Modifier::BOLD)
-                            } else if is_selected {
-                                Style::default().fg(Color::Cyan)
-                            } else {
-                                Style::default().fg(Color::White)
-                            },
-                        ),
-                        Span::styled(tree_prefix, divider_style),
-                        Span::styled(status_char, status_style),
-                        Span::raw(" "),
-                        Span::styled(agent.abbreviated_path(), path_style),
-                    ]);
-                    items.push(ListItem::new(line).style(item_style));
-
-                    // Info line: type | status | pid | uptime | context
-                    let mut info_parts = vec![
-                        Span::raw("  "),
-                        Span::styled(format!("{}│  ", cont_prefix), divider_style),
-                        Span::styled(agent.name.clone(), type_style),
-                        Span::styled(" │ ", divider_style),
-                        Span::styled(status_text, status_style),
-                        Span::styled(" │ ", divider_style),
-                        Span::styled(format!("pid:{}", agent.pid), divider_style),
-                        Span::styled(" │ ", divider_style),
-                        Span::styled(agent.uptime_str(), divider_style),
-                    ];
-
-                    // Context bar if available
-                    if let Some(ctx) = agent.context_remaining {
-                        let bar_color = if ctx > 50 {
-                            Color::Green
-                        } else if ctx > 20 {
-                            Color::Yellow
-                        } else {
-                            Color::Red
-                        };
-                        info_parts.push(Span::styled(" │ ", Style::default().fg(Color::DarkGray)));
-                        info_parts.push(Span::styled(
-                            context_bar(ctx),
-                            Style::default().fg(bar_color),
-                        ));
-                    }
-
-                    items.push(ListItem::new(Line::from(info_parts)).style(item_style));
-
-                    // Status details
-                    match &agent.status {
-                        AgentStatus::AwaitingApproval {
-                            approval_type,
-                            details,
-                        } => {
-                            let approval_line = Line::from(vec![
-                                Span::raw("  "),
-                                Span::styled(
-                                    format!("{}│  ", cont_prefix),
-                                    Style::default().fg(Color::DarkGray),
-                                ),
-                                Span::styled("⚠ ", Style::default().fg(Color::Red)),
-                                Span::styled(
-                                    format!("{}", approval_type),
-                                    Style::default().fg(Color::Red).add_modifier(Modifier::BOLD),
-                                ),
-                            ]);
-                            items.push(ListItem::new(approval_line).style(item_style));
-
-                            if !details.is_empty() {
-                                let detail_text =
-                                    truncate_str(details, available_width.saturating_sub(14));
-                                let detail_line = Line::from(vec![
-                                    Span::raw("  "),
-                                    Span::styled(
-                                        format!("{}│  ", cont_prefix),
-                                        Style::default().fg(Color::DarkGray),
-                                    ),
-                                    Span::styled("  → ", Style::default().fg(Color::DarkGray)),
-                                    Span::styled(detail_text, Style::default().fg(Color::White)),
-                                ]);
-                                items.push(ListItem::new(detail_line).style(item_style));
-                            }
-
-                            if let ApprovalType::UserQuestion { choices, .. } = approval_type {
-                                for (i, choice) in choices.iter().take(4).enumerate() {
-                                    let choice_text =
-                                        truncate_str(choice, available_width.saturating_sub(14));
-                                    let choice_line = Line::from(vec![
-                                        Span::raw("  "),
-                                        Span::styled(
-                                            format!("{}│  ", cont_prefix),
-                                            Style::default().fg(Color::DarkGray),
-                                        ),
-                                        Span::styled(
-                                            format!("  {}. ", i + 1),
-                                            Style::default().fg(Color::Yellow),
-                                        ),
-                                        Span::styled(
-                                            choice_text,
-                                            Style::default().fg(Color::White),
-                                        ),
-                                    ]);
-                                    items.push(ListItem::new(choice_line).style(item_style));
-                                }
-                                if choices.len() > 4 {
-                                    let more_line = Line::from(vec![
-                                        Span::raw("  "),
-                                        Span::styled(
-                                            format!("{}│  ", cont_prefix),
-                                            Style::default().fg(Color::DarkGray),
-                                        ),
-                                        Span::styled(
-                                            format!("     ...+{} more", choices.len() - 4),
-                                            Style::default().fg(Color::DarkGray),
-                                        ),
-                                    ]);
-                                    items.push(ListItem::new(more_line).style(item_style));
-                                }
-                            }
-                        }
-                        AgentStatus::Processing { activity } => {
-                            if !activity.is_empty() {
-                                let activity_text =
-                                    truncate_str(activity, available_width.saturating_sub(14));
-                                let activity_line = Line::from(vec![
-                                    Span::raw("  "),
-                                    Span::styled(
-                                        format!("{}│  ", cont_prefix),
-                                        Style::default().fg(Color::DarkGray),
-                                    ),
-                                    Span::styled(
-                                        format!("{} ", state.spinner_frame()),
-                                        Style::default().fg(Color::Yellow),
-                                    ),
-                                    Span::styled(activity_text, Style::default().fg(Color::Yellow)),
-                                ]);
-                                items.push(ListItem::new(activity_line).style(item_style));
-                            }
-                        }
-                        AgentStatus::Error { message } => {
-                            let error_text =
-                                truncate_str(message, available_width.saturating_sub(14));
-                            let error_line = Line::from(vec![
-                                Span::raw("  "),
-                                Span::styled(
-                                    format!("{}│  ", cont_prefix),
-                                    Style::default().fg(Color::DarkGray),
-                                ),
-                                Span::styled("✗ ", Style::default().fg(Color::Red)),
-                                Span::styled(error_text, Style::default().fg(Color::Red)),
-                            ]);
-                            items.push(ListItem::new(error_line).style(item_style));
-                        }
-                        _ => {}
-                    }
-
-                    // Subagents
-                    for (sub_idx, subagent) in agent.subagents.iter().enumerate() {
-                        let is_last_sub = sub_idx == agent.subagents.len() - 1;
-                        let sub_branch = if is_last_sub { "└─" } else { "├─" };
-
-                        let (sub_char, sub_style) = match subagent.status {
-                            SubagentStatus::Running => {
-                                (state.spinner_frame(), Style::default().fg(Color::Cyan))
-                            }
-                            SubagentStatus::Completed => ("✓", Style::default().fg(Color::Green)),
-                            SubagentStatus::Failed => ("✗", Style::default().fg(Color::Red)),
-                            SubagentStatus::Unknown => ("?", Style::default().fg(Color::DarkGray)),
-                        };
-
-                        let duration = if matches!(subagent.status, SubagentStatus::Running) {
-                            format!(" ({})", subagent.duration_str())
-                        } else {
-                            String::new()
-                        };
-
-                        let sub_line = Line::from(vec![
-                            Span::raw("  "),
-                            Span::styled(
-                                format!("{}{}", cont_prefix, sub_branch),
-                                Style::default().fg(Color::DarkGray),
-                            ),
-                            Span::styled(sub_char, sub_style),
-                            Span::raw(" "),
-                            Span::styled(
-                                subagent.subagent_type.display_name(),
-                                Style::default()
-                                    .fg(Color::White)
-                                    .add_modifier(Modifier::BOLD),
-                            ),
-                            Span::styled(duration, Style::default().fg(Color::Yellow)),
-                        ]);
-                        items.push(ListItem::new(sub_line));
-
-                        if !subagent.description.is_empty() {
-                            let desc_prefix = if is_last_sub { "   " } else { "│  " };
-                            let desc_text = truncate_str(
-                                &subagent.description,
-                                available_width.saturating_sub(14),
-                            );
-                            let desc_line = Line::from(vec![
-                                Span::raw("  "),
-                                Span::styled(
-                                    format!("{}{}", cont_prefix, desc_prefix),
-                                    Style::default().fg(Color::DarkGray),
-                                ),
-                                Span::styled("  ", Style::default()),
-                                Span::styled(desc_text, Style::default().fg(Color::DarkGray)),
-                            ]);
-                            items.push(ListItem::new(desc_line));
-                        }
-                    }
+                     for (i, line) in rendered_lines.into_iter().enumerate() {
+                         let style = if i == 0 {
+                             // Apply selection background only to the first line (main line)
+                             if is_cursor {
+                                Style::default().bg(parse_color(&state.config.current_item_bg_color))
+                             } else if is_selected {
+                                 if let Some(bg) = &state.config.multi_selection_bg_color {
+                                     Style::default().bg(parse_color(bg))
+                                 } else if let Some(bg_color) = &agent.background_color {
+                                     Style::default().bg(parse_color(bg_color))
+                                 } else {
+                                     Style::default()
+                                 }
+                             } else if let Some(bg_color) = &agent.background_color {
+                                 Style::default().bg(parse_color(bg_color))
+                             } else {
+                                 Style::default()
+                             }
+                         } else {
+                             Style::default()
+                         };
+                         items.push(ListItem::new(line).style(style));
+                     }
                 }
             }
         }
 
         let list = List::new(items).block(block);
         let mut list_state = ListState::default();
-        list_state.select(Some(state.selected_index));
+        
+        // We need to find the visual index of the selected agent.
+        let mut visual_index = 0;
+        let mut found = false;
+        
+        // Re-traverse to find visual index
+        'outer: for (session, windows) in tree.sessions.iter() {
+             visual_index += 1; // Header
+
+             for ((window_num, window_name), window_agents) in windows.iter() {
+                 for (original_idx, agent) in window_agents.iter() {
+                     if *original_idx == state.selected_index {
+                         found = true;
+                         break 'outer;
+                     }
+                     // Count lines this agent takes
+                     let lines = render_agent(template, agent, state, false, false, available_width, session, *window_num, window_name).len();
+                     visual_index += lines; 
+                 }
+             }
+        }
+
+        if found {
+            list_state.select(Some(visual_index));
+        } else {
+            list_state.select(None); 
+        }
+
         frame.render_stateful_widget(list, area, &mut list_state);
     }
+}
+
+/// Renders a single agent based on the template
+fn render_agent<'a>(
+    template: &str,
+    agent: &'a MonitoredAgent,
+    state: &'a AppState,
+    is_cursor: bool,
+    is_selected: bool,
+    available_width: usize,
+    session: &str,
+    window_id: u32,
+    window_name: &str,
+) -> Vec<Line<'a>> {
+    let mut lines = Vec::new();
+
+    // Default template if empty
+    let effective_template = if template.is_empty() {
+        "{selection} {status_char} {name} {uptime}" 
+    } else {
+        template
+    };
+
+    // Split template by newlines
+    for tmpl_line in effective_template.lines() {
+        // Special case: {subagents} placeholder expands to multiple lines
+        if tmpl_line.contains("{subagents}") {
+             if tmpl_line.trim() == "{subagents}" {
+                 // Standalone subagents placeholder - render proper subagent lines
+                 lines.extend(render_subagents(agent, state, available_width));
+                 continue;
+             }
+             // If mixed with other text, handle it (though usually it should be on its own line)
+        }
+
+        let rendered_line = render_template_line(tmpl_line, agent, state, is_cursor, is_selected, available_width, session, window_id, window_name);
+        lines.push(rendered_line);
+    }
+    
+    // Auto-append status details (approval/questions) if not explicitly handled
+    // The previous implementation always showed them. We should probably keep showing them
+    // unless we add specific placeholders for them.
+    // For now, let's append them at the end if the status requires attention.
+    if agent.status.needs_attention() {
+         lines.extend(render_status_details(agent, available_width));
+    }
+
+    lines
+}
+
+fn render_template_line<'a>(
+    tmpl_line: &str,
+    agent: &'a MonitoredAgent,
+    state: &'a AppState,
+    is_cursor: bool,
+    is_selected: bool,
+    available_width: usize,
+    session: &str,
+    window_id: u32,
+    window_name: &str,
+) -> Line<'a> {
+    let mut spans = Vec::new();
+    let chars: Vec<char> = tmpl_line.chars().collect();
+    let mut i = 0;
+    
+    while i < chars.len() {
+        if chars[i] == '{' {
+            // Find closing '}'
+            if let Some(end) = chars[i..].iter().position(|&c| c == '}') {
+                let end_idx = i + end;
+                let placeholder: String = chars[i+1..end_idx].iter().collect();
+                
+                // Render placeholder
+                spans.push(render_placeholder(&placeholder, agent, state, is_cursor, is_selected, available_width, session, window_id, window_name));
+                
+                i = end_idx + 1;
+                continue;
+            }
+        }
+        
+        // Regular char
+        spans.push(Span::raw(chars[i].to_string()));
+        i += 1;
+    }
+    
+    Line::from(spans)
+}
+
+fn render_placeholder<'a>(
+    name: &str,
+    agent: &'a MonitoredAgent,
+    state: &'a AppState,
+    is_cursor: bool,
+    is_selected: bool,
+    _width: usize,
+    session: &str,
+    window_id: u32,
+    window_name: &str,
+) -> Span<'a> {
+     match name {
+         "session" => Span::styled(session.to_string(), Style::default().fg(Color::Cyan)),
+         "window_id" => Span::styled(window_id.to_string(), Style::default().fg(Color::DarkGray)),
+         "window_name" => Span::styled(window_name.to_string(), Style::default().fg(Color::White)),
+         "selection" => {
+             let text = if is_selected && is_cursor {
+                "▶☑"
+            } else if is_selected {
+                " ☑"
+            } else if is_cursor {
+                "▶ "
+            } else {
+                "  "
+            };
+            if is_cursor {
+                 Span::styled(text, Style::default().fg(Color::Rgb(0, 100, 200)).add_modifier(Modifier::BOLD))
+            } else if is_selected {
+                 Span::styled(text, Style::default().fg(Color::Cyan))
+            } else {
+                 Span::styled(text, Style::default().fg(Color::White))
+            }
+         },
+         "status_char" => {
+             match &agent.status {
+                AgentStatus::Idle => Span::styled("●", Style::default().fg(Color::Green)),
+                AgentStatus::Processing { .. } => Span::styled(state.spinner_frame(), Style::default().fg(Color::Yellow)),
+                AgentStatus::AwaitingApproval { .. } => Span::styled("⚠", Style::default().fg(Color::Red).add_modifier(Modifier::BOLD)),
+                AgentStatus::Error { .. } => Span::styled("✗", Style::default().fg(Color::Red)),
+                AgentStatus::Tui { .. } => Span::styled("○", Style::default().fg(Color::Blue)),
+                AgentStatus::Unknown => Span::styled("○", Style::default().fg(Color::DarkGray)),
+             }
+         },
+         "name" => {
+             let color = agent.color.as_deref().unwrap_or(&state.config.agent_name_color);
+             Span::styled(&agent.name, Style::default().fg(parse_color(color)))
+         },
+         "pid" => Span::styled(agent.pid.to_string(), Style::default().fg(Color::DarkGray)),
+         "uptime" => Span::styled(agent.uptime_str(), Style::default().fg(Color::DarkGray)),
+         "path" => Span::styled(agent.abbreviated_path(), Style::default().fg(Color::Cyan)),
+         "status_text" => {
+             let (text, style) = match &agent.status {
+                 AgentStatus::Idle => ("Idle", Style::default().fg(Color::Green)),
+                 AgentStatus::Processing { .. } => ("Working", Style::default().fg(Color::Yellow)),
+                 AgentStatus::AwaitingApproval { .. } => ("Waiting", Style::default().fg(Color::Red)),
+                 AgentStatus::Error { .. } => ("Error", Style::default().fg(Color::Red)),
+                 AgentStatus::Tui { name } => (name.as_str(), Style::default().fg(Color::Blue)),
+                 AgentStatus::Unknown => ("Unknown", Style::default().fg(Color::DarkGray)),
+             };
+             Span::styled(text, style)
+         },
+         "context" => {
+             if let Some(ctx) = agent.context_remaining {
+                let bar_color = if ctx > 50 {
+                    Color::Green
+                } else if ctx > 20 {
+                    Color::Yellow
+                } else {
+                    Color::Red
+                };
+                Span::styled(context_bar(ctx), Style::default().fg(bar_color))
+             } else {
+                 Span::raw("")
+             }
+         },
+         "subagents" => Span::raw(""), // Handled separately
+         _ => Span::raw(format!("{{{}}}", name)),
+     }
+}
+
+fn render_subagents<'a>(agent: &'a MonitoredAgent, state: &'a AppState, width: usize) -> Vec<Line<'a>> {
+    let mut lines = Vec::new();
+    for subagent in &agent.subagents {
+        let (sub_char, sub_style) = match subagent.status {
+            SubagentStatus::Running => (state.spinner_frame(), Style::default().fg(Color::Cyan)),
+            SubagentStatus::Completed => ("✓", Style::default().fg(Color::Green)),
+            SubagentStatus::Failed => ("✗", Style::default().fg(Color::Red)),
+            SubagentStatus::Unknown => ("?", Style::default().fg(Color::DarkGray)),
+        };
+
+        let duration = if matches!(subagent.status, SubagentStatus::Running) {
+            format!(" ({})", subagent.duration_str())
+        } else {
+            String::new()
+        };
+
+        let line = Line::from(vec![
+            Span::raw("   "), // Indent
+            Span::styled(sub_char, sub_style),
+             Span::raw(" "),
+            Span::styled(
+                subagent.subagent_type.display_name(),
+                Style::default().fg(Color::White).add_modifier(Modifier::BOLD),
+            ),
+            Span::styled(duration, Style::default().fg(Color::Yellow)),
+        ]);
+        lines.push(line);
+        
+        // Description
+        if !subagent.description.is_empty() {
+            lines.push(Line::from(vec![
+                Span::raw("     "), // Indent
+                Span::styled(truncate_str(&subagent.description, width.saturating_sub(10)), Style::default().fg(Color::DarkGray))
+            ]));
+        }
+    }
+    lines
+}
+
+fn render_status_details<'a>(agent: &'a MonitoredAgent, width: usize) -> Vec<Line<'a>> {
+    let mut lines = Vec::new();
+    match &agent.status {
+        AgentStatus::AwaitingApproval { approval_type, details } => {
+             lines.push(Line::from(vec![
+                 Span::raw("   "),
+                 Span::styled("⚠ ", Style::default().fg(Color::Red)),
+                 Span::styled(format!("{}", approval_type), Style::default().fg(Color::Red).add_modifier(Modifier::BOLD))
+             ]));
+             
+             if !details.is_empty() {
+                 lines.push(Line::from(vec![
+                     Span::raw("      "),
+                     Span::styled(truncate_str(details, width.saturating_sub(10)), Style::default().fg(Color::White))
+                 ]));
+             }
+             
+             if let ApprovalType::UserQuestion { choices, .. } = approval_type {
+                for (i, choice) in choices.iter().take(4).enumerate() {
+                    lines.push(Line::from(vec![
+                        Span::raw("      "),
+                        Span::styled(format!("{}. ", i + 1), Style::default().fg(Color::Yellow)),
+                        Span::styled(truncate_str(choice, width.saturating_sub(14)), Style::default().fg(Color::White))
+                    ]));
+                }
+                if choices.len() > 4 {
+                    lines.push(Line::from(vec![
+                         Span::raw("      "),
+                         Span::styled(format!("...+{} more", choices.len() - 4), Style::default().fg(Color::DarkGray))
+                    ]));
+                }
+             }
+        },
+        AgentStatus::Processing { activity } if !activity.is_empty() => {
+             lines.push(Line::from(vec![
+                 Span::raw("   "),
+                 Span::styled(activity, Style::default().fg(Color::Yellow))
+             ]));
+        },
+        AgentStatus::Error { message } => {
+             lines.push(Line::from(vec![
+                 Span::raw("   "),
+                 Span::styled("Error: ", Style::default().fg(Color::Red).add_modifier(Modifier::BOLD)),
+                 Span::styled(message, Style::default().fg(Color::Red))
+             ]));
+        },
+        _ => {}
+    }
+    lines
+    
 }
 
 fn parse_color(name: &str) -> Color {
@@ -514,3 +530,5 @@ fn context_bar(percent: u8) -> String {
         percent
     )
 }
+
+

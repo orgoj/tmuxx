@@ -441,6 +441,22 @@ d = { execute_command = { command = "zede ~/.dippy" } }
 
 # Using environment variables
 x = { execute_command = { command = "echo ${ENV:USER} - ${SESSION_NAME}" } }
+
+[pane_tree]
+# View mode: "compact" or "full"
+mode = "full"
+
+# Session header template
+header_template = " ▼ {session}"
+
+# Compact mode template (single line per agent)
+compact_template = "  {selection}{window_id}:{window_name} │ {status_char} {name} {status_text}"
+
+# Full mode template (multi-line detailed view)
+full_template = '''  {selection}{status_char} {name}
+    {status_text} | pid:{pid} | {uptime}
+    {path} {context}
+{subagents}'''
 ```
 
 **Valid tmux key names for send_keys:**

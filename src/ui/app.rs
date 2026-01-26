@@ -992,6 +992,15 @@ async fn run_loop(
                                         title, prompt, initial, single_line, false, // not readonly
                                     ));
                                 }
+                                Action::TogglePaneTreeMode => {
+                                    let new_mode = if state.config.pane_tree.mode == "compact" {
+                                        "full"
+                                    } else {
+                                        "compact"
+                                    };
+                                    state.config.pane_tree.mode = new_mode.to_string();
+                                    state.set_status(format!("Switched to {} view", new_mode));
+                                }
                                 Action::HidePopupInput => {
                                     state.popup_input = None;
                                 }
@@ -1306,6 +1315,7 @@ fn map_key_to_action(
                 KeyAction::ToggleMenu => Action::ToggleMenu,
                 KeyAction::ToggleSubagentLog => Action::ToggleSubagentLog,
                 KeyAction::CaptureTestCase => Action::CaptureTestCase,
+                KeyAction::TogglePaneTreeMode => Action::TogglePaneTreeMode,
             };
         }
     }

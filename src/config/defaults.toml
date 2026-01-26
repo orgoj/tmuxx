@@ -206,9 +206,19 @@ priority = 10
   # Support standard prompts: $, #, %, >, ❯
   pattern = '''(?s).*[$#%>❯]\s*\z'''
 
+[pane_tree]
+mode = "full"
+header_template = " ▼ {session}"
+compact_template = "  {selection}{window_id}:{window_name} │ {status_char} {name} {status_text}"
+full_template = '''  {selection}{status_char} {name}
+    {status_text} | pid:{pid} | {uptime}
+    {path} {context}
+{subagents}'''
+
 [key_bindings]
 "j" = { navigate = "next_agent" }
 "k" = { navigate = "prev_agent" }
+"c" = "toggle_pane_tree_mode"
 "y" = "approve"
 "Y" = "approve"
 "n" = "reject"

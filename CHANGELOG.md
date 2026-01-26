@@ -9,7 +9,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.1.22] - 2026-01-25
 
+
 ### Added
+- **Configurable Pane Tree**: Complete overhaul of the agent list display with configurable templates.
+  - **Two Modes**: `compact` (single line) and `full` (detailed).
+  - **Templates**: Fully customizable templates for header, compact, and full views in `defaults.toml`.
+  - **Toggling**: Press `c` to instantly toggle between modes.
+  - **Configuration**: New `[pane_tree]` section with `header_template`, `compact_template`, and `full_template`.
+  - **Clean UI**: Removed legacy tree lines and ASCII art for a cleaner, modern look.
 - **Persistent Tree Menu**: Refactored the Command Menu into a true persistent tree view.
   - Submenus expand/collapse in-place instead of replacing the list.
   - Support for multiple simultaneously expanded submenus.

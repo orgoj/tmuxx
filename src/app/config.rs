@@ -91,6 +91,10 @@ pub struct Config {
     /// Tree menu configuration
     #[serde(default)]
     pub menu: MenuConfig,
+
+    /// Pane tree configuration
+    #[serde(default)]
+    pub pane_tree: PaneTreeConfig,
 }
 
 #[derive(Deserialize, Default)]
@@ -116,6 +120,7 @@ struct PartialConfig {
     todo_files: Option<Vec<String>>,
     sidebar_width: Option<SidebarWidth>,
     menu: Option<MenuConfig>,
+    pane_tree: Option<PaneTreeConfig>,
 }
 
 impl PartialConfig {
@@ -173,6 +178,9 @@ impl PartialConfig {
         }
         if let Some(v) = self.menu {
             config.menu = v;
+        }
+        if let Some(v) = self.pane_tree {
+            config.pane_tree = v;
         }
 
         if !self.agents.is_empty() {
@@ -364,6 +372,36 @@ pub struct SubagentRules {
     pub start: String,
     pub running: String,
     pub complete: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct PaneTreeConfig {
+    #[serde(default = "default_pane_tree_mode")]
+    pub mode: String,
+
+    #[serde(default)]
+    pub compact_template: String,
+
+    #[serde(default)]
+    pub full_template: String,
+
+    #[serde(default)]
+    pub header_template: String,
+}
+
+fn default_pane_tree_mode() -> String {
+    "full".to_string()
+}
+
+impl Default for PaneTreeConfig {
+    fn default() -> Self {
+        Self {
+            mode: "full".to_string(),
+            compact_template: "  {selection}{window_id}:{window_name} │ {status_char} {name} {status_text}".to_string(),
+            full_template: "  {selection}{status_char} {name}\n    {status_text} | pid:{pid} | {uptime}\n    {path} {context}\n{subagents}".to_string(),
+            header_template: " ▼ {session}".to_string(),
+        }
+    }
 }
 
 impl Default for Config {

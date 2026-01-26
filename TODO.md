@@ -1,5 +1,7 @@
 # TODO - tmuxcc
 
+- [ ] kdyz kliknu mysi v listu windows, tak se oznaci uplne jiny windows, kontrola oprava!
+
 - [ ] menu na prompty (stromove) - user a projekt definice, asi nejaky adresar a v nem soubory, v menu jen nazvy
 - [ ] text do TOTO okna muze generovat externi program (napr. beads)
 - [ ] selected pane rychly filtr - default binding s - prepina mezi zobrazenim selected a normalnim
@@ -8,6 +10,7 @@
 - [ ] jak poznat commandy co bezi v ssh ?
 - [ ] todo na plnou sirku summary (mozna)
 - [ ] proc se help editor zavira na jine klavesy nez esc? treba na doprav a doleva. klavesy nahoru a dolu funguji ale divne text skace u toho doleva a doprava, jako by kurzor chodil po texdu, to ma delat jen scroll v readonly. pgup/down je ok. esc funguje.
+- [ ] colapse session v tree a jen idikator error/reguired action
 
 ## Priority Tasks
 
