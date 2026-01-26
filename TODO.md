@@ -19,6 +19,9 @@
 - [ ] **Focus (f) - Outside Tmux**: Automatické otevírání nového okna terminálu (Kitty, Alacritty) s připojením k session, pokud `tmuxx` běží mimo tmux.
 - [ ] **Action Menu**: Komplexní systém konfigurovatelných akcí (proměnné, bash pipeline).
 
+### Configuration
+- [ ] **Vylepšený init-config**: `--init-config` (nebo `--write-config`) by měl zapsat `defaults.toml` včetně komentářů (z `include_str!`), ne jen serializovaný struct.
+
 ## 🔮 Nápady a Roadmap (Ideas)
 
 ### AI Integrace
