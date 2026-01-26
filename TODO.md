@@ -1,14 +1,11 @@
 # TODO - tmuxcc
 
-
-
+- [ ] todo na plnou sirku boxu - config option ( pak vubec negenerovat pravou cast boxu)
 
 - [ ] menu na prompty (stromove) - user a projekt definice, asi nejaky adresar a v nem soubory, v menu jen nazvy
 - [ ] text do TOTO okna muze generovat externi program (napr. beads)
-- [ ] definovatelny format template pro zobrazeni dat ve stromu, mozna i dva a prepinani compact/full, musime byt schopni udelat i jednoradkovy seznam pane
-- [x] refactor defaults - musi byt vse jen v config a v programu jen neco jako config->get("width", 24), zadne finkce a clasy co vraceli nejake default objekty, co to je za antipatern, mame config ten da vzdy hodnotu funci get a ta se pouziva, KISS
+- [?] refactor defaults - musi byt vse jen v config a v programu jen neco jako config->get("width", 24), zadne finkce a clasy co vraceli nejake default objekty, co to je za antipatern, mame config ten da vzdy hodnotu funci get a ta se pouziva, KISS
 - [ ] jak poznat commandy co bezi v ssh ?
-- [ ] todo na plnou sirku summary (mozna)
 - [ ] proc se help editor zavira na jine klavesy nez esc? treba na doprav a doleva. klavesy nahoru a dolu funguji ale divne text skace u toho doleva a doprava, jako by kurzor chodil po texdu, to ma delat jen scroll v readonly. pgup/down je ok. esc funguje.
 - [ ] colapse session v tree a jen idikator error/reguired action
 

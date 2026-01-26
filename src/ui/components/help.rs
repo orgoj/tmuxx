@@ -32,11 +32,9 @@ impl HelpWidget {
         // Or just categorize them into buckets.
         
         for (action, keys) in action_to_keys {
-            let mut keys_str: String = keys.iter().map(|k| k.as_str()).collect::<Vec<&str>>().join(" / ");
-            // Sort keys for consistency (e.g. "j" before "Down")
             let mut sorted_keys = keys.clone();
             sorted_keys.sort(); 
-            keys_str = sorted_keys.iter().map(|k| k.as_str()).collect::<Vec<&str>>().join(" / ");
+            let keys_str: String = sorted_keys.iter().map(|k| k.as_str()).collect::<Vec<&str>>().join(" / ");
             
             match action {
                 // Navigation

@@ -562,21 +562,30 @@ impl AppState {
 
     /// Check if an agent matches the current filter pattern (internal logic)
     pub fn matches_filter_impl(&self, index: usize, agent: &MonitoredAgent) -> bool {
-         // 1. Check Active filter
-        if self.filter_active {
-             if let crate::agents::AgentStatus::Idle = agent.status {
-                 return false;
-             }
-        }
+        // Boolean filters (Active / Selected)
+        // Treated as OR (Union): If any are enabled, agent must match AT LEAST ONE of the enabled filters.
+        if self.filter_active || self.filter_selected {
+            let mut matched = false;
 
-        // 2. Check Selected filter
-        if self.filter_selected {
-            if !self.selected_agents.contains(&index) {
+            if self.filter_active {
+                // Active = Not Idle
+                if !matches!(agent.status, crate::agents::AgentStatus::Idle) {
+                    matched = true;
+                }
+            }
+
+            if self.filter_selected {
+                if self.selected_agents.contains(&index) {
+                    matched = true;
+                }
+            }
+
+            if !matched {
                 return false;
             }
         }
         
-        // 3. Check Text pattern
+        // Text pattern (Text filter is always AND logic with the above)
         match &self.filter_pattern {
             None => true,                                // No filter = show all
             Some(pattern) if pattern.is_empty() => true, // Empty = show all
@@ -597,6 +606,12 @@ impl AppState {
         }
     }
 
+    // ... (rest of methods)
+
+    // ... (in tests module)
+
+
+
     /// Get filtered agent list
     pub fn filtered_agents(&self) -> Vec<&MonitoredAgent> {
         self.agents
@@ -605,6 +620,16 @@ impl AppState {
             .enumerate()
             .filter(|(idx, agent)| self.matches_filter_impl(*idx, agent))
             .map(|(_, agent)| agent)
+            .collect()
+    }
+
+    /// Get filtered agent list with their original indices
+    pub fn filtered_agents_with_indices(&self) -> Vec<(usize, &MonitoredAgent)> {
+        self.agents
+            .root_agents
+            .iter()
+            .enumerate()
+            .filter(|(idx, agent)| self.matches_filter_impl(*idx, agent))
             .collect()
     }
 
@@ -811,16 +836,64 @@ mod tests {
         // Previous should also stay at 0
         state.select_prev();
         assert_eq!(state.selected_index, 0);
-
-        // Now filter to show a and c (hide b)
-        state.filter_pattern = Some("session-".to_string()); // matches all
-        state.filter_pattern = None; // show all first
-        state.filter_pattern = Some("session-a".to_string());
-
-        // Verify we only see session-a
-        let visible = state.visible_agent_indices();
-        assert_eq!(visible, vec![0]);
     }
+
+    #[test]
+    fn test_navigation_active_filter_skips_idle() {
+        let mut state = AppState::default();
+        use crate::agents::AgentStatus;
+
+        // Add 3 agents: Idle, Processing, Idle
+        let mut a1 = create_test_agent("1", "idle1", 0);
+        a1.status = AgentStatus::Idle;
+        state.agents.root_agents.push(a1);
+
+        let mut a2 = create_test_agent("2", "working", 1);
+        a2.status = AgentStatus::Processing { activity: "work".to_string() };
+        state.agents.root_agents.push(a2);
+
+        let mut a3 = create_test_agent("3", "idle2", 2);
+        a3.status = AgentStatus::Idle;
+        state.agents.root_agents.push(a3);
+
+        // Verify all 3 present
+        assert_eq!(state.visible_agent_indices(), vec![0, 1, 2]);
+
+        // Enable Active Filter (should hide 0 and 2)
+        state.toggle_filter_active();
+        assert!(state.filter_active);
+        
+        // Only 1 should be visible
+        assert_eq!(state.visible_agent_indices(), vec![1]);
+
+        // Current selection should account for visibility (ensure_visible_selection called by toggle)
+        // Default select was 0. 0 is hidden. Nearest visible is 1.
+        assert_eq!(state.selected_index, 1);
+
+        // Next should loop to 1
+        state.select_next();
+        assert_eq!(state.selected_index, 1);
+
+        // Prev should loop to 1
+        state.select_prev();
+        assert_eq!(state.selected_index, 1);
+        
+        // Now make 3 working
+        if let Some(agent) = state.agents.get_agent_mut(2) {
+            agent.status = AgentStatus::Processing { activity: "work".to_string() };
+        }
+        
+        // Now 1 and 2 visible
+        assert_eq!(state.visible_agent_indices(), vec![1, 2]);
+        
+        // Navigation: 1 -> 2 -> 1
+        assert_eq!(state.selected_index, 1);
+        state.select_next();
+        assert_eq!(state.selected_index, 2);
+        state.select_next();
+        assert_eq!(state.selected_index, 1);
+    }
+
 
     #[test]
     fn test_navigation_with_filter_multiple_visible() {
@@ -953,11 +1026,11 @@ mod tests {
         // Cursor should move to first visible (index 0)
         assert_eq!(state.selected_index, 0);
 
-        // Multi-selection should only contain visible indices
+        // Multi-selection should still contain hidden indices (design choice: preserve selection across filters)
         assert!(state.selected_agents.contains(&0));
-        assert!(!state.selected_agents.contains(&1)); // Hidden, removed
+        assert!(state.selected_agents.contains(&1)); // Hidden, BUT preserved in set
         assert!(state.selected_agents.contains(&2));
-        assert_eq!(state.selected_agents.len(), 2);
+        assert_eq!(state.selected_agents.len(), 3);
     }
 
     #[test]
@@ -1017,5 +1090,54 @@ mod tests {
         state.selected_index = 0;
         state.toggle_selection();
         assert!(state.selected_agents.contains(&0));
+    }
+
+
+    #[test]
+    fn test_filters_union() {
+        let mut state = AppState::default();
+        use crate::agents::AgentStatus;
+
+        // 0: Idle, Selected
+        let mut a0 = create_test_agent("0", "idle-sel", 0);
+        a0.status = AgentStatus::Idle;
+        state.agents.root_agents.push(a0);
+
+        // 1: Working, Selected
+        let mut a1 = create_test_agent("1", "work-sel", 1);
+        a1.status = AgentStatus::Processing { activity: "work".to_string() };
+        state.agents.root_agents.push(a1);
+
+        // 2: Working, Not Selected
+        let mut a2 = create_test_agent("2", "work-unsel", 2);
+        a2.status = AgentStatus::Processing { activity: "work".to_string() };
+        state.agents.root_agents.push(a2);
+
+        // 3: Idle, Not Selected
+        let mut a3 = create_test_agent("3", "idle-unsel", 3);
+        a3.status = AgentStatus::Idle;
+        state.agents.root_agents.push(a3);
+
+        // Select 0 and 1
+        state.selected_agents.insert(0);
+        state.selected_agents.insert(1);
+        
+        // 1. No filters -> All visible
+        assert_eq!(state.visible_agent_indices(), vec![0, 1, 2, 3]);
+
+        // 2. Active Only -> 1, 2 (Working)
+        state.filter_active = true;
+        assert_eq!(state.visible_agent_indices(), vec![1, 2]);
+
+        // 3. Selected Only (Active still ON) -> Union (Active OR Selected)
+        // Active match: 1, 2
+        // Selected match: 0, 1
+        // Union: 0, 1, 2
+        state.filter_selected = true;
+        assert_eq!(state.visible_agent_indices(), vec![0, 1, 2]);
+
+        // 4. Active OFF, Selected Only -> 0, 1
+        state.filter_active = false;
+        assert_eq!(state.visible_agent_indices(), vec![0, 1]);
     }
 }

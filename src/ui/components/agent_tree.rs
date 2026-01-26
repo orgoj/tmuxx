@@ -32,16 +32,16 @@ struct SessionWindowTree<'a> {
 }
 
 impl<'a> SessionWindowTree<'a> {
-    fn new(agents: &[&'a MonitoredAgent]) -> Self {
+    fn new(agents: &[(usize, &'a MonitoredAgent)]) -> Self {
         let mut sessions: SessionsMap<'a> = BTreeMap::new();
 
-        for (idx, agent) in agents.iter().enumerate() {
+        for (original_idx, agent) in agents.iter() {
             sessions
                 .entry(&agent.session)
                 .or_default()
                 .entry((agent.window, &agent.window_name))
                 .or_default()
-                .push((idx, *agent));
+                .push((*original_idx, *agent));
         }
 
         Self { sessions }
@@ -50,8 +50,8 @@ impl<'a> SessionWindowTree<'a> {
 
 impl AgentTreeWidget {
     pub fn render(frame: &mut Frame, area: Rect, state: &AppState) {
-        // Get filtered agents
-        let filtered_agents = state.filtered_agents();
+        // Get filtered agents with original indices
+        let filtered_agents = state.filtered_agents_with_indices();
         let _agents = &state.agents.root_agents; // Keep for counts
         let active_count = state.agents.active_count();
         let subagent_count = state.agents.running_subagent_count();
@@ -198,7 +198,7 @@ impl AgentTreeWidget {
 
     /// Maps a visual row index (relative to list content) to an agent index
     pub fn get_agent_index_at_row(row: usize, state: &AppState, width: usize) -> Option<usize> {
-        let filtered_agents = state.filtered_agents();
+        let filtered_agents = state.filtered_agents_with_indices();
         
         let tree = SessionWindowTree::new(&filtered_agents);
         
