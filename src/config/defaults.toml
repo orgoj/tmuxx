@@ -9,7 +9,7 @@ ignore_self = true
 log_actions = true
 hide_bottom_input = true
 agent_name_color = "#000000"
-current_item_bg_color = "#4a4a4a"
+current_item_bg_color = "#aaaaaa"
 sidebar_width = 60
 
 # Display TODO from project files (TODO.md, etc.)
@@ -22,11 +22,11 @@ name = "Claude"
 background_color = "#fce4fc"
 priority = 100
   default_status = "processing"
-  
+
   [[agents.matchers]]
   type = "command"
   pattern = "(?i)claude|anthropic|claude-code"
-  
+
   [[agents.matchers]]
   type = "ancestor"
   pattern = "(?i)claude|anthropic|claude-code"
@@ -45,8 +45,8 @@ priority = 100
   # Use [^\n]*❯ for prompt to prevent swallowing body lines.
   # Use [│]* instead of [│]? to handle multiple pipe characters (e.g. from tmux split panes).
   # Use non-greedy (?P<body>.*?) before the footer to correctly isolate the current active block.
-  pattern = '''(?ms)(?P<indicator>.*?)(?:^|\n)[ \t]*[│]*[─╌]{10,}.*?(?:$|\n)(?P<body>.*?)(?:^|\n)[ \t]*[│]*[^\n]*❯(?P<suffix>.*)$'''
-  
+  pattern = '''(?ms)(?P<indicator>.*)(?:^|\n)[ \t]*[│]*[─╌]{10,}.*?(?:$|\n)(?P<body>.*?)(?:^|\n)[ \t]*[│]*[^\n]*❯(?P<suffix>.*)$'''
+
   # Refinement: Detect questions in the body to switch to awaiting_approval
   [[agents.state_rules.refinements]]
   group = "body"
@@ -92,7 +92,7 @@ priority = 100
   [[agents.state_rules]]
   status = "awaiting_input"
   pattern = '''(?s).*[❯]\s*\z'''
-  
+
   # 4. Processing Indicators (Manual)
   [[agents.state_rules]]
   status = "processing"

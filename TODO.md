@@ -1,13 +1,13 @@
 # TODO - tmuxcc
 
 - [ ] menu na prompty (stromove) - user a projekt definice, asi nejaky adresar a v nem soubory, v menu jen nazvy
-- [ ] TODO text muze generovat externi program (napr. beads)
+- [ ] text do TOTO okna muze generovat externi program (napr. beads)
 - [ ] selected pane rychly filtr - default binding s - prepina mezi zobrazenim selected a normalnim
-- [x] help tex neobsahuje binding, asi po presunu do defaults.toml
+- [ ] definovatelny format template pro zobrazeni dat ve stromu, mozna i dva a prepinani compact/full, musime byt schopni udelat i jednoradkovy seznam pane
 - [x] refactor defaults - musi byt vse jen v config a v programu jen neco jako config->get("width", 24), zadne finkce a clasy co vraceli nejake default objekty, co to je za antipatern, mame config ten da vzdy hodnotu funci get a ta se pouziva, KISS
 - [ ] jak poznat commandy co bezi v ssh ?
-- [ ] todo na plnou sirku summary
-- [ ] proc se hel editor zavira na jine klavesy nez esc? treba na doprav a doleva. klavesy nahoru a dolu funguji ale divne text skace u toho doleva a doprava, jako by kurzor chodil po texdu, to ma delat jen scroll v readonly. pgup/down je ok. esc funguje.
+- [ ] todo na plnou sirku summary (mozna)
+- [ ] proc se help editor zavira na jine klavesy nez esc? treba na doprav a doleva. klavesy nahoru a dolu funguji ale divne text skace u toho doleva a doprava, jako by kurzor chodil po texdu, to ma delat jen scroll v readonly. pgup/down je ok. esc funguje.
 
 ## Priority Tasks
 
