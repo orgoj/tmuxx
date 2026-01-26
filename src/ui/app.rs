@@ -997,6 +997,22 @@ async fn run_loop(
                                     state.config.pane_tree.mode = new_mode.to_string();
                                     state.set_status(format!("Switched to {} view", new_mode));
                                 }
+                                Action::ToggleFilterActive => {
+                                    state.toggle_filter_active();
+                                    if state.filter_active {
+                                        state.set_status("Showing active (non-idle) agents only".to_string());
+                                    } else {
+                                        state.set_status("Showing all agents".to_string());
+                                    }
+                                }
+                                Action::ToggleFilterSelected => {
+                                    state.toggle_filter_selected();
+                                    if state.filter_selected {
+                                        state.set_status("Showing selected agents only".to_string());
+                                    } else {
+                                        state.set_status("Showing all agents".to_string());
+                                    }
+                                }
                                 Action::HidePopupInput => {
                                     state.popup_input = None;
                                 }
@@ -1312,6 +1328,8 @@ fn map_key_to_action(
                 KeyAction::ToggleSubagentLog => Action::ToggleSubagentLog,
                 KeyAction::CaptureTestCase => Action::CaptureTestCase,
                 KeyAction::TogglePaneTreeMode => Action::TogglePaneTreeMode,
+                KeyAction::ToggleFilterActive => Action::ToggleFilterActive,
+                KeyAction::ToggleFilterSelected => Action::ToggleFilterSelected,
             };
         }
     }

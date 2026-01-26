@@ -126,6 +126,10 @@ pub enum Action {
     None,
     /// Toggle pane tree display mode (compact/full)
     TogglePaneTreeMode,
+    /// Toggle filter for active agents (non-idle)
+    ToggleFilterActive,
+    /// Toggle filter for selected agents
+    ToggleFilterSelected,
 }
 
 impl Action {
@@ -185,6 +189,8 @@ impl Action {
             Action::ModalTextareaSubmit => "Submit modal textarea",
             Action::CaptureTestCase => "Capture test case",
             Action::TogglePaneTreeMode => "Toggle pane tree mode (compact/full)",
+            Action::ToggleFilterActive => "Toggle active agents filter",
+            Action::ToggleFilterSelected => "Toggle selected agents filter",
             Action::None => "",
         }
     }

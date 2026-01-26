@@ -165,9 +165,14 @@ pub struct AppState {
     /// Content of the project TODO file for the currently selected agent
     pub current_todo: Option<String>,
     /// Whether the command menu is shown
+    /// Whether the command menu is shown
     pub show_menu: bool,
     /// State for the command menu widget
     pub menu_tree: MenuTreeState,
+    /// Filter: Show only active (non-idle) agents
+    pub filter_active: bool,
+    /// Filter: Show only selected agents
+    pub filter_selected: bool,
 }
 
 impl AppState {
@@ -209,6 +214,8 @@ impl AppState {
             current_todo: None,
             show_menu: false,
             menu_tree: MenuTreeState::new(),
+            filter_active: false,
+            filter_selected: false,
         }
     }
 
@@ -530,6 +537,46 @@ impl AppState {
 
     /// Check if an agent matches the current filter pattern
     pub fn matches_filter(&self, agent: &MonitoredAgent) -> bool {
+        // Find index of this agent (fallback, O(N))
+        let index = self.agents.root_agents.iter().position(|a| std::ptr::eq(a, agent));
+        if let Some(idx) = index {
+            self.matches_filter_impl(idx, agent)
+        } else {
+            // Should happen only if agent is not in root_agents??
+            // Just use text pattern matching as fallback if index not found
+            // This is safer than unwrapping
+            match &self.filter_pattern {
+                None => true,
+                Some(pattern) if pattern.is_empty() => true,
+                Some(pattern) => {
+                    let pattern_lower = pattern.to_lowercase();
+                    agent.agent_type.to_string().to_lowercase().contains(&pattern_lower)
+                        || agent.session.to_lowercase().contains(&pattern_lower)
+                        || agent.window_name.to_lowercase().contains(&pattern_lower)
+                        || agent.target.to_lowercase().contains(&pattern_lower)
+                        || agent.path.to_lowercase().contains(&pattern_lower)
+                }
+            }
+        }
+    }
+
+    /// Check if an agent matches the current filter pattern (internal logic)
+    pub fn matches_filter_impl(&self, index: usize, agent: &MonitoredAgent) -> bool {
+         // 1. Check Active filter
+        if self.filter_active {
+             if let crate::agents::AgentStatus::Idle = agent.status {
+                 return false;
+             }
+        }
+
+        // 2. Check Selected filter
+        if self.filter_selected {
+            if !self.selected_agents.contains(&index) {
+                return false;
+            }
+        }
+        
+        // 3. Check Text pattern
         match &self.filter_pattern {
             None => true,                                // No filter = show all
             Some(pattern) if pattern.is_empty() => true, // Empty = show all
@@ -551,41 +598,77 @@ impl AppState {
     }
 
     /// Get filtered agent list
-    /// Returns Vec for flexibility. If performance becomes an issue,
-    /// consider caching or using iterator instead.
     pub fn filtered_agents(&self) -> Vec<&MonitoredAgent> {
         self.agents
             .root_agents
             .iter()
-            .filter(|agent| self.matches_filter(agent))
+            .enumerate()
+            .filter(|(idx, agent)| self.matches_filter_impl(*idx, agent))
+            .map(|(_, agent)| agent)
             .collect()
     }
 
     /// Returns indices of agents that are currently visible (match filter)
-    /// These are indices into the unfiltered root_agents list
     pub fn visible_agent_indices(&self) -> Vec<usize> {
         self.agents
             .root_agents
             .iter()
             .enumerate()
-            .filter(|(_, agent)| self.matches_filter(agent))
+            .filter(|(idx, agent)| self.matches_filter_impl(*idx, agent))
             .map(|(idx, _)| idx)
             .collect()
     }
 
     /// Ensures the current selection points to a visible agent.
-    /// If current agent is hidden by filter, jumps to first visible.
-    /// Also removes hidden agents from multi-selection.
+    /// If actual current agent is hidden, tries to find the nearest visible neighbor.
     pub fn ensure_visible_selection(&mut self) {
         let visible = self.visible_agent_indices();
 
-        // Remove hidden agents from multi-selection
-        self.selected_agents.retain(|idx| visible.contains(idx));
+        // Remove hidden agents from multi-selection?
+        // User request: "s - prepina mezi zobrazenim selected a normalnim"
+        // If I toggle "Show Selected", obviously all visible are selected.
+        // If I untoggle, I should keep selection? Yes.
+        // But if I toggle "Active Only", and a selected agent is Idle (hidden), should it be unselected?
+        // Probably not physically unselected, just hidden. 
+        // But `toggle_selection` logic relies on visibility.
+        // Let's Keep `selected_agents` intact even if hidden, but `get_operation_indices` filters them.
+        // Just ensure `selected_index` (cursor) is visible.
 
-        // If current cursor is not visible, jump to first visible
-        if !visible.is_empty() && !visible.contains(&self.selected_index) {
-            self.selected_index = visible[0];
+        if visible.is_empty() {
+            // No visible agents at all
+             return;
         }
+
+        if visible.contains(&self.selected_index) {
+            // Context preserved!
+            return;
+        }
+
+        // Current index is hidden. Find nearest visible.
+        // We want the visible agent with index closest to self.selected_index.
+        // Since visible is sorted, we can binary search or just linear scan.
+        
+        let mut nearest_idx = visible[0];
+        let mut min_diff = (self.selected_index as isize - nearest_idx as isize).abs();
+
+        for &idx in &visible {
+            let diff = (self.selected_index as isize - idx as isize).abs();
+            if diff < min_diff {
+                min_diff = diff;
+                nearest_idx = idx;
+            }
+        }
+        self.selected_index = nearest_idx;
+    }
+    
+    pub fn toggle_filter_active(&mut self) {
+        self.filter_active = !self.filter_active;
+        self.ensure_visible_selection();
+    }
+
+    pub fn toggle_filter_selected(&mut self) {
+        self.filter_selected = !self.filter_selected;
+        self.ensure_visible_selection();
     }
 
     /// Refresh the current project TODO content based on the selected agent's path

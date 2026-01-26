@@ -243,4 +243,6 @@ full_template = '''  {selection}{status_char} {name}
 "8" = { send_number = 8 }
 "9" = { send_number = 9 }
 "m" = "toggle_menu"
-"s" = "toggle_subagent_log"
+"s" = "toggle_filter_selected"
+"x" = "toggle_filter_active"
+"S" = "toggle_subagent_log"

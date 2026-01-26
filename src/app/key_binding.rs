@@ -52,6 +52,10 @@ pub enum KeyAction {
     ToggleSubagentLog,
     /// Toggle pane tree mode
     TogglePaneTreeMode,
+    /// Toggle filter for active agents (non-idle)
+    ToggleFilterActive,
+    /// Toggle filter for selected agents
+    ToggleFilterSelected,
 }
 
 /// Configuration for command execution

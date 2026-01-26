@@ -1,10 +1,10 @@
 # TODO - tmuxcc
 
-- [ ] rychly filtr na ty co nejsou idle - toogle - standardni binding v default.toml melo by to zobrazovat stav filtru v top baru
+
+
 
 - [ ] menu na prompty (stromove) - user a projekt definice, asi nejaky adresar a v nem soubory, v menu jen nazvy
 - [ ] text do TOTO okna muze generovat externi program (napr. beads)
-- [ ] selected pane rychly filtr - default binding s - prepina mezi zobrazenim selected a normalnim
 - [ ] definovatelny format template pro zobrazeni dat ve stromu, mozna i dva a prepinani compact/full, musime byt schopni udelat i jednoradkovy seznam pane
 - [x] refactor defaults - musi byt vse jen v config a v programu jen neco jako config->get("width", 24), zadne finkce a clasy co vraceli nejake default objekty, co to je za antipatern, mame config ten da vzdy hodnotu funci get a ta se pouziva, KISS
 - [ ] jak poznat commandy co bezi v ssh ?

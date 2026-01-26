@@ -11,6 +11,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 
 ### Added
+- **Quick Filters**: Added dynamic filtering capabilities for better agent management.
+  - **Show Selected (`s`)**: Toggle visibility of only multi-selected agents.
+  - **Show Active (`x`)**: Toggle visibility of agents that are not Idle.
+  - **Context Preservation**: Selection cursor intelligently jumps to the nearest visible neighbor when filters change.
+  - **Status Feedback**: Status bar indicates active filter state.
+  - *Note*: Subagent log toggle moved to `S` (Shift+s).
 - **Configurable Pane Tree**: Complete overhaul of the agent list display with configurable templates.
   - **Two Modes**: `compact` (single line) and `full` (detailed).
   - **Templates**: Fully customizable templates for header, compact, and full views in `defaults.toml`.
