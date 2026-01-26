@@ -18,6 +18,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 - **Claude Detection**: Added support for "Would you like to proceed?" prompt in approval detection.
+- **Claude Detection**: Added support for "Tasks (... open)" indicator to signify unfinished work (Awaiting Approval).
 - **Improved Test System**:
   - `Capture Test Case` (`C-s`) now prompts for explicit standardized status types.
   - `tmuxcc test` updated to handle `working` and `approval` keywords with backward compatibility.

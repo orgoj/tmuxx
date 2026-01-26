@@ -58,6 +58,11 @@ priority = 100
   status = "approval"
   type = "approval"
 
+  [[agents.state_rules.refinements]]
+  group = "indicator"
+  pattern = '''(?i)Tasks\s*\(\d+\s+done,\s+[1-9]\d*\s+open\)'''
+  status = "Tasks Pending"
+  type = "approval"
 
   # 2. Specialized Approvals
   [[agents.state_rules]]
