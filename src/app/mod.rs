@@ -10,4 +10,4 @@ pub use actions::Action;
 pub use config::Config;
 pub use key_binding::{KeyAction, KeyBindings, KillMethod, NavAction};
 pub use session_pattern::SessionPattern;
-pub use state::{AgentTree, AppState, FocusedPanel, PopupInputState, PopupType};
+pub use state::{AgentTree, AppState, FocusedPanel, MessageKind, PopupInputState, PopupType};

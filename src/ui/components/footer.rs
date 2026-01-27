@@ -24,24 +24,18 @@ impl FooterWidget {
             spans.push(Span::styled(" ", sep));
         }
 
-        if let Some(msg) = &state.last_error {
-            // Check if it's a status message (starts with ✓) or error
-            if msg.starts_with("✓ ") {
-                let text = msg.chars().skip(2).collect::<String>();
-                spans.push(Span::styled(
-                    format!("✓ {}", truncate_error(&text, area.width as usize - 4)),
-                    Style::default().fg(Color::Green),
-                ));
-            } else {
-                spans.push(Span::styled(
-                    truncate_error(msg, area.width as usize - 2),
-                    Style::default().fg(if msg.starts_with("tmuxx ") {
-                        Color::Gray
-                    } else {
-                        Color::Red
-                    }),
-                ));
+        if let Some(msg) = &state.last_message {
+            let color = match msg.kind {
+                crate::app::MessageKind::Info => Color::Green,
+                crate::app::MessageKind::Success => Color::Green,
+                crate::app::MessageKind::Error => Color::Red,
+                crate::app::MessageKind::Welcome => Color::Gray,
             };
+
+            spans.push(Span::styled(
+                truncate_error(&msg.text, area.width as usize - 2),
+                Style::default().fg(color),
+            ));
         }
 
         let line = Line::from(spans);

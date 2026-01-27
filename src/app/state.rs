@@ -116,6 +116,26 @@ impl AgentTree {
     }
 }
 
+/// Type of status message
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum MessageKind {
+    /// Normal information (Gray)
+    Info,
+    /// Success notification (Green)
+    Success,
+    /// Error notification (Red)
+    Error,
+    /// Welcome message (Gray/Special)
+    Welcome,
+}
+
+/// Status message with its kind
+#[derive(Debug, Clone)]
+pub struct StatusMessage {
+    pub text: String,
+    pub kind: MessageKind,
+}
+
 /// Main application state
 #[derive(Debug)]
 pub struct AppState {
@@ -147,8 +167,8 @@ pub struct AppState {
     pub show_summary_detail: bool,
     /// Whether the application should quit
     pub should_quit: bool,
-    /// Last error message (if any)
-    pub last_error: Option<String>,
+    /// Last status/error message
+    pub last_message: Option<StatusMessage>,
     /// Sidebar width (fixed or percentage)
     pub sidebar_width: SidebarWidth,
     /// Animation tick counter
@@ -212,7 +232,10 @@ impl AppState {
             show_subagent_log: false,
             show_summary_detail: true,
             should_quit: false,
-            last_error: Some(welcome),
+            last_message: Some(StatusMessage {
+                text: welcome,
+                kind: MessageKind::Welcome,
+            }),
             sidebar_width,
             tick: 0,
             last_tick: Instant::now(),
@@ -557,13 +580,30 @@ impl AppState {
 
     /// Sets an error message
     pub fn set_error(&mut self, message: String) {
-        self.last_error = Some(message);
+        self.last_message = Some(StatusMessage {
+            text: message,
+            kind: MessageKind::Error,
+        });
     }
 
     /// Set a status message (non-error, displayed differently)
     pub fn set_status(&mut self, message: String) {
-        self.last_error = None;
-        self.set_error(message);
+        let kind = if message.starts_with("✓ ")
+            || message.starts_with("Executed:")
+            || message.starts_with("Started:")
+            || message.starts_with("Sent:")
+            || message.starts_with("Killed session:")
+            || message.starts_with("Captured test case:")
+        {
+            MessageKind::Success
+        } else {
+            MessageKind::Info
+        };
+
+        self.last_message = Some(StatusMessage {
+            text: message,
+            kind,
+        });
     }
 
     /// Sets the filter pattern and updates visibility projection
@@ -575,7 +615,7 @@ impl AppState {
 
     /// Clears the error message
     pub fn clear_error(&mut self) {
-        self.last_error = None;
+        self.last_message = None;
     }
 
     /// Logs an action to the status bar if log_actions is enabled

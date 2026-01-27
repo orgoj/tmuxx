@@ -3,7 +3,7 @@
 ## 🛠 Opravy (Fixes)
 - [x] prompt popup dialog nezobrazuje jak vybrat prompt Enter a Alt+Enter s hintem
 - [x] v popupdialogu (prompr / menu) mid ve spodu boz, ktery bude zobrazovat cely command a nebo prompt
-- [ ] ve status bar maji byt jen errory cervene, ted je tam skoro vsechno cervene , normalni hlaseni maji byt zlene, opravit
+- [x] ve status bar maji byt jen errory cervene, ted je tam skoro vsechno cervene , normalni hlaseni maji byt zlene, opravit
 - [ ] config reload ? jestli je to jednoduche, jinak presunout pozdeji (binding command)
 
 ## 💡 Drobnosti (Tweaks)
