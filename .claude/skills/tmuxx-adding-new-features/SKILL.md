@@ -1,6 +1,6 @@
 ---
 name: tmuxx-adding-new-features
-description: "Use this to assess, create, and review new interactive features in tmuxx. Covers the full lifecycle from backend implementation to configuration mapping and UI integration."
+description: "Use this to assess, create, and review new interactive features in tmuxx. Covers lifecycle from backend to UI, enforcing config-first design."
 ---
 
 # Adding New Features to Tmuxx
@@ -11,7 +11,7 @@ You use this skill to implement new user-facing functionality. Tmuxx is a **conf
 
 ### 1. Analysis
 - Determine if the feature requires a new tmux command or purely internal state changes.
-- Identify the necessary configuration changes (key bindings, new config options).
+- Identify necessary config changes. **If adding options, refer to `tmuxx-adding-config-options`.**
 - Verify if any existing libraries can be used (consult `tmuxx-researching-libraries`).
 
 ### 2. Execution
@@ -31,9 +31,10 @@ Define the internal action used within the event loop.
 - **File**: `src/app/actions.rs`
 - Add variant to `enum Action` and update `impl Action { fn description() }`.
 
-#### D. Default Binding
+#### D. Default Binding & Config
 - **File**: `src/config/defaults.toml`
-- Add the entry under `[key_bindings]`.
+- Add the entry under `[key_bindings]` if it has a default key.
+- If it has a new config option, ensure it is in `defaults.toml` too.
 
 #### E. UI Integration
 - **File**: `src/ui/app.rs`
@@ -42,9 +43,12 @@ Define the internal action used within the event loop.
 
 #### F. Documentation
 - Update `CHANGELOG.md` under `[Unreleased]`.
-- Update `README.md` (Key Bindings table and Features section).
+- Update `README.md`:
+  - Add to Key Bindings table.
+  - Add to Features section.
+  - If it involves new config, document it in Configuration section.
 
 ### 3. Verification
 - Use `tmuxx-testing` skill to verify the feature in a live tmux session.
 - Ensure `cargo clippy` and `cargo fmt` are run.
-- Check that the new action is listed in the help UI or described correctly in `Action::description()`.
+- Check that the new action is listed in the help UI (`?`).

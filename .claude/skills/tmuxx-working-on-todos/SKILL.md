@@ -17,16 +17,26 @@ You use this skill when asked to pick up the next task from the project's roadma
 
 ### 2. Execution
 
-#### Path A: Small Task
-- Describe the solution and identify the relevant skill (e.g., `tmuxx-adding-config-options`).
-- Implement the fix/feature.
+**CRITICAL: You MUST invoke the specific skill for the type of task you are doing.**
 
-#### Path B: Complex Task
-- Initiate a brainstorming session.
-- Create an implementation plan using `tmuxx-planning`.
-- Wait for user approval.
+#### Task Type: New Feature / Interactive Functionality
+- **INVOKE SKILL**: `tmuxx-adding-new-features`
+- Follow its steps for backend, config schema, UI, and docs.
 
-#### Path C: New Pattern
+#### Task Type: New Configuration Option
+- **INVOKE SKILL**: `tmuxx-adding-config-options`
+- Follow its steps for `config.rs`, `config_override.rs`, and CLI args.
+
+#### Task Type: Complex / Unknown / Architecture Change
+- **INVOKE SKILL**: `tmuxx-planning`
+- Create a plan and wait for user approval before coding.
+
+#### Task Type: Small Fix / Maintenance
+- Describe the solution.
+- Implement the fix.
+- **INVOKE SKILL**: `tmuxx-testing` to verify.
+
+#### Task Type: New Pattern
 - If the task requires a new repeatable process, create a new skill first.
 
 ### 3. Verification
