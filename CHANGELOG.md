@@ -20,6 +20,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Menu Hints**: Added usage hints to the bottom of "Prompts" and "Command" menus (e.g., explaining `Enter` vs `Alt+Enter` for prompts).
 
 ### Fixed
+- **AI Agent Detection (Pi/Claude)**: Fixed false positives in AI agent state detection. Pi now uses strict anchor-based matching for question marks, and Claude now correctly identifies "Idle" even when a prompt is active.
+- **Universal Parser (UI Implementation)**: Implemented missing `highlight_line` and `process_indicators` in `UniversalParser`, enabling syntax highlighting and container/SSH icons for custom-defined agents.
 - **Safe Config Reload**: Modified the configuration reload process to handle errors gracefully. If an invalid configuration is detected during reload, the application now displays an error in the status bar instead of crashing.
 - **Status Bar Colors**: Improved the status bar (footer) color logic. Status messages and action logs are now displayed in Green, while actual errors remain Red.
 - **Help/Modal Scrolling**: Fixed arrow keys in readonly modals (like Help) to scroll text instead of moving the cursor.

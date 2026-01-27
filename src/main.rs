@@ -69,6 +69,10 @@ enum Commands {
         /// Directory containing test fixtures
         #[arg(long, default_value = "tests/fixtures")]
         dir: PathBuf,
+
+        /// Verbose output showing regex match details
+        #[arg(short, long)]
+        debug: bool,
     },
 }
 
@@ -85,8 +89,8 @@ async fn main() -> Result<()> {
         .await;
     }
 
-    if let Some(Commands::Test { dir }) = cli.command {
-        return tmuxx::cmd::test::run_test(tmuxx::cmd::test::TestArgs { dir }).await;
+    if let Some(Commands::Test { dir, debug }) = cli.command {
+        return tmuxx::cmd::test::run_test(tmuxx::cmd::test::TestArgs { dir, debug }).await;
     }
 
     // Show config path and exit

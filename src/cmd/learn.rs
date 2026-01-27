@@ -100,6 +100,7 @@ pub async fn run_learn(args: LearnArgs) -> Result<()> {
             pattern: final_pattern,
             approval_type: None,
             last_lines: None,
+            splitter: None,
             refinements: Vec::new(),
         }],
         subagent_rules: None,

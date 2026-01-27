@@ -1,0 +1,170 @@
+ One more check: Approval Required string itself doesn't end with ?.
+ Does .*\? cover it? No.
+ So Approval Required branch is needed.
+ Does Approval Required need to be at the very end?
+ Usually, yes. Pi says "Approval Required" and waits.
+ Or it asks "Start now? [y/n]" and waits.
+
+ So strictly anchoring it to the prompt is the correct behavior.
+
+ I will proceed.
+
+ One subtle thing: (?:Approval Required|.*\?)
+ If input is Approval Required?
+ Branch 1 matches Approval Required.
+ Branch 2 matches Approval Required?.
+ Since alternation is ordered (usually), it tries Branch 1.
+ Approval Required matches.
+ Remaining: ? + newline + prompt.
+ Does \s*... match ?? No.
+
+ So if I use (?:Approval Required|.*\?), and the text is Approval Required?, the first branch matches but the suffix check fails.
+ Then it backtracks and tries Branch 2.
+ .*\? matches Approval Required?.
+ Suffix check matches \n<Prompt>.
+ Success.
+
+ What if text is Approval Required (no question mark).
+ Branch 1 matches.
+ Suffix check matches \n<Prompt>.
+ Success.
+
+ So (?:Approval Required|.*\?) is safe.
+
+ Let's apply.
+
+ I should also check pi non-powerline prompt chars.
+ In defaults.toml:
+ pattern = '''(?is)(?:Approval Required|.*\?\s*(?:(?m)^(?:╭─|╰─|↑|─|❯).*\s*)*\z)'''
+
+ I'll use the same robust list (?:╭─|╰─|↑|─|❯) for both, as they share the logic now.
+
+ Wait, pi agent also has [~/↑─] in the old regex. I replaced it with the robust list (?:╭─|╰─|↑|─|❯) which covers ↑ and ─. It should be fine.
+
+ Let's do it.
+
+ And I should double check src/parsers/universal.rs logic?
+ No, the logic is in regex.
+
+ I will modify src/config/defaults.toml.
+
+ One question:
+ last_lines = 40
+ This regex is matched against the last 40 lines.
+ (?s) means dot matches newline.
+ ^ matches start of line (due to (?m) inside).
+
+ The regex structure:
+ (?is) (case insensitive, dot all)
+ (?:Approval Required|.*\?) (Content ending)
+ \s* (Whitespace)
+ (?:(?m)^(?:╭─|╰─|↑|─|❯).*\s*)* (Zero or more prompt lines)
+ \z (End of string)
+
+ Looks solid.
+
+ Wait, (?m) inside a group (?:(?m)...) toggles multiline mode. Does it verify that ^ matches line start?
+ In Rust regex crate:
+ (?m) enables multi-line mode ( ^ and $ match begin/end line).
+ It applies to the rest of the pattern or the group.
+ Since I use it inside (?:...), does it scope?
+ Rust regex documentation says flags can be scoped (?m:...).
+ But (?m) acts as a toggle.
+
+ If I write (?:(?m)^...), it enables multiline for the group?
+ Actually, regex syntax (?flags:...) is the scoped version. (?flags) is global or rest-of-group?
+ Rust regex (?m) turns on multi-line mode.
+ If I put it inside a non-capturing group, it usually applies until the end of the group.
+
+ The syntax I used: (?:(?m)^(?:...))
+ It looks like I am trying to match start-of-line anchors.
+
+ Let's assume (?m) works as intended (enabling ^ to match line starts).
+
+ I will make the edit.
+
+ One detail: The user said "podle posledniho znaku pred statusberem" (according to the last character before status bar).
+ The Approval Required branch strictly violates "last character IS ?" rule.
+ But Approval Required is a specific string that Pi emits.
+ If Pi emits Approval Required without ?, we should probably detect it.
+ But the user's instruction was specific: "jestli je to otaznik tak approval, jinak idle" (if it is question mark then approval, else idle).
+ This sounds like "Only check for question mark".
+ BUT, earlier I was detecting Approval Required.
+
+ If I remove Approval Required branch, I strictly follow "last char is ?".
+ If Pi emits Approval Required (no ?), then it would be Idle.
+ Is that correct?
+ Usually Pi output is ... confirm? [y/n] -> Ends with ].
+ My regex doesn't handle ].
+ It handles ?.
+
+ Wait, ApprovalType::UserQuestion detection in universal parser looks for Enter to select.
+ That's separate.
+
+ Standard approvals:
+ Do you want to ...? -> Ends with ?.
+ Confirm [y/n]: -> Ends with :.
+ [y/n] -> Ends with ].
+
+ The user said "jestli je to otaznik tak approval" (if it's question mark, then approval).
+ Maybe I should STICK to that simple rule?
+
+ But wait, defaults.toml has state_rules with pattern.
+ If I remove Approval Required literal, I might miss some cases where Pi doesn't use ?.
+ But Approval Required usually appears as a header?
+ "Approval Required"
+ "..."
+ "Start? [y/n]"
+
+ So the last char is ].
+ My regex looks for ?.
+
+ If the prompt is Start? [y/n], and I look for ?.
+ .*\? matches Start?.
+ Remaining:  [y/n].
+ \s* fails (space is ok, but [y/n] is not whitespace).
+ So Start? [y/n] fails my regex!
+
+ The user's instruction "last character is ?" might be a simplification or referencing a specific case (where prompt ends with ?).
+ "jestli je to otaznik tak approval" -> "if it is a question mark".
+
+ If the user strictly means "The last non-whitespace char is ?", then [y/n] should NOT match.
+ But maybe case_idle... failure was because ? appeared in the middle.
+
+ Let's stick to fixing the regex grouping first, as that is definitely a bug (matches "Approval Required" anywhere).
+ And I will keep Approval Required literal because it was there before and likely useful.
+
+ But I should check if [y/n] is common.
+ In defaults.toml:
+ [[agents.highlight_rules]] pattern = '''(?i)\[y/n\]'''
+ So [y/n] is expected.
+
+ If Pi outputs [y/n], does it expect approval? Yes.
+ Does my regex catch it?
+ No, unless Approval Required string is also present.
+
+ If the user wants strictly ? at the end...
+ Maybe I should trust the user.
+ "novy test FAIL, je treba detekovat stav ... podle posledniho znaku pred statusberem, jestli je to otaznik tak approval, jinak idle"
+
+ Translation: "New test FAIL, it is necessary to detect state ... by the last character before status bar, if it is a question mark then approval, otherwise idle".
+
+ This sounds authoritative. "If ? then approval, else idle".
+ It implies:
+ 1. Don't look for "Approval Required" string.
+ 2. Don't look for [y/n].
+ 3. JUST look for ? at the end.
+
+ If I remove Approval Required, I strictly follow this.
+ And case_idle_... (which has ? in the middle) will pass (Idle).
+ And case_approval_... (which presumably ends with ?) will pass (Approval).
+
+ Let's verify case_approval_... content.
+ It ends with ??
+ The diff showed pattern = ... in the test file, but that's the input to the test.
+ The actual case_approval... content (the captured pane)
+
+ ⠹ Working...
+
+╭─ π  | ◈ Gemini 3 Pro High (Antigravity) | thinking:off | 📁 tmuxx | ⎇ main *1 ?3 | ◫ 12.1%/1.0M ⚡ | ⊛ 7.8M | (sub) ────────────────────────────────────────────────────────────╮
+╰─                                                                                                                                                                               ─╯

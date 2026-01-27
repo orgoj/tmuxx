@@ -108,6 +108,12 @@ pub trait AgentParser: Send + Sync {
         let _ = content;
         true
     }
+
+    /// Returns a debug explanation of why the status was determined (which rule matched)
+    fn explain_status(&self, content: &str) -> Option<String> {
+        let _ = content;
+        None
+    }
 }
 
 /// Registry of all available parsers

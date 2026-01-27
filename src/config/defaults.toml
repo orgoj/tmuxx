@@ -1,4 +1,6 @@
-# These are loaded first, then overridden by user config.
+# tmuxx default configuration
+# Note: Structural detection is used instead of line counts for robust agent monitoring.
+
 poll_interval_ms = 500
 cyclic_navigation = false
 capture_lines = 200
@@ -9,8 +11,6 @@ popup_trigger_key = "/"
 ignore_self = true
 log_actions = true
 hide_bottom_input = true
-# External terminal wrapper (empty = disabled)
-# terminal_wrapper = "wezterm start -- bash -lc '{cmd}'"
 terminal_wrapper = ""
 
 todo_full_width = true
@@ -76,97 +76,65 @@ priority = 100
   ancestor_pattern = "nix-shell"
   icon = "❄"
 
-  # 1. Structural Prompt Block (Synthesis/Contextual)
-  # Recognizes the two lines with the prompt between them.
-  # Determines state based on the indicator block ABOVE the separator.
-  # NOTE: Layout stripping removes the footer region, so we match up to the prompt.
+  # ==========================================================================
+  # CLAUDE STATE DETECTION (Admin Notes)
+  # ==========================================================================
+  # 1. Structural Split: Find the prompt area (─── line) from bottom.
+  # 2. Working: Spinner on FIRST line of LAST block in body has top priority.
+  # 3. Approval: TUI menus (Esc to cancel) or Yes/No prompts (❯ 1. Yes) 
+  #    are detected in both body and prompt groups.
+  # 4. Idle: Default state if no refinements match after splitting.
+  # ==========================================================================
+
   [[agents.state_rules]]
   status = "idle"
   type = "idle"
-  # Capture everything up to the separator as indicator. Handle optional │ in separators.
-  pattern = '''(?ms)(?P<indicator>.*)(?:^|\n)[ \t]*[│]*[─╌]{10,}.*?(?:$|\n)(?P<body>.*?)(?:^|\n)[ \t]*[│]*[^\n]*?❯(?P<suffix>.*)$'''
+  last_lines = 40
+  splitter = "separator_line"
 
-  # Refinement: Detect questions in the body to switch to awaiting_approval
+  # --- Refinement 1: WORKING (Checks first line of last block in response body) ---
   [[agents.state_rules.refinements]]
   group = "body"
-  pattern = "(?i)Do you want to|wants to exit.*?mode|Exit.*?mode\\?|confirm|Would you like to"
-  status = "confirm"
-  type = "approval"
-  [[agents.state_rules.refinements]]
-  group = "indicator"
-  pattern = '''(?is)(?:Mulling|Thinking|Esc to interrupt|✢|∴)[^\n]*(?:\n[^\n]*){0,1}\s*\z'''
-  status = "Thinking"
+  location = "first_line_of_last_block"
+  pattern = '''[✽✻✢*∴⏺●·]\s*\w+…'''
+  status = "working"
   type = "working"
+
+  # --- Refinement 2: ACTION REQUIRED (TUI menu in prompt area) ---
   [[agents.state_rules.refinements]]
-  group = "suffix"
-  pattern = "(?i)Enter to select"
-  status = "approval"
+  group = "prompt"
+  pattern = '''(?:Enter to select|Esc to cancel|❯\s*1\.\s*Yes)'''
+  status = "menu"
   type = "approval"
 
+  # --- Refinement 3: ACTION REQUIRED (TUI menu in body area) ---
   [[agents.state_rules.refinements]]
-  group = "indicator"
-  pattern = '''(?i)Tasks\s*\(\d+\s+done,\s+[1-9]\d*\s+open\)'''
-  status = "Tasks Pending"
+  group = "body"
+  pattern = '''(?:Enter to select|Esc to cancel|❯\s*1\.\s*Yes)'''
+  status = "menu"
   type = "approval"
 
-  # 2. Specialized Approvals
-  [[agents.state_rules]]
-  status = "edit"
+  # --- Refinement 4: UNFINISHED TASKS (in last block only) ---
+  [[agents.state_rules.refinements]]
+  group = "body"
+  location = "last_block"
+  pattern = '''◻'''
+  status = "unfinished tasks"
   type = "approval"
-  approval_type = "edit"
-  pattern = '''(?i)(?:Edit|Write|Modify)\s+.*?\?|Do you want to (?:edit|write|modify)|Allow.*?edit'''
 
-  [[agents.state_rules]]
-  status = "create"
-  type = "approval"
-  approval_type = "create"
-  pattern = '''(?i)Create\s+.*?\?|Do you want to create|Allow.*?create'''
-
-  [[agents.state_rules]]
-  status = "delete"
-  type = "approval"
-  approval_type = "delete"
-  pattern = '''(?i)Delete\s+.*?\?|Do you want to delete|Allow.*?delete'''
-
-  [[agents.state_rules]]
-  status = "shell"
-  type = "approval"
-  approval_type = "shell"
-  pattern = '''(?i)(?:Run|Execute)\s+(?:command|bash|shell)|Do you want to run|Allow.*?(?:command|bash)|run this command'''
-
-  [[agents.state_rules]]
-  status = "mcp"
-  type = "approval"
-  approval_type = "mcp"
-  pattern = '''(?i)MCP\s+tool|Do you want to use.*?MCP|Allow.*?MCP'''
-
-  [[agents.state_rules]]
-  status = "question"
-  type = "approval"
-  pattern = '''(?ms)(?<details>Let me ask you.*?)(\n\s*Enter to select\s*[\n\r]*\z)'''
-
-  # 3. Legacy Input Detection (Fallback)
-  [[agents.state_rules]]
-  status = "Claude Code"
+  # --- Refinement 5: ACTIVE PROMPT (Force Idle if prompt is empty) ---
+  [[agents.state_rules.refinements]]
+  group = "prompt"
+  pattern = '''(?m)^❯\s*$'''
+  status = "idle"
   type = "idle"
-  pattern = '''(?s).*[❯]\s*\z'''
 
-  # 4. Processing Indicators (Manual)
-  [[agents.state_rules]]
-  status = "Thinking"
-  type = "working"
-  last_lines = 20
-  pattern = '''(?mx)
-    (?:
-      ^[ \t]*[✽⎿✻✢*∴]\s+.*   # Spinner or continuation (Added ✢, *, ∴)
-      |
-      (?:Mulling|Thinking)…
-      |
-      ^[ \t]*●\s+.*      # Tool use bullet
-      |
-      \(Esc\s+to\s+interrupt # Generic footer
-    )
-  '''
+  # --- Refinement 6: PENDING EDITS (System msg in footer) ---
+  [[agents.state_rules.refinements]]
+  group = "prompt"
+  pattern = '''(?m)^[^❯]*⏵⏵ accept edits'''
+  status = "edits pending"
+  type = "approval"
 
   [agents.subagent_rules]
   start = '''(?m)[⏺⠿⠇⠋⠙⠸⠴⠦⠧⠖⠏]\s*Task\s*\([^)]*subagent_type\s*[:=]\s*["']?(\w[\w-]*)["']?[^)]*description\s*[:=]\s*["']([^"']+)["']'''
@@ -182,23 +150,18 @@ priority = 100
   [[agents.highlight_rules]]
   pattern = '''^\+.*'''
   color = "green"
-
   [[agents.highlight_rules]]
   pattern = '''^-.*'''
   color = "red"
-
   [[agents.highlight_rules]]
   pattern = '''^@@.*'''
   color = "cyan"
-
   [[agents.highlight_rules]]
   pattern = '''(?i)\[y/n\]'''
   color = "yellow"
-
   [[agents.highlight_rules]]
   pattern = '''(?i)⚠|error'''
   color = "red"
-
   [[agents.highlight_rules]]
   pattern = '''^[❯>].*'''
   color = "cyan"
@@ -223,30 +186,44 @@ priority = 96
 
   [[agents.matchers]]
   type = "content"
-  # Detekce Pi Powerline podle levého horního kulatého rohu (╭)
   pattern = "╭"
 
+  # Rule 0: Dippy Approval (highest priority)
   [[agents.state_rules]]
-  status = "Approval Required"
+  status = "Dippy Approval"
   type = "approval"
-  # Match any output ending with ? immediately before the status bar
-  pattern = '''(?s)(?:.*\?|.*→ Yes.*)\s*(?:(?m)^(?:╭─|╰─|↑|─|❯).*\s*)*\z'''
   last_lines = 40
+  pattern = '''↑↓ navigate'''
 
   [[agents.state_rules]]
+  status = "idle"
+  type = "idle"
+  last_lines = 40
+  splitter = "powerline_box"
+
+  # --- Refinement 1: Question ---
+  [[agents.state_rules.refinements]]
+  group = "body"
+  location = "last_line"
+  pattern = '''\?'''
+  status = "Question"
+  type = "approval"
+
+  # --- Refinement 2: WORKING (High Priority) ---
+  [[agents.state_rules.refinements]]
+  group = "body"
+  location = "last_line"
+  pattern = '''[\u2800-\u28FF*✻∴⏺✢◻▶►]|Working'''
   status = "Working..."
   type = "working"
-  pattern = '''(?i)[⠋⠙⠹⠸⠼⠴⠦⠧⠇⠏]\s*Working\.\.\.'''
 
-  [[agents.state_rules]]
-  status = "idle"
-  type = "idle"
-  pattern = '''(?m)^╰─.*─╯\s*\z'''
-
-  [[agents.state_rules]]
-  status = "idle"
-  type = "idle"
-  pattern = '''(?s).*❯\s*\z'''
+  # --- Refinement 3: Error ---
+  [[agents.state_rules.refinements]]
+  group = "body"
+  location = "last_line"
+  pattern = '''Command exited with code [1-9]'''
+  status = "Error"
+  type = "error"
 
 [[agents]]
 id = "pi"
@@ -263,27 +240,47 @@ priority = 95
   type = "title"
   pattern = "(?i)^π"
 
-  [[agents.state_rules]]
-  status = "Approval Required"
-  type = "approval"
-  # Match any output ending with ? immediately before the status bar
-  pattern = '''(?s)(?:.*\?|.*→ Yes.*)\s*(?:(?m)^(?:╭─|╰─|↑|─|❯).*\s*)*\z'''
-  last_lines = 40
+  # ==========================================================================
+  # Pi State Detection
+  # ==========================================================================
 
+  # Rule 0: Dippy Approval (highest priority)
   [[agents.state_rules]]
+  status = "Dippy Approval"
+  type = "approval"
+  last_lines = 40
+  pattern = '''↑↓ navigate'''
+
+  # Rule 1: Main structural detection
+  [[agents.state_rules]]
+  status = "idle"
+  type = "idle"
+  last_lines = 40
+  splitter = "separator_line"
+
+  # --- Refinement 1: WORKING (Highest Priority in body) ---
+  [[agents.state_rules.refinements]]
+  group = "body"
+  location = "last_line"
+  pattern = '''[\u2800-\u28FF*✻∴⏺✢◻▶►]|Working'''
   status = "Working..."
   type = "working"
-  pattern = '''(?i)[⠋⠙⠹⠸⠼⠴⠦⠧⠇⠏]\s*Working\.\.\.'''
 
-  [[agents.state_rules]]
-  status = "idle"
-  type = "idle"
-  pattern = '''(?s).*❯\s*\z'''
+  # --- Refinement 2: Question ---
+  [[agents.state_rules.refinements]]
+  group = "body"
+  location = "last_line"
+  pattern = '''\?'''
+  status = "Question"
+  type = "approval"
 
-  [[agents.state_rules]]
-  status = "idle"
-  type = "idle"
-  pattern = '''(?m)^↑[\d\.]+[kM]?\s+↓[\d\.]+[kM]?.*'''
+  # --- Refinement 3: Error ---
+  [[agents.state_rules.refinements]]
+  group = "body"
+  location = "last_line"
+  pattern = '''Command exited with code [1-9]'''
+  status = "Error"
+  type = "error"
 
 [[agents]]
 id = "gemini"
@@ -293,7 +290,6 @@ priority = 90
   [[agents.matchers]]
   type = "command"
   pattern = "(?i)gemini|google"
-
   [[agents.state_rules]]
   status = "Gemini"
   type = "idle"
@@ -307,7 +303,6 @@ priority = 85
   [[agents.matchers]]
   type = "command"
   pattern = "(?i)opencode|open-code"
-
   [[agents.state_rules]]
   status = "OpenCode"
   type = "idle"
@@ -321,7 +316,6 @@ priority = 80
   [[agents.matchers]]
   type = "command"
   pattern = "(?i)codex|openai"
-
   [[agents.state_rules]]
   status = "Codex"
   type = "idle"
@@ -334,61 +328,47 @@ background_color = "#eaffe3"
 priority = 10
   # Default for Terminal: if no prompt is seen, it's busy (processing)
   default_type = "working"
-
   [[agents.matchers]]
   type = "command"
   pattern = ".*"
-
-  # Generic Shell State Rules: TUI Apps (mc, htop, etc.)
   [[agents.state_rules]]
   status = "mc"
   type = "idle"
   last_lines = 3
   pattern = '''(?m)^ 1Help\s+2Menu\s+3View\s+4Edit\s+5Copy\s+6RenMov'''
-
   [[agents.state_rules]]
   status = "htop"
   type = "idle"
   last_lines = 3
   pattern = '''(?m)^(?:F1| 1)Help\s+F?2Setup\s+F?3Search\s+F?4Filter\s+F?5'''
-
   [[agents.state_rules]]
   status = "vim"
   type = "idle"
   last_lines = 3
   pattern = '''(?m)^-- (?:INSERT|VISUAL|REPLACE) --|\[[0-9]+\]\s+[0-9]+%\s+L:[0-9]+\s+C:[0-9]+'''
-
   [[agents.state_rules]]
   status = "tui"
   type = "idle"
   last_lines = 3
-  # Detect common frame characters used in TUIs (mc, dialog, etc.)
   pattern = '''[│┌┐└┘├┤┬┴┼═║╔╗╚╝╠╣╦╩╬]'''
-
-  # Error State: Non-zero exit code in prompt (e.g. "1 x")
   [[agents.state_rules]]
   status = "Err"
   type = "error"
   last_lines = 300
   pattern = '''(?s).*\d+\s+x\s*\z'''
-
-  # Generic Shell State Rules: ONLY the prompt makes it Idle
   [[agents.state_rules]]
   status = "shell"
   type = "idle"
   last_lines = 300
-  # Support standard prompts: $, #, %, >, ❯
   pattern = '''(?s).*[$#%>❯]\s*\z'''
 
 [prompts]
   [[prompts.items]]
   name = "commit"
   text = "commit"
-
   [[prompts.items]]
   name = "continue"
   text = "continue"
-
   [[prompts.items]]
   name = "use internal tools!"
   text = "use internal tools!"

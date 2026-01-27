@@ -1,0 +1,170 @@
+
+ One detail: last_lines = 40.
+ This limits the search to the last 40 lines.
+ .* will start matching from the beginning of those 40 lines.
+ It finds the last ?.
+ Then verifies the suffix.
+ This is efficient and correct.
+
+ I will use edit to update both blocks in src/config/defaults.toml.
+
+ And I should verify case_approval still passes.
+ If case_approval ends with ?, it will pass.
+
+ I'll check case_approval content again.
+ tests/fixtures/pi-powerline/case_approval_20260127_180612.txt
+ In the previous turn's output (which was confusing), I saw:
+ .../dippy-extension.ts
+ ...
+ It didn't show the end.
+ But if it was failing (Got Idle), and then Passed (Got Approval) after I added ? support (even with the broken grouping), it means it matched either Approval Required or ?.
+ If it matched Approval Required (random text), it was a false positive (but coincidentally correct status).
+ But the user says "new test FAIL" - referring to the Idle case which FAILED (got Approval) because of false positive.
+
+ So case_approval must be a legitimate approval state.
+ If it ends in ?, my new strict regex will catch it.
+ If it relies on Approval Required string but NOT ? at end, my new regex will FAIL it.
+
+ I'll assume the user is right and ? is the signal.
+
+ Let's Apply.
+
+ Wait, I need to confirm case_approval content.
+ I'll read the end of tests/fixtures/pi-powerline/case_approval_20260127_180612.txt first.
+ Better safe than sorry.
+
+ And I'll read tests/fixtures/pi-powerline/case_idle_20260127_183135.txt end as well.
+
+ Checking file contents before editing.
+
+
+
+ $ tail -n 20 tests/fixtures/pi-powerline/case_approval_20260127_180612.txt tests/fixtures/pi-powerline/case_idle_20260127_183135.txt
+
+ ... (40 earlier lines, ctrl+o to expand)
+
+ ╭─ π  | ◈ Gemini 3 Pro High (Antigravity) | thinking:off | 📁 tmuxx | ⎇ main | ◫ 11.2%/1.0M ⚡ | ⊛ 5.9M | (sub)
+ ──────────────────────────────────────────────────────────────────╮
+ ╰─
+ ─╯
+
+
+ case_approval_...:
+
+ ```
+    Shall I start?
+
+   ╭─ π  | ...
+   ╰─ ... ─╯
+ ```
+
+ Ends with Shall I start? followed by empty line (whitespace) and then Prompt lines.
+ So .*\? matches Shall I start?.
+ Rest: \n\n╭─....
+ \s* matches \n\n.
+ Suffix matches prompt lines.
+ This will PASS with the new strict regex.
+
+ case_idle_...:
+
+ ```
+    The codebase is clean, tested, and committed.
+
+   ╭─ π  | ...
+   ╰─ ... ─╯
+ ```
+
+ Ends with committed. followed by empty line and prompt.
+ Last ? in the file is probably way up (e.g. ?3 in status bar of previous prompt, or Did you fix...? in text).
+ Wait, ?3 in status bar ⎇ main | ◫ 11.2%/1.0M ⚡ | ⊛ 5.9M | (sub).
+ The ?3 is in the status bar itself.
+ My regex: (?:(?m)^(?:╭─|╰─|↑|─|❯).*\s*)*.
+ This consumes the status bar.
+ So .*\? will search backwards from the end.
+ If the status bar contains ?, it will be consumed by the Suffix Group (if .* inside the group matches it).
+ The group is (?:(?m)^(?:╭─|╰─|↑|─|❯).*\s*)*.
+ It matches lines starting with ╭─ etc.
+ The line ╭─ π ... ?3 ... starts with ╭─.
+ So the Suffix Group consumes it!
+
+ This is dangerous.
+ If case_idle has ? inside the status bar (e.g. git status ?3), and .*\? matches it?
+ No, .*\? is in the first part.
+ Regex: (?s)(.*)(\?) (\s*) (Suffix)
+ The regex engine tries to match the entire string.
+ It will find the LAST ? that allows the rest to match \s* + Suffix.
+
+ If ? is inside the Suffix (Status Bar), can .*\? match it?
+ Yes, .* is greedy. It swallows everything.
+ It finds the ? in ?3.
+ Then \s* must match 3 | ....
+ 3 is not whitespace.
+ So matching ? inside ?3 fails.
+
+ What if there is ?  (question mark space)?
+ ?
+ Then \s* matches space.
+ Rest must be Suffix lines.
+ If ?  is in the middle of status bar line...
+ The rest of the line must be consumed.
+ \s* only consumes whitespace.
+ It cannot consume the rest of the status bar line.
+ UNLESS the status bar line ends right there? No.
+
+ So ? inside the status bar is SAFE, unless it is at the very end of a status bar line (followed by newline).
+ Does Pi put ? at end of status bar? Unlikely.
+
+ What about ? in the text before the prompt?
+ In case_idle, the text ends with "The codebase is clean, tested, and committed."
+ Previous text: "Did you fix both pi agent definitions?"
+ .*\? matches definitions?.
+ Remaining: \n\nProblem: ... \n The codebase ... \n\n <Prompt>.
+ \s* fails immediately on \n\nP.
+ So it's safe.
+
+ The only risk is if ? is the last non-whitespace character of the output.
+ And that's exactly the definition of Approval we want.
+
+ So the plan is solid.
+
+ I will update src/config/defaults.toml.
+
+ ```toml
+     [[agents.state_rules]]
+     status = "Approval Required"
+     type = "approval"
+     # Match any output ending with ? immediately before the status bar
+     pattern = '''(?s).*\?\s*(?:(?m)^(?:╭─|╰─|↑|─|❯).*\s*)*\z'''
+     last_lines = 40
+ ```
+
+ I will apply this to both pi and pi-powerline.
+
+ And I'll remove Approval Required literal branch.
+
+ Let's go.
+
+
+ edit src/config/defaults.toml:270
+
+      ...
+  266
+  267   [[agents.state_rules]]
+  268   status = "Approval Required"
+  269   type = "approval"
+ -270   # Match explicit "Approval Required" block
+ -271   # OR any output ending with ? immediately before the prompt/status bar
+ -272   pattern = '''(?is)(?:Approval Required|.*\?\s*(?:(?m)^(?:╭─|╰─|↑|─|❯).*\s*)*\z)'''
+ +270   # Match any output ending with ? immediately before the status bar
+ +271   pattern = '''(?s).*\?\s*(?:(?m)^(?:╭─|╰─|↑|─|❯).*\s*)*\z'''
+  273   last_lines = 40
+  274
+  275   [[agents.state_rules]]
+  276   status = "Working..."
+      ...
+
+
+ ⠇ Working...
+
+╭─ π  | ◈ Gemini 3 Pro High (Antigravity) | thinking:off | 📁 tmuxx | ⎇ main *1 ?4 | ◫ 13.0%/1.0M ⚡ | ⊛ 8.1M | (sub) ────────────────────────────────────────────────────────────╮
+╰─                                                                                                                                                                               ─╯

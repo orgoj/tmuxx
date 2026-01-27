@@ -1,0 +1,170 @@
+  250 [[agents]]
+  251 id = "pi"
+      ...
+
+
+
+
+ $ cargo run -- test --dir tests/fixtures/pi-powerline
+
+ ... (8 earlier lines, ctrl+o to expand)
+   📄 case_working_20260127_173829.txt         Expected: working         Got: Working...      -> PASS
+   📄 case_working_20260127_173840.txt         Expected: working         Got: Working...      -> PASS
+   📄 case_working_20260127_175723.txt         Expected: working         Got: Working...      -> PASS
+
+ 📊 Total Results: 5 Passed, 0 Failed
+
+
+
+
+ $ rmdir tests/fixtures/pi__powerline_
+
+ rmdir: failed to remove 'tests/fixtures/pi__powerline_': Directory not empty
+
+
+ Command exited with code 1
+
+
+
+
+ $ ls -F tests/fixtures/pi__powerline_
+
+ case_approval_20260127_180612.txt
+
+
+
+
+ $ mv tests/fixtures/pi__powerline_/case_approval_20260127_180612.txt tests/fixtures/pi-powerline/
+ rmdir tests/fixtures/pi__powerline_
+
+ (no output)
+
+
+
+
+ $ cargo run -- test --dir tests/fixtures/pi-powerline
+
+ ... (12 earlier lines, ctrl+o to expand)
+
+ 📊 Total Results: 5 Passed, 1 Failed
+
+
+ Command exited with code 1
+
+
+
+ read tests/fixtures/pi-powerline/case_approval_20260127_180612.txt
+
+   *         ~/.pi/agent/extensions/dippy-extension.ts
+   *
+  ... (158 more lines, ctrl+o to expand)
+
+
+
+  1
+
+
+
+ ... (161 more lines, ctrl+o to expand)
+
+
+
+ edit src/config/defaults.toml:232
+
+      ...
+  228
+  229   [[agents.state_rules]]
+  230   status = "Approval Required"
+  231   type = "approval"
+ -232   pattern = '''(?is)(?:Approval Required|.*\?\s*(?:(?m)^[~/↑─].*\s*)*\z)'''
+ +232   pattern = '''(?is)(?:Approval Required|.*\?\s*(?:(?m)^[~/↑─╭╰].*\s*)*\z)'''
+  233   last_lines = 40
+  234
+  235   [[agents.state_rules]]
+  236   status = "Working..."
+      ...
+
+
+
+
+ $ cargo run -- test --dir tests/fixtures/pi-powerline
+
+ ... (9 earlier lines, ctrl+o to expand)
+   📄 case_working_20260127_173829.txt         Expected: working         Got: Working...      -> PASS
+   📄 case_working_20260127_173840.txt         Expected: working         Got: Working...      -> PASS
+   📄 case_working_20260127_175723.txt         Expected: working         Got: Working...      -> PASS
+
+ 📊 Total Results: 6 Passed, 0 Failed
+
+
+
+
+ $ cargo fmt && cargo clippy
+
+ Checking tmuxx v0.2.2 (/home/michael/work/ai/TOOLS/tmuxx)
+     Finished `dev` profile [unoptimized + debuginfo] target(s) in 1.79s
+
+
+
+
+ $ git add -A && git status --short
+
+ ... (7 earlier lines, ctrl+o to expand)
+ A  tests/fixtures/pi-powerline/case_approval_20260127_180612.txt
+ R  tests/fixtures/pi__powerline_/case_working_20260127_173808.txt -> tests/fixtures/pi-powerline/case_working_20260127_173808.txt
+ R  tests/fixtures/pi__powerline_/case_working_20260127_173829.txt -> tests/fixtures/pi-powerline/case_working_20260127_173829.txt
+ R  tests/fixtures/pi__powerline_/case_working_20260127_173840.txt -> tests/fixtures/pi-powerline/case_working_20260127_173840.txt
+ R  tests/fixtures/pi__powerline_/case_working_20260127_175723.txt -> tests/fixtures/pi-powerline/case_working_20260127_175723.txt
+
+
+
+
+ $ git commit -m "fix: Fix screenshot path and Pi Powerline detection
+
+ Problem:
+ 1. Capture Test Case saved files to 'pi__powerline_' instead of 'pi-powerline' because it used the sanitized display name instead of the config ID.
+ 2. Pi Powerline was incorrectly detected as 'Idle' when working or asking for approval, because the prompt is persistent (TUI-style) and the Idle rule matched first.
+ 3. Approval detection regex didn't account for Powerline box characters.
+
+ Solution:
+ 1. Updated \`MonitoredAgent\` to store \`config_id\`.
+ 2. Updated \`CaptureTestCase\` to use \`config_id\` for directory naming.
+ 3. Added \`agent_id()\` to \`AgentParser\` trait.
+ 4. Reordered \`pi-powerline\` state rules in \`defaults.toml\` to check Working/Approval before Idle.
+ 5. Updated Approval regex to include '╭' and '╰'.
+ 6. Moved existing test fixtures to the correct directory."
+
+ ... (2 earlier lines, ctrl+o to expand)
+  create mode 100644 tests/fixtures/pi-powerline/case_approval_20260127_180612.txt
+  rename tests/fixtures/{pi__powerline_ => pi-powerline}/case_working_20260127_173808.txt (100%)
+  rename tests/fixtures/{pi__powerline_ => pi-powerline}/case_working_20260127_173829.txt (100%)
+  rename tests/fixtures/{pi__powerline_ => pi-powerline}/case_working_20260127_173840.txt (100%)
+  rename tests/fixtures/{pi__powerline_ => pi-powerline}/case_working_20260127_175723.txt (100%)
+
+
+ The issues with screenshot saving and Pi Powerline detection have been fixed.
+
+ ### Summary of Fixes
+
+ 1. Screenshot Directory:
+     - Found that CaptureTestCase was using the sanitized Display Name (Pi (Powerline) -> pi__powerline_) instead of the Config ID (pi-powerline).
+     - Updated MonitoredAgent to carry the config_id.
+     - Updated CaptureTestCase to use config_id for the directory name, ensuring consistency with tmuxx test.
+ 2. Test Fixtures:
+     - Moved the incorrectly named directory tests/fixtures/pi__powerline_ to tests/fixtures/pi-powerline.
+     - Moved all test cases to the correct location.
+ 3. Pi Powerline Detection:
+     - Diagnosed that pi-powerline acts like a TUI with a persistent prompt. The previous rules checked for the prompt first, causing it to always report Idle even when
+ "Working..." or "Approval Required" text was present.
+     - Reordered Rules: Moved the Idle (prompt) rule to the bottom of the list in defaults.toml. Now Approval and Working take precedence.
+     - Improved Regex: Updated the Approval regex to include Powerline box characters (╭, ╰), fixing detection for "Shall I start?" prompts.
+ 4. Verification:
+     - Ran tmuxx test --dir tests/fixtures/pi-powerline.
+     - Result: 6 Passed, 0 Failed. All scenarios (Idle, Working, Approval) are now correctly detected.
+
+ The codebase is clean, tested, and committed.
+
+╭─ π  | ◈ Gemini 3 Pro High (Antigravity) | thinking:off | 📁 tmuxx | ⎇ main | ◫ 11.2%/1.0M ⚡ | ⊛ 5.9M | (sub) ──────────────────────────────────────────────────────────────────╮
+╰─                                                                                                                                                                               ─╯
+
+

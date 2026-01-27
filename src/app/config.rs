@@ -636,6 +636,8 @@ pub struct AgentKeys {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct StateRule {
     pub status: String,
+    /// Regex pattern. If splitter is set, this can be empty.
+    #[serde(default)]
     pub pattern: String,
     /// Explicit categorization of the status
     #[serde(rename = "type")]
@@ -644,6 +646,9 @@ pub struct StateRule {
     pub approval_type: Option<String>,
     /// If set, only search within the last N lines
     pub last_lines: Option<usize>,
+    /// Built-in splitter function: "separator_line", "powerline_box"
+    /// Creates named groups "body" and "prompt" automatically
+    pub splitter: Option<String>,
     /// Refine the status based on capture groups in the pattern
     #[serde(default)]
     pub refinements: Vec<Refinement>,
@@ -666,6 +671,8 @@ pub struct Refinement {
     #[serde(rename = "type")]
     pub kind: Option<RuleType>,
     pub approval_type: Option<String>,
+    /// Where to apply pattern: "anywhere" (default), "last_line", "last_block"
+    pub location: Option<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

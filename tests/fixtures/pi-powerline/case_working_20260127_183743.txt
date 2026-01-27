@@ -1,0 +1,170 @@
+
+ Let's double check operator precedence.
+ | has very low precedence.
+ So yes, my previous regex was:
+ (Match "Approval Required" anywhere) OR (Match ... at end).
+
+ Correct regex should be:
+ (?:Approval Required|.*\?)\s*(?:(?m)^(?:╭─|╰─|↑|─|❯).*\s*)*\z
+
+ This ensures that even if "Approval Required" is found, it MUST be followed only by the prompt structure.
+
+ I will update defaults.toml with this fix.
+
+ Wait, looking at the previous edit:
+ pattern = '''(?is)(?:Approval Required|.*\?\s*(?:(?m)^(?:╭─|╰─|↑|─|❯).*\s*)*\z)'''
+
+ I added \s*(?:(?m)^(?:╭─|╰─|↑|─|❯).*\s*)*\z ONLY to the second branch.
+ I need to wrap the Approval Required|.*\? in a group and apply the suffix to that group.
+
+ Correct pattern:
+ '''(?is)(?:Approval Required|.*\?)\s*(?:(?m)^(?:╭─|╰─|↑|─|❯).*\s*)*\z'''
+
+ Let's apply this fix.
+
+ Also, I'll update pi (not powerline) agent as well, as it likely suffers from the same issue (matching "Approval Required" in random text).
+
+ Current pi pattern:
+ pattern = '''(?is)(?:Approval Required|.*\?\s*(?:(?m)^(?:╭─|╰─|↑|─|❯).*\s*)*\z)'''
+ (I updated it to be the same in the last turn).
+
+ So both need fixing.
+
+ User "opravil jsi oba pi agenty definice?" -> "Did you fix both pi agent definitions?"
+ Yes, I did, but I introduced this logic error in both.
+ I will fix both now.
+
+ One detail: .*\? is greedy.
+ If I have:
+
+ ```
+   Approval Required
+   Some noise
+   <Prompt>
+ ```
+
+ The regex (?:Approval Required|.*\?) matches Approval Required.
+ The suffix check \s*... will fail because of "Some noise".
+
+ But .*\? could match past "Approval Required" if there is a ? later.
+ If the text is:
+
+ ```
+   Approval Required
+   Is this okay?
+   <Prompt>
+ ```
+
+ .*\? matches up to okay?.
+ Suffix matches \n<Prompt>.
+ So it matches. Correct.
+
+ If text is:
+
+ ```
+   Approval Required
+   (no question mark here)
+   <Prompt>
+ ```
+
+ .*\? might fail (if no ? in text).
+ Approval Required branch matches.
+ Suffix check fails (due to "(no question mark here)").
+ So it fails. Correct.
+
+ So the logic (?:Approval Required|.*\?)\s*(?:...)*\z seems correct and robust.
+
+ I will apply this change.
+
+ One more check: Approval Required string itself doesn't end with ?.
+ Does .*\? cover it? No.
+ So Approval Required branch is needed.
+ Does Approval Required need to be at the very end?
+ Usually, yes. Pi says "Approval Required" and waits.
+ Or it asks "Start now? [y/n]" and waits.
+
+ So strictly anchoring it to the prompt is the correct behavior.
+
+ I will proceed.
+
+ One subtle thing: (?:Approval Required|.*\?)
+ If input is Approval Required?
+ Branch 1 matches Approval Required.
+ Branch 2 matches Approval Required?.
+ Since alternation is ordered (usually), it tries Branch 1.
+ Approval Required matches.
+ Remaining: ? + newline + prompt.
+ Does \s*... match ?? No.
+
+ So if I use (?:Approval Required|.*\?), and the text is Approval Required?, the first branch matches but the suffix check fails.
+ Then it backtracks and tries Branch 2.
+ .*\? matches Approval Required?.
+ Suffix check matches \n<Prompt>.
+ Success.
+
+ What if text is Approval Required (no question mark).
+ Branch 1 matches.
+ Suffix check matches \n<Prompt>.
+ Success.
+
+ So (?:Approval Required|.*\?) is safe.
+
+ Let's apply.
+
+ I should also check pi non-powerline prompt chars.
+ In defaults.toml:
+ pattern = '''(?is)(?:Approval Required|.*\?\s*(?:(?m)^(?:╭─|╰─|↑|─|❯).*\s*)*\z)'''
+
+ I'll use the same robust list (?:╭─|╰─|↑|─|❯) for both, as they share the logic now.
+
+ Wait, pi agent also has [~/↑─] in the old regex. I replaced it with the robust list (?:╭─|╰─|↑|─|❯) which covers ↑ and ─. It should be fine.
+
+ Let's do it.
+
+ And I should double check src/parsers/universal.rs logic?
+ No, the logic is in regex.
+
+ I will modify src/config/defaults.toml.
+
+ One question:
+ last_lines = 40
+ This regex is matched against the last 40 lines.
+ (?s) means dot matches newline.
+ ^ matches start of line (due to (?m) inside).
+
+ The regex structure:
+ (?is) (case insensitive, dot all)
+ (?:Approval Required|.*\?) (Content ending)
+ \s* (Whitespace)
+ (?:(?m)^(?:╭─|╰─|↑|─|❯).*\s*)* (Zero or more prompt lines)
+ \z (End of string)
+
+ Looks solid.
+
+ Wait, (?m) inside a group (?:(?m)...) toggles multiline mode. Does it verify that ^ matches line start?
+ In Rust regex crate:
+ (?m) enables multi-line mode ( ^ and $ match begin/end line).
+ It applies to the rest of the pattern or the group.
+ Since I use it inside (?:...), does it scope?
+ Rust regex documentation says flags can be scoped (?m:...).
+ But (?m) acts as a toggle.
+
+ If I write (?:(?m)^...), it enables multiline for the group?
+ Actually, regex syntax (?flags:...) is the scoped version. (?flags) is global or rest-of-group?
+ Rust regex (?m) turns on multi-line mode.
+ If I put it inside a non-capturing group, it usually applies until the end of the group.
+
+ The syntax I used: (?:(?m)^(?:...))
+ It looks like I am trying to match start-of-line anchors.
+
+ Let's assume (?m) works as intended (enabling ^ to match line starts).
+
+ I will make the edit.
+
+ One detail: The user said "podle posledniho znaku pred statusberem" (according to the last character before status bar).
+ The `Approval Required
+
+ ⠹ Working...
+
+╭─ π  | ◈ Gemini 3 Pro High (Antigravity) | thinking:off | 📁 tmuxx | ⎇ main *1 ?2 | ◫ 12.1%/1.0M ⚡ | ⊛ 7.8M | (sub) ────────────────────────────────────────────────────────────╮
+╰─                                                                                                                                                                               ─╯

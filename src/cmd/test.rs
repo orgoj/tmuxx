@@ -10,6 +10,7 @@ use crate::parsers::UniversalParser;
 
 pub struct TestArgs {
     pub dir: PathBuf,
+    pub debug: bool,
 }
 
 pub async fn run_test(args: TestArgs) -> Result<()> {
@@ -30,13 +31,13 @@ pub async fn run_test(args: TestArgs) -> Result<()> {
     if !subdirs.is_empty() {
         println!("📂 Found {} test suites (subdirectories)", subdirs.len());
         for dir in subdirs {
-            let (s, f) = run_suite_for_dir(&dir, &config)?;
+            let (s, f) = run_suite_for_dir(&dir, &config, args.debug)?;
             total_success += s;
             total_fail += f;
         }
     } else {
         // Run in single directory mode
-        let (s, f) = run_suite_for_dir(&args.dir, &config)?;
+        let (s, f) = run_suite_for_dir(&args.dir, &config, args.debug)?;
         total_success += s;
         total_fail += f;
     }
@@ -53,7 +54,11 @@ pub async fn run_test(args: TestArgs) -> Result<()> {
     Ok(())
 }
 
-fn run_suite_for_dir(dir: &std::path::Path, config: &Config) -> Result<(usize, usize)> {
+fn run_suite_for_dir(
+    dir: &std::path::Path,
+    config: &Config,
+    debug: bool,
+) -> Result<(usize, usize)> {
     let dirname = dir.file_name().unwrap_or_default().to_string_lossy();
 
     // Determine Agent ID
@@ -157,6 +162,12 @@ fn run_suite_for_dir(dir: &std::path::Path, config: &Config) -> Result<(usize, u
             actual_status.short_text(),
             result_str
         );
+
+        if debug {
+            if let Some(explanation) = parser.explain_status(&content) {
+                println!("{}", explanation);
+            }
+        }
 
         if !is_match {
             println!("     Actual Status: {:?}", actual_status);
