@@ -229,7 +229,8 @@ priority = 96
   [[agents.state_rules]]
   status = "Approval Required"
   type = "approval"
-  pattern = '''(?is)(?:Approval Required|.*\?\s*(?:(?m)^[~/↑─╭╰].*\s*)*\z)'''
+  # Match any output ending with ? immediately before the status bar
+  pattern = '''(?s)(?:.*\?|.*→ Yes.*)\s*(?:(?m)^(?:╭─|╰─|↑|─|❯).*\s*)*\z'''
   last_lines = 40
 
   [[agents.state_rules]]
@@ -265,9 +266,8 @@ priority = 95
   [[agents.state_rules]]
   status = "Approval Required"
   type = "approval"
-  # Match explicit "Approval Required" block
-  # OR any output ending with ? (ignoring status bar lines starting with ~, /, ↑, or ─)
-  pattern = '''(?is)(?:Approval Required|.*\?\s*(?:(?m)^[~/↑─].*\s*)*\z)'''
+  # Match any output ending with ? immediately before the status bar
+  pattern = '''(?s)(?:.*\?|.*→ Yes.*)\s*(?:(?m)^(?:╭─|╰─|↑|─|❯).*\s*)*\z'''
   last_lines = 40
 
   [[agents.state_rules]]
