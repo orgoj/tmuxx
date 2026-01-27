@@ -14,6 +14,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Menu Hints**: Added usage hints to the bottom of "Prompts" and "Command" menus (e.g., explaining `Enter` vs `Alt+Enter` for prompts).
 
 ### Fixed
+- **Safe Config Reload**: Modified the configuration reload process to handle errors gracefully. If an invalid configuration is detected during reload, the application now displays an error in the status bar instead of crashing.
 - **Status Bar Colors**: Improved the status bar (footer) color logic. Status messages and action logs are now displayed in Green, while actual errors remain Red.
 - **Help/Modal Scrolling**: Fixed arrow keys in readonly modals (like Help) to scroll text instead of moving the cursor.
 - **Help Window Closing**: Prevented `Left`/`Right`/`Home`/`End` keys from accidentally closing the Help window.

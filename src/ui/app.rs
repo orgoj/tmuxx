@@ -1341,7 +1341,14 @@ async fn run_loop(
                                     // This should not happen here (handled in modal textarea mode)
                                 }
                                 Action::ReloadConfig => {
-                                    state.reload_config(Config::load_merged());
+                                    match Config::try_load_merged() {
+                                        Ok(new_config) => {
+                                            state.reload_config(new_config);
+                                        }
+                                        Err(e) => {
+                                            state.set_error(format!("Reload failed: {}", e));
+                                        }
+                                    }
                                 }
                                 Action::None => {}
                             }

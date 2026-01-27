@@ -2,6 +2,8 @@
 
 ## 🛠 Opravy (Fixes)
 
+- [x] reload nesmi pri spatnem konfigu shodit aplikaci, config je treba nacitat a validovat separatne a jen napsat error do status bar kdyz je config vadny
+
 ## 💡 Drobnosti (Tweaks)
 - [ ] **Notifikační systém**: Desktopové a terminálové upozornění na události vyžadující pozornost (approval, error). Mozna jen volani cmd na poslani notifikace a s definovatelnym spozdenim (1min). Pro kazde window zapsat cas vzniku aproval a kdyz to prekroci ten cas tak posilat notifikaci.
 - [ ] **SSH Detection**: Výzkum spolehlivé detekce AI agentů běžících uvnitř SSH session.

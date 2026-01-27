@@ -638,6 +638,7 @@ mod tests {
             }),
             summary_rules: None,
             highlight_rules: Vec::new(),
+            process_indicators: vec![],
         };
 
         let parser = UniversalParser::new(config, 16384);
