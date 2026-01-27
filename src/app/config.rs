@@ -389,11 +389,19 @@ impl PartialConfig {
         if let Some(v) = self.cyclic_navigation {
             config.cyclic_navigation = v;
         }
-        if let Some(v) = self.menu {
-            config.menu = v;
+        if let Some(mut v) = self.menu {
+            if v.merge_with_defaults {
+                config.menu.items.append(&mut v.items);
+            } else {
+                config.menu = v;
+            }
         }
-        if let Some(v) = self.prompts {
-            config.prompts = v;
+        if let Some(mut v) = self.prompts {
+            if v.merge_with_defaults {
+                config.prompts.items.append(&mut v.items);
+            } else {
+                config.prompts = v;
+            }
         }
         if let Some(v) = self.pane_tree {
             config.pane_tree = v;
@@ -809,7 +817,10 @@ impl Config {
         if items.is_empty() {
             None
         } else {
-            Some(MenuConfig { items })
+            Some(MenuConfig {
+                items,
+                merge_with_defaults: false,
+            })
         }
     }
 
@@ -832,7 +843,10 @@ impl Config {
                         return Some(menu);
                     }
                     if let Some(items) = proj.menu_items {
-                        return Some(MenuConfig { items });
+                        return Some(MenuConfig {
+                            items,
+                            merge_with_defaults: false,
+                        });
                     }
                 } else {
                     eprintln!("Warning: Failed to parse .tmuxx.toml");

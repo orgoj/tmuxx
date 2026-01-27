@@ -5,6 +5,10 @@ use serde::{Deserialize, Serialize};
 pub struct MenuConfig {
     #[serde(default)]
     pub items: Vec<MenuItem>,
+
+    /// If true, these items will be appended to the existing/default items instead of replacing them
+    #[serde(default)]
+    pub merge_with_defaults: bool,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
