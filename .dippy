@@ -1,9 +1,13 @@
 deny scripts/cp-bin.sh * "User does this when application works!"
 allow ./scripts/reload-test.sh
 
+allow tmuxx test *
+
 allow cargo test *
 allow cargo build *
 allow cargo clippy *
+allow cargo run -- test *
+
 allow touch src/**
 
 allow tmux list-sessions *

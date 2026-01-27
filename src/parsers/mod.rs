@@ -36,6 +36,9 @@ pub trait AgentParser: Send + Sync {
     /// Returns the name of the agent
     fn agent_name(&self) -> &str;
 
+    /// Returns the ID of the agent (from config)
+    fn agent_id(&self) -> &str;
+
     /// Returns the configured color for the agent
     fn agent_color(&self) -> Option<&str>;
 

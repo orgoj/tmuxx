@@ -166,8 +166,10 @@ impl fmt::Display for AgentStatus {
 /// Represents a monitored AI agent in a tmux pane
 #[derive(Debug, Clone)]
 pub struct MonitoredAgent {
-    /// Unique identifier for this agent
+    /// Unique identifier for this agent instance (session:window.pane-pid)
     pub id: String,
+    /// Config ID (e.g. "claude", "pi")
+    pub config_id: String,
     /// Human-readable name (from config or command)
     pub name: String,
     /// Agent color theme (from config, e.g. "magenta")
@@ -211,6 +213,7 @@ impl MonitoredAgent {
     #[allow(clippy::too_many_arguments)]
     pub fn new(
         id: String,
+        config_id: String,
         name: String,
         color: Option<String>,
         target: String,
@@ -226,6 +229,7 @@ impl MonitoredAgent {
         let now = Instant::now();
         Self {
             id,
+            config_id,
             name,
             color,
             background_color,
@@ -368,6 +372,7 @@ mod tests {
     fn test_monitored_agent() {
         let agent = MonitoredAgent::new(
             "agent-1".to_string(),
+            "claude".to_string(),
             "Claude Code".to_string(),
             Some("magenta".to_string()),
             "main:0.1".to_string(),

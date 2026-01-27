@@ -227,20 +227,20 @@ priority = 96
   pattern = "╭"
 
   [[agents.state_rules]]
-  status = "idle"
-  type = "idle"
-  pattern = '''(?m)^╰─.*─╯\s*\z'''
-
-  [[agents.state_rules]]
   status = "Approval Required"
   type = "approval"
-  pattern = '''(?is)(?:Approval Required|.*\?\s*(?:(?m)^[~/↑─].*\s*)*\z)'''
+  pattern = '''(?is)(?:Approval Required|.*\?\s*(?:(?m)^[~/↑─╭╰].*\s*)*\z)'''
   last_lines = 40
 
   [[agents.state_rules]]
   status = "Working..."
   type = "working"
   pattern = '''(?i)[⠋⠙⠹⠸⠼⠴⠦⠧⠇⠏]\s*Working\.\.\.'''
+
+  [[agents.state_rules]]
+  status = "idle"
+  type = "idle"
+  pattern = '''(?m)^╰─.*─╯\s*\z'''
 
   [[agents.state_rules]]
   status = "idle"

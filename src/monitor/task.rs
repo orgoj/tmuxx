@@ -188,6 +188,7 @@ impl MonitorTask {
                 // Create monitored agent
                 let mut agent = MonitoredAgent::new(
                     format!("{}-{}", target, pane.pid),
+                    parser.agent_id().to_string(),
                     parser.agent_name().to_string(),
                     parser.agent_color().map(|s| s.to_string()),
                     target,

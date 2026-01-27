@@ -237,6 +237,10 @@ impl AgentParser for UniversalParser {
         &self.config.name
     }
 
+    fn agent_id(&self) -> &str {
+        &self.config.id
+    }
+
     fn agent_color(&self) -> Option<&str> {
         self.config.color.as_deref()
     }

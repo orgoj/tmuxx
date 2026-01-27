@@ -1288,9 +1288,9 @@ async fn run_loop(
                                                     let safe_status = status_str.replace(|c: char| !c.is_alphanumeric(), "_");
                                                     let filename = format!("case_{}_{}.txt", safe_status, timestamp);
 
-                                                    // Determine directory: tests/fixtures/{agent_name}
-                                                    // Use agent name (from config) so that multiple panes of same agent type go to same folder
-                                                    let safe_name = agent.name.to_lowercase().replace(|c: char| !c.is_alphanumeric(), "_");
+                                                    // Determine directory: tests/fixtures/{agent_config_id}
+                                                    // Use agent config ID (from config) so that multiple panes of same agent type go to same folder
+                                                    let safe_name = agent.config_id.to_lowercase().replace(|c: char| !c.is_alphanumeric() && c != '-', "_");
                                                     let dir_name = if safe_name.is_empty() {
                                                         "unknown"
                                                     } else {
