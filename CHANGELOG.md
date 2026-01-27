@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+- **Persistent Selection**: Selection is now managed by unique agent IDs instead of list indices. This ensures that the current cursor and multi-selection persist across monitor updates, configuration reloads, and window actions (like Approve/Reject). Multi-selection is no longer cleared automatically after sending 'y'/'n', satisfying user request for persistence.
+
 ## [0.2.3] - 2026-01-27
 
 ### Performance

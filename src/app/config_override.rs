@@ -413,6 +413,7 @@ mod tests {
                     command,
                     blocking,
                     terminal,
+                    ..
                 }),
             ) => {
                 assert_eq!(key, "z");
@@ -432,6 +433,7 @@ mod tests {
                     command,
                     blocking,
                     terminal,
+                    ..
                 }),
             ) => {
                 assert_eq!(key, "x");
@@ -455,6 +457,7 @@ mod tests {
                     command,
                     blocking,
                     terminal,
+                    ..
                 }),
             ) => {
                 assert_eq!(key, "y");

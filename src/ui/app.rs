@@ -245,16 +245,11 @@ async fn run_loop(
             // Handle monitor updates
             Some(update) = rx.recv() => {
                 state.agents = update.agents;
+                // Sync selection based on agent IDs
+                state.sync_selection();
+
                 // Update cached visibility projection after agent list changes
                 state.update_visible_indices();
-
-                // Ensure selected index is valid
-                if state.selected_index >= state.agents.root_agents.len() {
-                    state.selected_index = state.agents.root_agents.len().saturating_sub(1);
-                }
-                // Clean up invalid selections
-                let max_idx = state.agents.root_agents.len();
-                state.selected_agents.retain(|&idx| idx < max_idx);
 
                 // Refresh TODO content for the newly selected/updated agent
                 state.refresh_project_todo();
@@ -782,7 +777,6 @@ async fn run_loop(
                                             }
                                         }
                                     }
-                                    state.clear_selection();
                                 }
                                 Action::Reject => {
                                     let indices = state.get_operation_indices();
@@ -801,7 +795,6 @@ async fn run_loop(
                                             }
                                         }
                                     }
-                                    state.clear_selection();
                                 }
                                 Action::ApproveAll => {
                                     for agent in &state.agents.root_agents {

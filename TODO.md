@@ -1,7 +1,5 @@
 # TODO - Tmuxx
 
-- [ ] selected se nekdy resetuje? mam vybrane selected poslu y do window a nemam zadny selested, selested je navazany na nactene windows a neni zadny reset niky, musis si pamatovat i kdyz delas reload config nebo cokoliv, musis mit idendifikatory tech termux windows selestovanych, to prepina jen uzivatel ovladenim , to se nemuze stratit
-
 ## 🚀 Větší funkce (Features)
 
 ### Global Highlight Rules

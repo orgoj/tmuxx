@@ -145,8 +145,10 @@ pub struct AppState {
     pub agents: AgentTree,
     /// Currently selected agent index (cursor position)
     pub selected_index: usize,
-    /// Multi-selected agent indices
-    pub selected_agents: HashSet<usize>,
+    /// ID of the currently selected agent (cursor position)
+    pub selected_agent_id: Option<String>,
+    /// Multi-selected agent IDs
+    pub selected_agents: HashSet<String>,
     /// Which panel is focused
     pub focused_panel: FocusedPanel,
     /// Input buffer (always available)
@@ -221,6 +223,7 @@ impl AppState {
             config,
             agents: AgentTree::new(),
             selected_index: 0,
+            selected_agent_id: None,
             selected_agents: HashSet::new(),
             focused_panel: FocusedPanel::Sidebar,
             input_buffer: String::new(),
@@ -407,6 +410,7 @@ impl AppState {
             // Current not visible, jump to first visible
             self.selected_index = self.visible_indices[0];
         }
+        self.update_selected_id();
     }
 
     /// Selects the previous visible agent (respects filter)
@@ -431,12 +435,14 @@ impl AppState {
             // Current not visible, jump to first visible
             self.selected_index = self.visible_indices[0];
         }
+        self.update_selected_id();
     }
 
     /// Selects the first visible agent
     pub fn select_first(&mut self) {
         if let Some(&first) = self.visible_indices.first() {
             self.selected_index = first;
+            self.update_selected_id();
         }
     }
 
@@ -444,6 +450,7 @@ impl AppState {
     pub fn select_last(&mut self) {
         if let Some(&last) = self.visible_indices.last() {
             self.selected_index = last;
+            self.update_selected_id();
         }
     }
 
@@ -451,6 +458,36 @@ impl AppState {
     pub fn select_agent(&mut self, index: usize) {
         if index < self.agents.root_agents.len() {
             self.selected_index = index;
+            self.update_selected_id();
+        }
+    }
+
+    fn update_selected_id(&mut self) {
+        self.selected_agent_id = self
+            .agents
+            .get_agent(self.selected_index)
+            .map(|a| a.id.clone());
+    }
+
+    /// Synchronize selected_index and selected_agent_id after agent list updates
+    pub fn sync_selection(&mut self) {
+        if let Some(id) = &self.selected_agent_id {
+            // Try to find the agent with this ID in the new list
+            if let Some(pos) = self.agents.root_agents.iter().position(|a| &a.id == id) {
+                self.selected_index = pos;
+                return;
+            }
+        }
+
+        // Fallback: If ID not found or None, clamp current index
+        if self.agents.root_agents.is_empty() {
+            self.selected_index = 0;
+            self.selected_agent_id = None;
+        } else {
+            if self.selected_index >= self.agents.root_agents.len() {
+                self.selected_index = self.agents.root_agents.len().saturating_sub(1);
+            }
+            self.update_selected_id();
         }
     }
 
@@ -461,10 +498,13 @@ impl AppState {
             return; // Current agent is hidden, no-op
         }
 
-        if self.selected_agents.contains(&self.selected_index) {
-            self.selected_agents.remove(&self.selected_index);
-        } else {
-            self.selected_agents.insert(self.selected_index);
+        if let Some(agent) = self.selected_agent() {
+            let id = agent.id.clone();
+            if self.selected_agents.contains(&id) {
+                self.selected_agents.remove(&id);
+            } else {
+                self.selected_agents.insert(id);
+            }
         }
 
         // If "Selected Only" filter is active, updating selection might change visibility
@@ -476,10 +516,14 @@ impl AppState {
 
     /// Selects all visible agents (respects filter)
     pub fn select_all(&mut self) {
-        // We use a clone to avoid immutable/mutable borrow issues if sub-methods are called
-        let visible = self.visible_indices.clone();
-        for i in visible {
-            self.selected_agents.insert(i);
+        let visible_ids: Vec<String> = self
+            .visible_indices
+            .iter()
+            .filter_map(|&idx| self.agents.root_agents.get(idx).map(|a| a.id.clone()))
+            .collect();
+
+        for id in visible_ids {
+            self.selected_agents.insert(id);
         }
 
         if self.filter_selected {
@@ -507,13 +551,13 @@ impl AppState {
                 vec![]
             }
         } else {
-            // Filter selected_agents to only visible ones
-            let mut indices: Vec<usize> = self
-                .selected_agents
-                .iter()
-                .copied()
-                .filter(|idx| self.visible_indices.contains(idx))
-                .collect();
+            // Filter agents to only those whose ID is in selected_agents and are visible
+            let mut indices: Vec<usize> = Vec::new();
+            for (idx, agent) in self.agents.root_agents.iter().enumerate() {
+                if self.selected_agents.contains(&agent.id) && self.visible_indices.contains(&idx) {
+                    indices.push(idx);
+                }
+            }
             indices.sort();
             indices
         }
@@ -521,7 +565,11 @@ impl AppState {
 
     /// Check if an agent is in multi-selection
     pub fn is_multi_selected(&self, index: usize) -> bool {
-        self.selected_agents.contains(&index)
+        if let Some(agent) = self.agents.get_agent(index) {
+            self.selected_agents.contains(&agent.id)
+        } else {
+            false
+        }
     }
 
     /// Toggles help display
@@ -697,8 +745,12 @@ impl AppState {
                 }
             }
 
-            if self.filter_selected && self.selected_agents.contains(&index) {
-                matched = true;
+            if self.filter_selected {
+                if let Some(agent_at_idx) = self.agents.get_agent(index) {
+                    if self.selected_agents.contains(&agent_at_idx.id) {
+                        matched = true;
+                    }
+                }
             }
 
             if !matched {
@@ -743,6 +795,7 @@ impl AppState {
         // If newly populated from empty, select first
         if old_indices.is_empty() && !self.visible_indices.is_empty() {
             self.selected_index = self.visible_indices[0];
+            self.update_selected_id();
         }
     }
 
@@ -793,6 +846,7 @@ impl AppState {
             }
         }
         self.selected_index = nearest_idx;
+        self.update_selected_id();
     }
 
     pub fn toggle_filter_active(&mut self) {
@@ -874,6 +928,7 @@ mod tests {
         // Add some agents
         state.agents.root_agents.push(MonitoredAgent::new(
             "1".to_string(),
+            "claude".to_string(),
             "Claude".to_string(),
             Some("magenta".to_string()),
             "main:0.0".to_string(),
@@ -888,6 +943,7 @@ mod tests {
         ));
         state.agents.root_agents.push(MonitoredAgent::new(
             "2".to_string(),
+            "opencode".to_string(),
             "OpenCode".to_string(),
             Some("blue".to_string()),
             "main:0.1".to_string(),
@@ -915,6 +971,7 @@ mod tests {
     fn create_test_agent(id: &str, session: &str, pane_index: u32) -> MonitoredAgent {
         MonitoredAgent::new(
             id.to_string(),
+            "test".to_string(),
             "Test Agent".to_string(),
             Some("cyan".to_string()),
             format!("{}:0.{}", session, pane_index),
@@ -1122,9 +1179,13 @@ mod tests {
         // Select all should only select visible (indices 0 and 2)
         state.select_all();
 
-        assert!(state.selected_agents.contains(&0));
-        assert!(!state.selected_agents.contains(&1)); // Hidden, not selected
-        assert!(state.selected_agents.contains(&2));
+        let id0 = state.agents.get_agent(0).unwrap().id.clone();
+        let id1 = state.agents.get_agent(1).unwrap().id.clone();
+        let id2 = state.agents.get_agent(2).unwrap().id.clone();
+
+        assert!(state.selected_agents.contains(&id0));
+        assert!(!state.selected_agents.contains(&id1)); // Hidden, not selected
+        assert!(state.selected_agents.contains(&id2));
         assert_eq!(state.selected_agents.len(), 2);
     }
 
@@ -1160,10 +1221,14 @@ mod tests {
         // Cursor should move to first visible (index 0)
         assert_eq!(state.selected_index, 0);
 
-        // Multi-selection should still contain hidden indices (design choice: preserve selection across filters)
-        assert!(state.selected_agents.contains(&0));
-        assert!(state.selected_agents.contains(&1)); // Hidden, BUT preserved in set
-        assert!(state.selected_agents.contains(&2));
+        // Multi-selection should still contain hidden IDs (design choice: preserve selection across filters)
+        let agent0_id = state.agents.get_agent(0).unwrap().id.clone();
+        let agent1_id = state.agents.get_agent(1).unwrap().id.clone();
+        let agent2_id = state.agents.get_agent(2).unwrap().id.clone();
+
+        assert!(state.selected_agents.contains(&agent0_id));
+        assert!(state.selected_agents.contains(&agent1_id)); // Hidden, BUT preserved in set
+        assert!(state.selected_agents.contains(&agent2_id));
         assert_eq!(state.selected_agents.len(), 3);
     }
 
@@ -1220,12 +1285,14 @@ mod tests {
 
         // Toggle should be no-op
         state.toggle_selection();
-        assert!(!state.selected_agents.contains(&1));
+        let id1 = state.agents.get_agent(1).unwrap().id.clone();
+        assert!(!state.selected_agents.contains(&id1));
 
         // Move to visible agent
         state.selected_index = 0;
         state.toggle_selection();
-        assert!(state.selected_agents.contains(&0));
+        let id0 = state.agents.get_agent(0).unwrap().id.clone();
+        assert!(state.selected_agents.contains(&id0));
     }
 
     #[test]
