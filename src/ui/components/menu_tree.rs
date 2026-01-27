@@ -133,11 +133,30 @@ impl MenuTreeWidget {
         let inner_area = block.inner(area);
         frame.render_widget(block, area);
 
+        // Flatten the tree
+        let items_to_render = flatten_tree(config, state);
+
+        // Get selected item content for preview
+        let preview_text = if let Some(index) = state.list_state.selected() {
+            if let Some(flat) = items_to_render.get(index) {
+                if let Some(cmd) = &flat.item.execute_command {
+                    Some(format!("Command: {}", cmd.command))
+                } else {
+                    flat.item.text.as_ref().map(|t| format!("Prompt: {}", t))
+                }
+            } else {
+                None
+            }
+        } else {
+            None
+        };
+
         let chunks = Layout::default()
             .direction(Direction::Vertical)
             .constraints([
                 Constraint::Length(if !state.filter.is_empty() { 2 } else { 0 }),
                 Constraint::Min(0),
+                Constraint::Length(if preview_text.is_some() { 3 } else { 0 }),
             ])
             .split(inner_area);
 
@@ -149,8 +168,15 @@ impl MenuTreeWidget {
 
         let list_area = chunks[1];
 
-        // Flatten the tree
-        let items_to_render = flatten_tree(config, state);
+        if let Some(text) = preview_text {
+            let preview_block = Block::default()
+                .borders(Borders::TOP)
+                .border_style(Style::default().fg(Color::DarkGray));
+            let preview_paragraph = Paragraph::new(text)
+                .block(preview_block)
+                .style(Style::default().fg(Color::Gray));
+            frame.render_widget(preview_paragraph, chunks[2]);
+        }
 
         let list_items: Vec<ListItem> = items_to_render
             .iter()
