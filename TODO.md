@@ -1,14 +1,8 @@
 # TODO - Tmuxx
 
 ## 🛠 Opravy (Fixes)
-- [x] prompt popup dialog nezobrazuje jak vybrat prompt Enter a Alt+Enter s hintem
-- [x] v popupdialogu (prompr / menu) mid ve spodu boz, ktery bude zobrazovat cely command a nebo prompt
-- [x] ve status bar maji byt jen errory cervene, ted je tam skoro vsechno cervene , normalni hlaseni maji byt zlene, opravit
-- [x] config reload ? jestli je to jednoduche, jinak presunout pozdeji (binding command)
-- [ ] aktualizovat definice agentu, udelej si na to skill pomoci /skill:creating-skill jde o to pustit `cargo run -- test --dir tests/fixtures` a pak inteleigentne hledat na tech screen charakteristicke prvky a texty ze kterych je mozne poznat stav a podle toho upravi definition.toml pro agenta
 
 ## 💡 Drobnosti (Tweaks)
-- [x] **TODO Layout**: Přidat možnost zobrazit TODO sekci na plnou šířku (pokud je aktivní, pravý panel s aktivitou se nebude vykreslovat). Defautl on.
 - [ ] **Notifikační systém**: Desktopové a terminálové upozornění na události vyžadující pozornost (approval, error). Mozna jen volani cmd na poslani notifikace a s definovatelnym spozdenim (1min). Pro kazde window zapsat cas vzniku aproval a kdyz to prekroci ten cas tak posilat notifikaci.
 - [ ] **SSH Detection**: Výzkum spolehlivé detekce AI agentů běžících uvnitř SSH session.
   - [ ] pro zacatek jen nejaky idikator i windows ze je v process ssh, to by mozna stacil config
@@ -35,7 +29,6 @@
 - [ ] **Event Filtering**: Notifikovat jen akční události, ne informační.
 
 ### Konfigurace a Rozšíření
-- [ ] **Config Hot Reload**: Automatické načtení změn v `config.toml`.
 - [ ] **Plugin System**: Možnost přidávat nové parsery agentů jako externí moduly/skripty.
 - [ ] **Profiles**: Rychlé přepínání mezi sadami nastavení (např. "Work", "Home").
 

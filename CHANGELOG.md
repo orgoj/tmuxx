@@ -20,6 +20,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 
 ## [Unreleased]
+
+## [0.2.2] - 2026-01-27
 ### Added
 - **Pi Powerline Support**: Added native support for the new Pi extension/theme (Powerline status bar, rounded corners).
 - **Content-Based Agent Matching**: Added `content` matcher type to agent definitions, allowing agents to be distinguished not just by command, but by specific content patterns in their output (e.g. rounded corners).
