@@ -367,7 +367,14 @@ fn render_parsed_template<'a, 'b>(
         for part in line_parts {
             match part {
                 TemplatePart::Text(t) => spans.push(Span::raw(t.clone())),
-                TemplatePart::Placeholder(name) => spans.push(render_placeholder(name, agent, ctx)),
+                TemplatePart::Placeholder(name) => {
+                    spans.push(render_placeholder(name, agent, ctx));
+                    if name == "name" {
+                        for icon in &agent.active_indicators {
+                            spans.push(Span::raw(format!(" {}", icon)));
+                        }
+                    }
+                }
             }
         }
         lines.push(Line::from(spans));

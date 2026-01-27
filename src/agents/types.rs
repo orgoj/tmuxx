@@ -196,6 +196,8 @@ pub struct MonitoredAgent {
     pub last_content: String,
     /// Process ID
     pub pid: u32,
+    /// Active process indicators (icons)
+    pub active_indicators: Vec<String>,
     /// When this agent was first detected
     pub started_at: Instant,
     /// When the pane content was last updated
@@ -238,6 +240,7 @@ impl MonitoredAgent {
             subagents: Vec::new(),
             last_content: String::new(),
             pid,
+            active_indicators: Vec::new(),
             started_at: now,
             last_updated: now,
             context_remaining: None,

@@ -147,6 +147,23 @@ background_color = "#e0e0e0"
   pattern = "Processing..."
 ```
 
+### Process Indicators
+
+Agents running inside containers (Docker, Podman) or SSH sessions can display an icon next to their name.
+
+```toml
+[[agents]]
+id = "claude"
+# ...
+[[agents.process_indicators]]
+ancestor_pattern = "ssh"
+icon = "🌐"
+
+[[agents.process_indicators]]
+ancestor_pattern = "docker"
+icon = "🐳"
+```
+
 ### Command Menu
 
 Define your own hierarchical menu (`m` key):

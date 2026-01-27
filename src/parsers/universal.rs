@@ -559,6 +559,10 @@ impl AgentParser for UniversalParser {
         self.config.keys.reject.as_deref().unwrap_or("n")
     }
 
+    fn process_indicators(&self) -> Vec<crate::app::config::ProcessIndicator> {
+        self.config.process_indicators.clone()
+    }
+
     fn requires_content_check(&self) -> bool {
         self.matchers
             .iter()

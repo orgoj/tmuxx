@@ -2,6 +2,7 @@ use std::collections::HashMap;
 use std::sync::Arc;
 use std::time::{Duration, Instant};
 
+use regex::Regex;
 use tokio::sync::mpsc;
 use tracing::{debug, error, warn};
 
@@ -168,6 +169,22 @@ impl MonitorTask {
                 // Parse context remaining
                 let context_remaining = parser.parse_context_remaining(&content);
 
+                // Calculate process indicators
+                let mut active_indicators = Vec::new();
+                for indicator in parser.process_indicators() {
+                    match Regex::new(&indicator.ancestor_pattern) {
+                        Ok(re) => {
+                            for cmd in &pane.ancestor_commands {
+                                if re.is_match(cmd) {
+                                    active_indicators.push(indicator.icon.clone());
+                                    break;
+                                }
+                            }
+                        }
+                        Err(e) => warn!("Invalid process indicator regex: {}", e),
+                    }
+                }
+
                 // Create monitored agent
                 let mut agent = MonitoredAgent::new(
                     format!("{}-{}", target, pane.pid),
@@ -187,6 +204,7 @@ impl MonitorTask {
                 agent.subagents = subagents;
                 agent.last_content = content;
                 agent.context_remaining = context_remaining;
+                agent.active_indicators = active_indicators;
                 agent.touch(); // Update last_updated
 
                 tree.root_agents.push(agent);

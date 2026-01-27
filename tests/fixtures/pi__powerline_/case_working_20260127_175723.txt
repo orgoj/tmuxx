@@ -1,0 +1,170 @@
+ Checking tmuxx v0.2.2 (/home/michael/work/ai/TOOLS/tmuxx)
+     Finished `dev` profile [unoptimized + debuginfo] target(s) in 1.11s
+
+
+
+ edit TODO.md:23
+
+      ...
+   19 ### SSH/Docker/Nix-shell Detection (Indicators)
+   20 **Účel:** Zobrazit symbol když agent běží v SSH/Docker/nix-shell
+   21
+   22 **Změny:**
+ - 23 1. `src/app/config.rs` - přidat do `AgentConfig` (~řádek 540):
+ + 23 - [x] `src/app/config.rs` - přidat do `AgentConfig` (~řádek 540):
+   24    ```rust
+   25    /// Process indicators to show next to agent name
+   26    /// Key: ancestor process pattern, Value: icon to display
+   27    #[serde(default)]
+   28    pub process_indicators: Vec<ProcessIndicator>,
+   29    ```
+   30
+   31    Nový struct:
+   32    ```rust
+   33    #[derive(Debug, Clone, Serialize, Deserialize)]
+   34    pub struct ProcessIndicator {
+   35        pub ancestor_pattern: String,  // regex pro ps -o comm=
+   36        pub icon: String,              // emoji/text k zobrazení
+   37    }
+   38    ```
+   39
+ - 40 2. `src/tmux/pane.rs` - přidat metodu `get_process_ancestors()`:
+ + 40 - [x] `src/tmux/pane.rs` - přidat metodu `get_process_ancestors()`:
+   41    ```rust
+   42    pub fn get_process_ancestors(&self) -> Vec<String> {
+   43        // Use ps -o ppid= to walk up process tree
+   44        // Return list of ancestor command names
+   45    }
+   46    ```
+   47
+ - 48 3. `src/agents/types.rs` - přidat do `MonitoredAgent`:
+ + 48 - [x] `src/agents/types.rs` - přidat do `MonitoredAgent`:
+   49    ```rust
+   50    pub active_indicators: Vec<String>,  // icons to display
+   51    ```
+   52
+ - 53 4. `src/ui/components/agent_tree.rs` - v renderování přidat:
+ + 53 - [x] `src/ui/components/agent_tree.rs` - v renderování přidat:
+   54    ```rust
+   55    // After agent name, append indicators
+   56    for icon in &agent.active_indicators {
+   57        spans.push(Span::raw(format!(" {}", icon)));
+   58    }
+   59    ```
+   60
+ - 61 5. `src/config/defaults.toml` - příklad v agent definici:
+ + 61 - [x] `src/config/defaults.toml` - příklad v agent definici:
+   62    ```toml
+   63    [[agents]]
+   64    id = "claude"
+   65    # ...
+      ...
+
+
+
+
+ $ cat /home/michael/work/ai/TOOLS/tmuxx/.pi/skills/tmuxx-managing-changelogs/SKILL.md
+
+ ... (24 earlier lines, ctrl+o to expand)
+ - Ensure `TODO.md` only contains current or upcoming work.
+
+ ### 3. Verification
+ - Verify that `CHANGELOG.md` correctly reflects all recent changes.
+ - Ensure `TODO.md` is focused and doesn't contain "ghost" tasks that are already done.
+
+
+
+ read CHANGELOG.md
+
+ # Changelog
+
+ All notable changes to **Tmuxx** (formerly tmuxcc) will be documented in this file.
+
+ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
+ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+
+ ## [Unreleased]
+
+ ### Performance
+ ... (196 more lines, ctrl+o to expand)
+
+
+
+ edit CHANGELOG.md:14
+
+      ...
+   10 ### Performance
+   11 - **Optimized Redraw Loop**: Significantly reduced CPU usage by only redrawing the TUI when state changes or input occurs, instead of forcing 60 FPS redraws. This allows
+ the application to be idle-efficient while remaining responsive.
+   12
+   13 ### Added
+ + 14 - **Process Detection Indicators**: Added `process_indicators` to agent config to display icons (e.g., 🐳, 🌐) when agents are running inside containers, SSH sessions, or
+ other wrappers, detected via process ancestry.
+   14 - **External Terminal Wrapper**: Added `terminal_wrapper` config option to execute commands in a separate terminal window (e.g. WezTerm, Alacritty) instead of the
+ background or current pane.
+   15 - **External Command Execution**: Added `external_terminal` flag to key bindings and menu items to leverage the wrapper.
+   16 - **Config Hot Reload**: Added `ReloadConfig` action (default binding: `Ctrl+r`) to reload the application configuration from disk without restarting.
+   17 - **Full-Width TODO**: Added `todo_full_width` configuration option (default: `true`). When enabled, the TODO section expands to full width, hiding the right-side activity
+ panel to provide more space for tasks.
+      ...
+
+
+
+
+ $ cat /home/michael/work/ai/TOOLS/tmuxx/.pi/skills/tmuxx-committing-changes/SKILL.md
+
+ ... (48 earlier lines, ctrl+o to expand)
+ Types: `feat`, `fix`, `refactor`, `docs`, `test`, `chore`.
+
+ ### 3. Verification
+ - Verify the commit was successful using `git log -1`.
+ - Ensure no accidental files were staged.
+
+
+
+ read README.md
+
+ # tmuxx
+
+ **Universal Config-Driven Dashboard for tmux & AI Agents**
+
+ `tmuxx` is a powerful TUI (Terminal User Interface) dashboard for monitoring and controlling multiple tmux panes simultaneously.
+
+ While designed with first-class support for AI coding agents (Claude Code, Pi, Gemini, OpenCode), its completely configuration-driven architecture makes it a universal tool for
+ monitoring **any** terminal process using custom regex rules.
+
+ > **Note**: This is a complete rewrite of `tmuxcc`, evolved into a standalone project with a focus on configurability, performance, and native AI agent integration.
+
+ ... (269 more lines, ctrl+o to expand)
+
+
+
+ edit README.md
+
+ Could not find the exact text in README.md. The old text must match exactly including all whitespace and newlines.
+
+
+
+ read README.md:150-179
+
+ ### Command Menu
+
+ Define your own hierarchical menu (`m` key):
+
+ ```toml
+ [menu]
+   [[menu.items]]
+   name = "Git"
+     [[menu.items.items]]
+     name = "Status"
+ ... (22 more lines, ctrl+o to expand)
+
+
+
+ 1
+
+
+ ⠏ Working...
+
+╭─ π  | ◈ Gemini 3 Pro High (Antigravity) | thinking:off | 📁 tmuxx | ⎇ main *7 | ◫ 5.8%/1.0M ⚡ | ⊛ 1.2M | (sub) ────────────────────────────────────────────────────────────────╮
+╰─                                                                                                                                                                               ─╯

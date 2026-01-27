@@ -64,6 +64,18 @@ priority = 100
   type = "ancestor"
   pattern = "(?i)claude|anthropic|claude-code"
 
+  [[agents.process_indicators]]
+  ancestor_pattern = "ssh"
+  icon = "🌐"
+
+  [[agents.process_indicators]]
+  ancestor_pattern = "docker"
+  icon = "🐳"
+
+  [[agents.process_indicators]]
+  ancestor_pattern = "nix-shell"
+  icon = "❄"
+
   # 1. Structural Prompt Block (Synthesis/Contextual)
   # Recognizes the two lines with the prompt between them.
   # Determines state based on the indicator block ABOVE the separator.

@@ -11,6 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Optimized Redraw Loop**: Significantly reduced CPU usage by only redrawing the TUI when state changes or input occurs, instead of forcing 60 FPS redraws. This allows the application to be idle-efficient while remaining responsive.
 
 ### Added
+- **Process Detection Indicators**: Added `process_indicators` to agent config to display icons (e.g., 🐳, 🌐) when agents are running inside containers, SSH sessions, or other wrappers, detected via process ancestry.
 - **External Terminal Wrapper**: Added `terminal_wrapper` config option to execute commands in a separate terminal window (e.g. WezTerm, Alacritty) instead of the background or current pane.
 - **External Command Execution**: Added `external_terminal` flag to key bindings and menu items to leverage the wrapper.
 - **Config Hot Reload**: Added `ReloadConfig` action (default binding: `Ctrl+r`) to reload the application configuration from disk without restarting.

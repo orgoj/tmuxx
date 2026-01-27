@@ -20,7 +20,7 @@
 **Účel:** Zobrazit symbol když agent běží v SSH/Docker/nix-shell
 
 **Změny:**
-1. `src/app/config.rs` - přidat do `AgentConfig` (~řádek 540):
+- [x] `src/app/config.rs` - přidat do `AgentConfig` (~řádek 540):
    ```rust
    /// Process indicators to show next to agent name
    /// Key: ancestor process pattern, Value: icon to display
@@ -37,7 +37,7 @@
    }
    ```
 
-2. `src/tmux/pane.rs` - přidat metodu `get_process_ancestors()`:
+- [x] `src/tmux/pane.rs` - přidat metodu `get_process_ancestors()`:
    ```rust
    pub fn get_process_ancestors(&self) -> Vec<String> {
        // Use ps -o ppid= to walk up process tree
@@ -45,12 +45,12 @@
    }
    ```
 
-3. `src/agents/types.rs` - přidat do `MonitoredAgent`:
+- [x] `src/agents/types.rs` - přidat do `MonitoredAgent`:
    ```rust
    pub active_indicators: Vec<String>,  // icons to display
    ```
 
-4. `src/ui/components/agent_tree.rs` - v renderování přidat:
+- [x] `src/ui/components/agent_tree.rs` - v renderování přidat:
    ```rust
    // After agent name, append indicators
    for icon in &agent.active_indicators {
@@ -58,7 +58,7 @@
    }
    ```
 
-5. `src/config/defaults.toml` - příklad v agent definici:
+- [x] `src/config/defaults.toml` - příklad v agent definici:
    ```toml
    [[agents]]
    id = "claude"
