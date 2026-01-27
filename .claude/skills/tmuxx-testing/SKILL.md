@@ -1,157 +1,43 @@
 ---
 name: tmuxx-testing
-description: Testing workflow and tmux safety rules for tmuxx development
+description: "Use this to assess, check, and verify tmuxx behavior in live tmux sessions. Enforces strict safety rules to prevent destructive command execution."
 ---
 
-# Testing Workflow for tmuxx
+# Testing Tmuxx
 
-**CRITICAL: Always use this skill when testing tmuxx!**
+You use this skill to verify your changes in a real environment. Tmuxx interacts with tmux, so testing requires careful execution to avoid sending keys to the wrong place.
 
-## META RULE: WRITE FIRST, DO LATER!
+## Requirements
+- A running tmux environment with test sessions (`ct-test`, `ct-multi`).
 
-- When user teaches you something new → WRITE IT TO CLAUDE.md IMMEDIATELY
-- When user corrects you → WRITE THE CORRECTION TO CLAUDE.md FIRST
-- When you learn a rule → WRITE IT DOWN BEFORE using it
-- **NEVER do things first and write later!**
-- **If electricity fails, you lose everything not written down!**
-- **Next session you won't remember anything not in CLAUDE.md!**
+## Steps
 
-## Test Sessions Structure
+### 1. Analysis
+- Identify which session needs to be monitored and which will be used for input.
+- **Rule**: `ct-test` is the ONLY session for `send-keys`.
 
-- `ct-test` - Session where tmuxx runs and DISPLAYS other sessions
-- `ct-multi` - Test session with 5 windows for multi-window testing
-- Other sessions: `cc-test`, `cc-tmuxx`, `cc-MOP`, `cc-tmp`
+### 2. Execution
 
-## ONLY Session for send-keys: `ct-test`
+#### A. Deployment
+- Use `./target/release/tmuxx` or `./target/debug/tmuxx`.
+- Use `scripts/reload-test.sh` to refresh the app in the test session.
 
-- This is THE ONLY session where you send keys for testing
-- ct-test is where you create test content that tmuxx monitors
-- ❌ WRONG: `tmux send-keys -t ct-test:0 "command"`
-- ✅ CORRECT: `tmux send-keys -t ct-test "command"`
-- **NEVER add :0 or :1 or any window number!**
-
-## CRITICAL: Send Keys ONE AT A TIME
-
-**NEVER send multiple keys without checking between each one!**
-
+#### B. Interaction
+- Send keys **ONE AT A TIME**.
+- **Rule**: Capture the pane and check the result AFTER EVERY KEY.
 ```bash
-# ❌ WRONG - multiple keys in loop, if tmuxx crashes keys go to bash and delete things!
-for i in {1..30}; do
-  tmux send-keys -t ct-test "" Enter
-done
-
-# ✅ CORRECT - ONE key, then CHECK what happened
 tmux send-keys -t ct-test "echo 'test'" Enter
 sleep 0.5
-tmux capture-pane -t ct-test -p  # CHECK result!
-
-# Then next key...
-tmux send-keys -t ct-test "" Enter
-sleep 0.5
-tmux capture-pane -t ct-test -p  # CHECK again!
+tmux capture-pane -t ct-test -p
 ```
 
-**Why:** If tmuxx crashes/exits, subsequent keys go to bash and can execute destructive commands!
+### 3. Verification (Safety Audit)
 
-## Test Scripts
+#### A. Content Check
+- **NEVER** use `tail` or `head` with `capture-pane`. Read the full output.
+- If capture is empty or doesn't show a bash prompt, **STOP IMMEDIATELY**.
 
-- `scripts/reload-test.sh` - Reload tmuxx in ct-test session **(USE THIS)**
-- `scripts/start-test-session.sh` - Start ct-test session
-- `scripts/setup-multi-test.sh` - Setup ct-multi session with multiple windows
-- `scripts/cp-bin.sh` - Install tmuxx to ~/bin (DON'T USE - user has working version!)
-
-## Testing Workflow
-
-1. Use `./target/release/tmuxx` for testing (never cp-bin.sh)
-2. Use `scripts/reload-test.sh` to reload tmuxx in ct-test session
-3. **INVOKE tmux-automation skill with Skill tool** - don't skip this step!
-4. Use tmux-automation skill to interact with TUI and verify behavior
-5. **NEVER ask user to test** - testing is YOUR responsibility
-6. **NEVER claim completion without runtime verification** - visual verification mandatory for UI features
-7. **NEVER kill test sessions!** Use scripts to reload, not kill and recreate
-
-## CRITICAL TMUX SAFETY RULES (NON-NEGOTIABLE)
-
-### 1. NEVER use tail/head with capture-pane!
-
-```bash
-# ❌ WRONG
-tmux capture-pane -t session -p | tail -30
-
-# ✅ CORRECT
-tmux capture-pane -t session -p
-```
-
-**Why:** Line 31 could be `reboot` or other destructive command!
-
-### 2. Empty capture = ERROR state → STOP IMMEDIATELY!
-
-- If `capture-pane -p` returns empty → DON'T send any commands
-- Check session exists, check for errors
-- **NEVER proceed without visible output**
-
-### 3. No bash prompt = ERROR state → STOP IMMEDIATELY!
-
-- If you don't see `$`, `>`, or clear input prompt → DON'T send commands
-- Something is wrong with the session
-- **NEVER blindly send Enter or other keys**
-
-### 4. ALWAYS capture FULL screen first to understand state
-
-```bash
-tmux capture-pane -t ct-test -p  # Full screen, no tail!
-```
-
-### 5. Check what you're doing BEFORE sending keys
-
-- Capture full screen
-- Verify prompt is visible
-- Verify expected state
-- ONLY THEN send commands
-
-### 6. ALWAYS test with actual config files!
-
-```bash
-# ❌ WRONG - unit tests pass but runtime fails
-cargo test  # Tests pass, but config.toml silently fails!
-
-# ✅ CORRECT - test with actual config file
-# 1. Add serde deny_unknown_fields to Config struct
-#[serde(deny_unknown_fields)]
-pub struct Config { ... }
-
-# 2. Test with actual ~/.config/tmuxx/config.toml
-./target/release/tmuxx --debug-config  # Shows loaded config
-
-# 3. Verify config parsing works, not just unit tests
-```
-
-**Why:** Unit tests ≠ working runtime config loading. Use `deny_unknown_fields` to catch errors early.
-
-### 7. Tmux Automation Pattern for Wrapper Scripts
-
-**When launching tools in tmux sessions, use send-keys pattern:**
-
-```bash
-# ❌ WRONG - direct execution fails if tool not in PATH
-tmux new-session -d -s name "/path/to/tmuxx"
-# Session dies immediately if tool exits!
-
-# ✅ CORRECT - bash session + send-keys
-tmux new-session -d -s "$SESSION" bash
-FULL_PATH=$(command -v tmuxx)  # Resolve full path
-tmux send-keys -t "$SESSION" "$FULL_PATH" Enter
-tmux attach-session -t "$SESSION"
-```
-
-**Why:**
-- Sessions stay alive even if tool crashes (bash keeps running)
-- Full path prevents PATH issues inside tmux
-- Allows error inspection after tool exits
-
-### 8. NEVER send keys to session where tmuxx is RUNNING!
-
-- ❌ FATAL: `tmux send-keys -t ct-test "y"` when tmuxx runs there
-- **Why:** tmuxx forwards keys to monitored sessions → unintended approvals!
-- ✅ CORRECT: Use dedicated test session WITHOUT tmuxx for interactive testing
-- **Testing tmuxx:** Only capture output, NEVER send keys to ct-test!
+#### B. UI Verification
+- Perform visual verification of TUI elements.
+- Verify that configuration overrides work as expected.
+- Run `cargo clippy` to ensure no linting regressions.
