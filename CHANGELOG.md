@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- **Menu Hints**: Added usage hints to the bottom of "Prompts" and "Command" menus (e.g., explaining `Enter` vs `Alt+Enter` for prompts).
+
 ### Fixed
 - **Help/Modal Scrolling**: Fixed arrow keys in readonly modals (like Help) to scroll text instead of moving the cursor.
 - **Help Window Closing**: Prevented `Left`/`Right`/`Home`/`End` keys from accidentally closing the Help window.

@@ -97,7 +97,7 @@ impl MenuTreeWidget {
 
         frame.render_widget(Clear, area);
 
-        let block = Block::default()
+        let mut block = Block::default()
             .title(Line::from(vec![
                 Span::styled(
                     format!(" {} ", title),
@@ -105,10 +105,30 @@ impl MenuTreeWidget {
                         .fg(Color::Cyan)
                         .add_modifier(Modifier::BOLD),
                 ),
-                Span::raw(" (Right/Enter:Expand, *:All, Esc:Close) "),
+                Span::raw(" (Right:Expand, *:All, Esc:Close) "),
             ]))
             .borders(Borders::ALL)
             .border_style(Style::default().fg(Color::Cyan));
+
+        if title.contains("Prompts") {
+            block = block.title_bottom(
+                Line::from(vec![
+                    Span::styled("[Enter]", Style::default().fg(Color::Yellow)),
+                    Span::raw(" Send  "),
+                    Span::styled("[Alt+Enter]", Style::default().fg(Color::Yellow)),
+                    Span::raw(" Edit & Send"),
+                ])
+                .alignment(ratatui::layout::Alignment::Center),
+            );
+        } else {
+            block = block.title_bottom(
+                Line::from(vec![
+                    Span::styled("[Enter]", Style::default().fg(Color::Yellow)),
+                    Span::raw(" Execute/Expand"),
+                ])
+                .alignment(ratatui::layout::Alignment::Center),
+            );
+        }
 
         let inner_area = block.inner(area);
         frame.render_widget(block, area);

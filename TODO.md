@@ -1,7 +1,7 @@
 # TODO - Tmuxx
 
 ## 🛠 Opravy (Fixes)
-- [ ] prompt popup dialog nezobrazuje jak vybrat prompt Enter a Alt+Enter s hintem
+- [x] prompt popup dialog nezobrazuje jak vybrat prompt Enter a Alt+Enter s hintem
 
 ## 💡 Drobnosti (Tweaks)
 - [ ] **TODO Layout**: Přidat možnost zobrazit TODO sekci na plnou šířku (pokud je aktivní, pravý panel s aktivitou se nebude vykreslovat). Defautl on.

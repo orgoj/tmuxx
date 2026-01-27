@@ -50,8 +50,6 @@ Changes:
 - File changes
 - Config updates
 - Documentation updates
-
-Co-Authored-By: Claude Sonnet 4.5 <noreply@anthropic.com>
 ```
 
 **Types:** feat, fix, refactor, docs, test, chore
