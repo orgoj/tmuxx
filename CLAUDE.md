@@ -237,6 +237,11 @@ All skills are in `.claude/skills/`:
 
 ### Key Principles
 
+- **Paths**: ALWAYS use relative paths (no absolute paths).
+- **Tools**: Use `rg` (ripgrep) for searching, never `grep`.
+- **Data Safety**: Never delete test fixtures/data; move or rename them if needed.
+- **TUI Performance**: Use conditional redrawing (`needs_redraw`) and lazy data fetching to minimize CPU.
+- **Git History**: Treat released CHANGELOG versions as immutable.
 - **Temporary files**: Use `./tmp/` in project, never system `/tmp/`
 - **Code duplication**: ZERO TOLERANCE - consolidate duplicate methods/structures
 - **Debug workflow**: Add visible debug to UI (status bar), not just file writes
