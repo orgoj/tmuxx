@@ -1,38 +1,8 @@
 # TODO - Tmuxx
 
-> **CRITICAL WIP**: The build is currently broken due to architectural migration (Regions & Heuristics). 
-> **Recovery Plan**: See [FIX.md](FIX.md).
-> **Objective**: Restore compilation and then finalize agent state detection.
-
-## 🛠 Opravy (Fixes)
-
-### Duplicate layout field v AgentConfig
-**Soubor:** `src/app/config.rs:560,572`
-**Problém:** Duplicitní pole `layout` v struct `AgentConfig`
-**Řešení:** Smazat řádky 570-572 (druhý `layout` s komentářem "Specific patterns")
-
-### Chybějící pole v StateRule (learn.rs)
-**Soubor:** `src/cmd/learn.rs:97`
-**Problém:** `StateRule` chybí pole `heuristic` a `region`
-**Řešení:** Přidat do struct inicializace:
-```rust
-StateRule {
-    // ... existing fields ...
-    heuristic: None,
-    region: "all".to_string(),
-}
-```
-
-### Aktualizovat definice agentů
-**Příkaz:** `cargo run -- test --dir tests/fixtures`
-**Akce:** Podle výstupu testu upravit regex patterns v `src/config/defaults.toml`
-**Stav:** WIP - Nová architektura UniversalParseru (regiony/heuristiky) je částečně implementována, ale build je rozbitý. Viz FIX.md.
-
----
-
 ## 💡 Drobnosti (Tweaks)
 
-- [ ] zere to 15% CPU a nastavene mam poll_interval_ms = 5000, to je moc, je treba to optimalizovat, proc to tolik zere, kdyz dam maly pooling?
+- [x] zere to 15% CPU a nastavene mam poll_interval_ms = 5000, to je moc, je treba to optimalizovat, proc to tolik zere, kdyz dam maly pooling?
 
 ### External Terminal Wrapper
 **Účel:** Spouštět příkazy v novém okně externího terminálu (wezterm, alacritty, kitty)

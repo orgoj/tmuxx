@@ -96,137 +96,147 @@ async fn run_loop(
     tmux_client: &TmuxClient,
     system_stats: &mut SystemStatsCollector,
 ) -> Result<()> {
+    let mut needs_redraw = true;
+
     loop {
         // Advance animation tick
+        let old_tick = state.tick;
         state.tick();
+        if state.tick != old_tick {
+            needs_redraw = true;
+        }
 
-        // Update system stats
-        system_stats.refresh();
-        state.system_stats = system_stats.stats().clone();
+        if needs_redraw {
+            // Update system stats
+            system_stats.refresh();
+            state.system_stats = system_stats.stats().clone();
 
-        // Draw UI
-        terminal.draw(|frame| {
-            let size = frame.area();
-            let main_chunks = Layout::main_layout(size);
+            // Draw UI
+            terminal.draw(|frame| {
+                let size = frame.area();
+                let main_chunks = Layout::main_layout(size);
 
-            // Header
-            HeaderWidget::render(frame, main_chunks[0], state);
+                // Header
+                HeaderWidget::render(frame, main_chunks[0], state);
 
-            // Calculate input height based on config
-            let input_height = if state.config.hide_bottom_input {
-                0 // No input widget shown
-            } else {
-                InputWidget::calculate_height(state.get_input(), 6)
-            };
-
-            if state.show_subagent_log {
-                // With subagent log: sidebar | summary+preview+input | subagent_log
-                let (left, preview, subagent_log) =
-                    Layout::content_layout_with_log(main_chunks[1], &state.sidebar_width);
-                AgentTreeWidget::render(frame, left, state);
-
-                // Split preview area for summary, preview, and input
-                let preview_chunks = ratatui::layout::Layout::default()
-                    .direction(ratatui::layout::Direction::Vertical)
-                    .constraints([
-                        ratatui::layout::Constraint::Length(15),
-                        ratatui::layout::Constraint::Min(5),
-                        ratatui::layout::Constraint::Length(input_height + 2),
-                    ])
-                    .split(preview);
-                if state.show_summary_detail {
-                    PanePreviewWidget::render_summary(frame, preview_chunks[0], state);
-                }
-
-                // Only render detailed view if an agent is actually selected/visible
-                if state.selected_agent().is_some() {
-                    PanePreviewWidget::render_detailed(frame, preview_chunks[1], state);
-                }
-
-                // Only render input if not hidden
-                if !state.config.hide_bottom_input {
-                    InputWidget::render(frame, preview_chunks[2], state);
-                }
-                SubagentLogWidget::render(frame, subagent_log, state);
-            } else {
-                // Normal: sidebar | summary+preview±input
-                if state.config.hide_bottom_input {
-                    // No input panel at all
-                    let (left, summary, preview) = Layout::content_layout_no_input(
-                        main_chunks[1],
-                        &state.sidebar_width,
-                        state.show_summary_detail,
-                    );
-                    AgentTreeWidget::render(frame, left, state);
-                    if state.show_summary_detail {
-                        PanePreviewWidget::render_summary(frame, summary, state);
-                    }
-                    if state.selected_agent().is_some() {
-                        PanePreviewWidget::render_detailed(frame, preview, state);
-                    }
+                // Calculate input height based on config
+                let input_height = if state.config.hide_bottom_input {
+                    0 // No input widget shown
                 } else {
-                    // With input panel
-                    let (left, summary, preview, input_area) = Layout::content_layout_with_input(
-                        main_chunks[1],
-                        &state.sidebar_width,
-                        input_height,
-                        state.show_summary_detail,
-                    );
+                    InputWidget::calculate_height(state.get_input(), 6)
+                };
+
+                if state.show_subagent_log {
+                    // With subagent log: sidebar | summary+preview+input | subagent_log
+                    let (left, preview, subagent_log) =
+                        Layout::content_layout_with_log(main_chunks[1], &state.sidebar_width);
                     AgentTreeWidget::render(frame, left, state);
+
+                    // Split preview area for summary, preview, and input
+                    let preview_chunks = ratatui::layout::Layout::default()
+                        .direction(ratatui::layout::Direction::Vertical)
+                        .constraints([
+                            ratatui::layout::Constraint::Length(15),
+                            ratatui::layout::Constraint::Min(5),
+                            ratatui::layout::Constraint::Length(input_height + 2),
+                        ])
+                        .split(preview);
                     if state.show_summary_detail {
-                        PanePreviewWidget::render_summary(frame, summary, state);
+                        PanePreviewWidget::render_summary(frame, preview_chunks[0], state);
                     }
+
+                    // Only render detailed view if an agent is actually selected/visible
                     if state.selected_agent().is_some() {
-                        PanePreviewWidget::render_detailed(frame, preview, state);
+                        PanePreviewWidget::render_detailed(frame, preview_chunks[1], state);
                     }
-                    InputWidget::render(frame, input_area, state);
+
+                    // Only render input if not hidden
+                    if !state.config.hide_bottom_input {
+                        InputWidget::render(frame, preview_chunks[2], state);
+                    }
+                    SubagentLogWidget::render(frame, subagent_log, state);
+                } else {
+                    // Normal: sidebar | summary+preview±input
+                    if state.config.hide_bottom_input {
+                        // No input panel at all
+                        let (left, summary, preview) = Layout::content_layout_no_input(
+                            main_chunks[1],
+                            &state.sidebar_width,
+                            state.show_summary_detail,
+                        );
+                        AgentTreeWidget::render(frame, left, state);
+                        if state.show_summary_detail {
+                            PanePreviewWidget::render_summary(frame, summary, state);
+                        }
+                        if state.selected_agent().is_some() {
+                            PanePreviewWidget::render_detailed(frame, preview, state);
+                        }
+                    } else {
+                        // With input panel
+                        let (left, summary, preview, input_area) =
+                            Layout::content_layout_with_input(
+                                main_chunks[1],
+                                &state.sidebar_width,
+                                input_height,
+                                state.show_summary_detail,
+                            );
+                        AgentTreeWidget::render(frame, left, state);
+                        if state.show_summary_detail {
+                            PanePreviewWidget::render_summary(frame, summary, state);
+                        }
+                        if state.selected_agent().is_some() {
+                            PanePreviewWidget::render_detailed(frame, preview, state);
+                        }
+                        InputWidget::render(frame, input_area, state);
+                    }
                 }
-            }
 
-            // Footer
-            FooterWidget::render(frame, main_chunks[2], state, &state.config);
+                // Footer
+                FooterWidget::render(frame, main_chunks[2], state, &state.config);
 
-            // Popup input (before help)
-            if let Some(popup_state) = &state.popup_input {
-                PopupInputWidget::render(frame, size, popup_state);
-            }
+                // Popup input (before help)
+                if let Some(popup_state) = &state.popup_input {
+                    PopupInputWidget::render(frame, size, popup_state);
+                }
 
-            // Modal textarea (before help)
-            if let Some(modal_state) = &state.modal_textarea {
-                ModalTextareaWidget::render(frame, size, modal_state);
-            }
-
-            // Menu Tree (before help)
-            if state.show_menu {
-                MenuTreeWidget::render(
-                    frame,
-                    size,
-                    &mut state.menu_tree,
-                    &state.config.menu,
-                    &state.config,
-                    "Command Menu",
-                );
-            }
-
-            // Prompts Menu (before help)
-            if state.show_prompts {
-                MenuTreeWidget::render(
-                    frame,
-                    size,
-                    &mut state.prompts_tree,
-                    &state.config.prompts,
-                    &state.config,
-                    "Prompts Menu",
-                );
-            }
-
-            // Help overlay (highest priority - render last)
-            if state.show_help {
+                // Modal textarea (before help)
                 if let Some(modal_state) = &state.modal_textarea {
                     ModalTextareaWidget::render(frame, size, modal_state);
                 }
-            }
-        })?;
+
+                // Menu Tree (before help)
+                if state.show_menu {
+                    MenuTreeWidget::render(
+                        frame,
+                        size,
+                        &mut state.menu_tree,
+                        &state.config.menu,
+                        &state.config,
+                        "Command Menu",
+                    );
+                }
+
+                // Prompts Menu (before help)
+                if state.show_prompts {
+                    MenuTreeWidget::render(
+                        frame,
+                        size,
+                        &mut state.prompts_tree,
+                        &state.config.prompts,
+                        &state.config,
+                        "Prompts Menu",
+                    );
+                }
+
+                // Help overlay (highest priority - render last)
+                if state.show_help {
+                    if let Some(modal_state) = &state.modal_textarea {
+                        ModalTextareaWidget::render(frame, size, modal_state);
+                    }
+                }
+            })?;
+            needs_redraw = false;
+        }
 
         // Handle events with short timeout for responsive UI (~60fps)
         let timeout = Duration::from_millis(16);
@@ -248,6 +258,7 @@ async fn run_loop(
 
                 // Refresh TODO content for the newly selected/updated agent
                 state.refresh_project_todo();
+                needs_redraw = true;
             }
 
             // Handle keyboard and mouse events
@@ -255,6 +266,7 @@ async fn run_loop(
                 // Process all pending events to avoid input lag
                 while event::poll(Duration::from_millis(0))? {
                     let event = event::read()?;
+                    needs_redraw = true;
 
                     // Handle mouse events
                     if let Event::Mouse(mouse) = event {
