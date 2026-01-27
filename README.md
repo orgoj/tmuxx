@@ -166,9 +166,18 @@ Define commonly used prompts (`p` key):
 
 ```toml
 [prompts]
+merge_with_defaults = true  # Append to default prompts instead of replacing them
+
   [[prompts.items]]
   name = "Refactor"
   text = "Refactor this code to be more modular."
+  
+  # Nested menu example
+  [[prompts.items]]
+  name = "Testing"
+    [[prompts.items.items]]
+    name = "Generate Unit Tests"
+    text = "Create unit tests for this module."
 ```
 
 ### Power User Tips
