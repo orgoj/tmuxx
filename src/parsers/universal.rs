@@ -20,6 +20,7 @@ enum CompiledMatcher {
     Command(Regex),
     Ancestor(Regex),
     Title(Regex),
+    Content(Regex),
 }
 
 struct CompiledStateRule {
@@ -86,6 +87,13 @@ impl UniversalParser {
                     Ok(re) => matchers.push(CompiledMatcher::Title(re)),
                     Err(e) => warn!(
                         "Invalid title pattern '{}' for agent {}: {}",
+                        pattern, config.name, e
+                    ),
+                },
+                MatcherConfig::Content { pattern } => match Regex::new(pattern) {
+                    Ok(re) => matchers.push(CompiledMatcher::Content(re)),
+                    Err(e) => warn!(
+                        "Invalid content pattern '{}' for agent {}: {}",
                         pattern, config.name, e
                     ),
                 },
@@ -280,6 +288,9 @@ impl AgentParser for UniversalParser {
                             best_strength = best_strength.max(MatchStrength::Strong);
                         }
                     }
+                }
+                CompiledMatcher::Content(_) => {
+                    // Content matchers do not contribute to initial detection strength
                 }
             }
         }
@@ -546,6 +557,41 @@ impl AgentParser for UniversalParser {
 
     fn rejection_keys(&self) -> &str {
         self.config.keys.reject.as_deref().unwrap_or("n")
+    }
+
+    fn requires_content_check(&self) -> bool {
+        self.matchers
+            .iter()
+            .any(|m| matches!(m, CompiledMatcher::Content(_)))
+    }
+
+    fn match_content(&self, content: &str) -> bool {
+        // If any Content matcher is present, at least ONE must match?
+        // Or ALL must match?
+        // Usually matchers are OR (if multiple defined).
+        // BUT here we are refining a match.
+        // Let's say: If there are content matchers, at least one must match.
+
+        let content_matchers: Vec<&Regex> = self
+            .matchers
+            .iter()
+            .filter_map(|m| match m {
+                CompiledMatcher::Content(re) => Some(re),
+                _ => None,
+            })
+            .collect();
+
+        if content_matchers.is_empty() {
+            return true;
+        }
+
+        for re in content_matchers {
+            if re.is_match(content) {
+                return true;
+            }
+        }
+
+        false
     }
 }
 

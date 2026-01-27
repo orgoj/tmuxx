@@ -103,6 +103,7 @@ pub async fn run_learn(args: LearnArgs) -> Result<()> {
             refinements: Vec::new(),
         }],
         subagent_rules: None,
+        process_indicators: Vec::new(),
         title_indicators: None,
         default_status: None,
         default_type: None,

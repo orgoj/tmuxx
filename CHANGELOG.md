@@ -19,6 +19,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Help Window Closing**: Prevented `Left`/`Right`/`Home`/`End` keys from accidentally closing the Help window.
 
 
+## [Unreleased]
+### Added
+- **Pi Powerline Support**: Added native support for the new Pi extension/theme (Powerline status bar, rounded corners).
+- **Content-Based Agent Matching**: Added `content` matcher type to agent definitions, allowing agents to be distinguished not just by command, but by specific content patterns in their output (e.g. rounded corners).
+- **Improved Pi Detection**: Standard Pi definition remains robust, while "Powerline" variant is auto-detected via content matching.
+
 ## [0.2.1] - 2026-01-27
 ### Added
 - **Kill Session Support**: Added ability to kill the entire tmux session of the selected agent (default binding: `X` or `Shift+x`).

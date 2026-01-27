@@ -89,6 +89,22 @@ pub trait AgentParser: Send + Sync {
     fn rejection_keys(&self) -> &str {
         "n"
     }
+
+    /// Returns the configured process indicators
+    fn process_indicators(&self) -> Vec<crate::app::config::ProcessIndicator> {
+        Vec::new()
+    }
+
+    /// Returns whether this parser requires content validation
+    fn requires_content_check(&self) -> bool {
+        false
+    }
+
+    /// Validates if the content matches (only called if requires_content_check returns true)
+    fn match_content(&self, content: &str) -> bool {
+        let _ = content;
+        true
+    }
 }
 
 /// Registry of all available parsers
@@ -119,7 +135,28 @@ impl ParserRegistry {
         Self { parsers }
     }
 
-    /// Finds a parser that matches the given pane info
+    /// Finds potential parsers that match the given pane info (based on process info only)
+    pub fn find_candidates_for_pane(&self, pane: &PaneInfo) -> Vec<&dyn AgentParser> {
+        let detection_strings = pane.detection_strings();
+        let mut candidates = Vec::new();
+
+        for parser in &self.parsers {
+            let strength = parser.match_strength(&detection_strings);
+            if strength > MatchStrength::None {
+                candidates.push((strength, parser.as_ref()));
+            }
+        }
+
+        // Sort by strength DESC, then keep original order (priority)
+        // Since we iterate in priority order, stable sort by strength is enough?
+        // Actually, candidates are already pushed in priority order.
+        // We just need to ensure Strong matches come before Weak matches.
+        candidates.sort_by_key(|b| std::cmp::Reverse(b.0));
+
+        candidates.into_iter().map(|(_, p)| p).collect()
+    }
+
+    /// Finds a parser that matches the given pane info (Legacy: ignores content matchers)
     pub fn find_parser_for_pane(&self, pane: &PaneInfo) -> Option<&dyn AgentParser> {
         let detection_strings = pane.detection_strings();
 

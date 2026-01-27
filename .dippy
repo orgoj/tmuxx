@@ -22,3 +22,6 @@ allow tmux display-message -t ct-test *
 allow-redirect ./tmp/*
 
 allow git add *
+
+# docasne pro reorganizaci
+#allow cp *

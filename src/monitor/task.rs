@@ -90,16 +90,49 @@ impl MonitorTask {
                 continue;
             }
 
-            // Try to find a matching parser for the pane (checks command, title, cmdline)
-            if let Some(parser) = self.parser_registry.find_parser_for_pane(&pane) {
-                let target = pane.target();
+            // Find suitable parser (possibly checking content)
+            let candidates = self.parser_registry.find_candidates_for_pane(&pane);
+            if candidates.is_empty() {
+                continue;
+            }
 
-                // Capture pane content
-                let content = match self.tmux_client.capture_pane(&target) {
-                    Ok(c) => c,
-                    Err(e) => {
-                        error!("Failed to capture pane {}: {}", target, e);
-                        continue;
+            let mut selected_parser = None;
+            let mut captured_content = None;
+            let target = pane.target();
+
+            for parser in candidates {
+                if parser.requires_content_check() {
+                    if captured_content.is_none() {
+                        match self.tmux_client.capture_pane(&target) {
+                            Ok(c) => captured_content = Some(c),
+                            Err(e) => {
+                                error!("Failed to capture pane {}: {}", target, e);
+                                continue;
+                            }
+                        }
+                    }
+                    if let Some(content) = &captured_content {
+                        if parser.match_content(content) {
+                            selected_parser = Some(parser);
+                            break;
+                        }
+                    }
+                } else {
+                    selected_parser = Some(parser);
+                    break;
+                }
+            }
+
+            if let Some(parser) = selected_parser {
+                let content = if let Some(c) = captured_content {
+                    c
+                } else {
+                    match self.tmux_client.capture_pane(&target) {
+                        Ok(c) => c,
+                        Err(e) => {
+                            error!("Failed to capture pane {}: {}", target, e);
+                            continue;
+                        }
                     }
                 };
 

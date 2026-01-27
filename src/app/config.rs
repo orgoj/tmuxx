@@ -559,6 +559,10 @@ pub struct AgentConfig {
     #[serde(default)]
     pub layout: Option<LayoutConfig>,
 
+    /// Process indicators to show next to agent name
+    #[serde(default)]
+    pub process_indicators: Vec<ProcessIndicator>,
+
     /// Rules for generating summary view
     #[serde(default)]
     pub summary_rules: Option<SummaryRules>,
@@ -597,6 +601,12 @@ pub struct LayoutConfig {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ProcessIndicator {
+    pub ancestor_pattern: String, // regex pro ps -o comm=
+    pub icon: String,             // emoji/text k zobrazení
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(tag = "type")]
 pub enum MatcherConfig {
     #[serde(rename = "command")]
@@ -607,6 +617,9 @@ pub enum MatcherConfig {
 
     #[serde(rename = "title")]
     Title { pattern: String },
+
+    #[serde(rename = "content")]
+    Content { pattern: String },
 }
 
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
