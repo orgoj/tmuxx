@@ -363,7 +363,7 @@ full_template = '''  {selection}{status_char} {name}
 "E" = { send_keys = "Escape" }
 "C" = { send_keys = "C-c" }
 "D" = { send_keys = "C-d" }
-"K" = { kill_app = { method = "sigterm" } }
+"K" = { kill_app = { method = "respawn" } }
 "r" = "rename_session"
 "C-l" = "refresh"
 "C-s" = "capture_test_case"
@@ -382,3 +382,4 @@ full_template = '''  {selection}{status_char} {name}
 "s" = "toggle_filter_selected"
 "x" = "toggle_filter_active"
 "S" = "toggle_subagent_log"
+"X" = "kill_session"

@@ -198,6 +198,19 @@ impl TmuxClient {
                 self.send_keys(target, "C-d")?;
                 Ok(())
             }
+            KillMethod::Respawn => {
+                // Respawn pane with -k (kill) flag
+                let output = Command::new("tmux")
+                    .args(["respawn-pane", "-k", "-t", target])
+                    .output()
+                    .context("Failed to execute tmux respawn-pane")?;
+
+                if !output.status.success() {
+                    let stderr = String::from_utf8_lossy(&output.stderr);
+                    anyhow::bail!("tmux respawn-pane failed: {}", stderr);
+                }
+                Ok(())
+            }
         }
     }
 
@@ -280,6 +293,20 @@ impl TmuxClient {
         if !output.status.success() {
             let stderr = String::from_utf8_lossy(&output.stderr);
             anyhow::bail!("tmux rename-session failed: {}", stderr);
+        }
+        Ok(())
+    }
+
+    /// Kills a tmux session
+    pub fn kill_session(&self, target_session: &str) -> Result<()> {
+        let output = Command::new("tmux")
+            .args(["kill-session", "-t", target_session])
+            .output()
+            .context("Failed to execute tmux kill-session")?;
+
+        if !output.status.success() {
+            let stderr = String::from_utf8_lossy(&output.stderr);
+            anyhow::bail!("tmux kill-session failed: {}", stderr);
         }
         Ok(())
     }

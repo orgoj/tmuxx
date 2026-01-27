@@ -4,7 +4,7 @@ set -e
 
 declare -A FILES=(
     ["target/release/tmuxx"]="$HOME/bin/tmuxx"
-    ["scripts/tmuxx-wrapper.sh"]="$HOME/bin/tcc"
+    ["scripts/tmuxx-wrapper.sh"]="$HOME/bin/txx"
 )
 
 for src in "${!FILES[@]}"; do

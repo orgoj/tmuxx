@@ -80,6 +80,8 @@ pub enum Action {
     SendKeys(String),
     /// Kill application in agent pane
     KillApp { method: KillMethod },
+    /// Kill the whole tmux session
+    KillSession,
     /// Show popup input dialog
     ShowPopupInput {
         title: String,
@@ -180,6 +182,7 @@ impl Action {
             Action::ScrollDown => "Scroll down",
             Action::SendKeys(_) => "Send keys to pane",
             Action::KillApp { .. } => "Kill application",
+            Action::KillSession => "Kill tmux session",
             Action::ShowPopupInput { .. } => "Show popup input",
             Action::HidePopupInput => "Hide popup",
             Action::PopupInputSubmit => "Submit popup input",

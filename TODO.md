@@ -1,9 +1,6 @@
 # TODO - Tmuxx
 
 ## 🛠 Opravy (Fixes)
-- [ ] **Správa Session**:
-    - [ ] Prověřit a opravit logiku "Kill Session" (vykazuje nestabilní chování).
-    - [ ] Přidat příkaz pro uzavření celé session (vhodné zejména pro úklid po SSH připojeních).
 - [ ] **Modal/Help Scrolling**: Opravit zavírání Help okna šipkami. V readonly režimu šipky nesmí hýbat kurzorem, ale pouze scrollovat text.
 - [ ] **Preview Scrolling**: Implementovat plynulý scroll v preview oblasti s automatickým scrollováním na konec po zalomení textu.
 

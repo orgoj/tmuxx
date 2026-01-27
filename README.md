@@ -101,7 +101,8 @@ All bindings are configurable in `config.toml`. Defaults:
 | `C-l` | Refresh | Force refresh / clear error states |
 | `C-s` | Capture | Capture current pane state for testing |
 | `r` | Rename | Rename current session |
-| `K` | Kill | Kill the process in the selected pane (SIGTERM) |
+| `K` | Kill | Kill/Respawn the process in the selected pane |
+| `X` | Kill Session | Kill the entire tmux session of selected agent |
 | **Views & Menus** | | |
 | `m` | Command Menu | Open fuzzy-searchable command menu |
 | `p` | Prompts Menu | Open tree of saved prompts |

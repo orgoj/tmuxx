@@ -19,6 +19,8 @@ pub enum KillMethod {
     Sigterm,
     /// Send Ctrl-C then Ctrl-D sequence (forced interrupt)
     CtrlCCtrlD,
+    /// Respawn the pane (kill process and restart command)
+    Respawn,
 }
 
 /// Actions that can be bound to keys
@@ -40,6 +42,8 @@ pub enum KeyAction {
     SendKeys(String),
     /// Kill the application in target pane
     KillApp { method: KillMethod },
+    /// Kill the whole tmux session
+    KillSession,
     /// Rename current session
     RenameSession,
     /// Capture current pane content as a test case

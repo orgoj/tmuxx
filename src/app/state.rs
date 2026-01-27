@@ -36,6 +36,11 @@ pub enum PopupType {
         /// The content captured at the moment of keypress
         content: String,
     },
+    /// Confirmation dialog for killing session
+    KillConfirmation {
+        /// The session name to kill
+        session: String,
+    },
 }
 
 /// State for popup input dialog

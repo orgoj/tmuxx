@@ -102,6 +102,9 @@ impl HelpWidget {
                 KeyAction::RenameSession => {
                     add_line("Actions", format!("  {:14} Rename session", keys_str))
                 }
+                KeyAction::KillSession => {
+                    add_line("Actions", format!("  {:14} Kill session", keys_str))
+                }
                 KeyAction::CaptureTestCase => {
                     add_line("Dev", format!("  {:14} Capture test case", keys_str))
                 }
@@ -112,6 +115,7 @@ impl HelpWidget {
                     let m = match method {
                         KillMethod::Sigterm => "SIGTERM",
                         KillMethod::CtrlCCtrlD => "C-c C-d",
+                        KillMethod::Respawn => "Respawn (-k)",
                     };
                     add_line("Actions", format!("  {:14} Kill app ({})", keys_str, m));
                 }

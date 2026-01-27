@@ -7,13 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-### Documentation
-- **README Rewrite**: Complete overhaul of README.md to reflect current features (tmuxx rename, config-driven architecture, menu system).
-- **Wrapper Documentation**: Added dedicated section for `txx` wrapper script.
-
-### Fixed
-- **Wrapper Script**: Updated `scripts/tmuxx-wrapper.sh` to pass command line arguments to the binary.
-- **Clippy Warning**: Fixed collapsible-else-if warning in `src/ui/app.rs`.
+## [0.2.1] - 2026-01-27
+### Added
+- **Kill Session Support**: Added ability to kill the entire tmux session of the selected agent (default binding: `X` or `Shift+x`).
+- **Confirmation Dialogs**: Added safety confirmation popup for destructive actions like killing a session.
+- **Improved Kill Action**: Added `respawn` method to `KillApp` action, which uses `tmux respawn-pane -k` for reliable process termination. Default binding for `K` updated to use this method.
 
 ## [0.2.0] - 2026-01-26 - The "Tmuxx" Rewrite
 
@@ -25,6 +23,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Log file: `tmuxx.log`
 - **Repo Change**: New repository location: [orgoj/tmuxx](https://github.com/orgoj/tmuxx).
 
+### Documentation
+- **README Rewrite**: Complete overhaul of README.md to reflect current features (tmuxx rename, config-driven architecture, menu system).
+- **Wrapper Documentation**: Added dedicated section for `txx` wrapper script.
+
 ### Added
 - **Native CLI Agents Support**: Explicit support for running as a universal dashboard with specialized support for AI agents.
 - **Todo from File**: Added default support for reading `TODO.md` from the agent's working directory.
@@ -32,6 +34,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 - **Documentation**: Complete overhaul of README and internal docs to reflect the new identity.
 - **Config Defaults**: Updated defaults to be more robust for general usage.
+
+### Fixed
+- **Wrapper Script**: Updated `scripts/tmuxx-wrapper.sh` to pass command line arguments to the binary.
+- **Clippy Warning**: Fixed collapsible-else-if warning in `src/ui/app.rs`.
 
 ---
 

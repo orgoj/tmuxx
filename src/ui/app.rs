@@ -953,6 +953,30 @@ async fn run_loop(
                                     }
                                     state.clear_selection();
                                 }
+                                Action::KillSession => {
+                                    if let Some(agent) = state.selected_agent() {
+                                        Action::ShowPopupInput {
+                                            title: "Confirm Kill Session".to_string(),
+                                            prompt: format!("Are you sure you want to kill session '{}'? (y/n)", agent.session),
+                                            initial: String::new(), // Empty buffer expects y/n
+                                            popup_type: crate::app::PopupType::KillConfirmation {
+                                                session: agent.session.clone(),
+                                            },
+                                        };
+                                        // We need to trigger the action immediately to show popup
+                                        // But Action::KillSession is just a trigger.
+                                        // Actually, we should dispatch ShowPopupInput from here.
+                                        state.popup_input = Some(crate::app::PopupInputState {
+                                            title: "Confirm Kill Session".to_string(),
+                                            prompt: format!("Kill session '{}'? Type 'y' to confirm.", agent.session),
+                                            buffer: String::new(),
+                                            cursor: 0,
+                                            popup_type: crate::app::PopupType::KillConfirmation {
+                                                session: agent.session.clone(),
+                                            },
+                                        });
+                                    }
+                                }
                                 Action::ExecuteCommand {
                                     command,
                                     blocking,
@@ -1220,6 +1244,16 @@ async fn run_loop(
                                                 }
                                                 // If new_name == session, just close dialog silently
                                             }
+                                            PopupType::KillConfirmation { session } => {
+                                                if popup.buffer.trim().eq_ignore_ascii_case("y") {
+                                                    if let Err(e) = tmux_client.kill_session(&session) {
+                                                        state.set_error(format!("Failed to kill session: {}", e));
+                                                    } else {
+                                                        state.set_status(format!("Killed session: {}", session));
+                                                        // Note: The monitor loop will update the tree shortly
+                                                    }
+                                                }
+                                            }
                                             PopupType::CaptureStatus { content } => {
                                                 let status_str = popup.buffer.trim().to_lowercase();
                                                 if status_str.is_empty() {
@@ -1469,6 +1503,7 @@ fn map_key_to_action(
                 KeyAction::KillApp { method } => Action::KillApp {
                     method: method.clone(),
                 },
+                KeyAction::KillSession => Action::KillSession,
                 KeyAction::RenameSession => {
                     if let Some(agent) = state.selected_agent() {
                         Action::ShowPopupInput {
