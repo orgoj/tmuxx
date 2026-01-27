@@ -138,6 +138,8 @@ pub enum Action {
     ToggleFilterActive,
     /// Toggle filter for selected agents
     ToggleFilterSelected,
+    /// Reload application configuration
+    ReloadConfig,
 }
 
 impl Action {
@@ -203,6 +205,7 @@ impl Action {
             Action::TogglePaneTreeMode => "Toggle pane tree mode (compact/full)",
             Action::ToggleFilterActive => "Toggle active agents filter",
             Action::ToggleFilterSelected => "Toggle selected agents filter",
+            Action::ReloadConfig => "Reload configuration",
             Action::None => "",
         }
     }

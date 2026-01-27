@@ -1340,6 +1340,9 @@ async fn run_loop(
                                 Action::ModalTextareaSubmit => {
                                     // This should not happen here (handled in modal textarea mode)
                                 }
+                                Action::ReloadConfig => {
+                                    state.reload_config(Config::load());
+                                }
                                 Action::None => {}
                             }
                         }
@@ -1509,6 +1512,7 @@ fn map_key_to_action(
                 KeyAction::TogglePaneTreeMode => Action::TogglePaneTreeMode,
                 KeyAction::ToggleFilterActive => Action::ToggleFilterActive,
                 KeyAction::ToggleFilterSelected => Action::ToggleFilterSelected,
+                KeyAction::ReloadConfig => Action::ReloadConfig,
             };
         }
     }

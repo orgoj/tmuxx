@@ -97,6 +97,9 @@ impl HelpWidget {
                 KeyAction::Refresh => {
                     add_line("View", format!("  {:14} Redraw / Clear error", keys_str))
                 }
+                KeyAction::ReloadConfig => {
+                    add_line("General", format!("  {:14} Reload configuration", keys_str))
+                }
 
                 // Commands / Custom
                 KeyAction::RenameSession => {

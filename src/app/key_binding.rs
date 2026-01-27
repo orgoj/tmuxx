@@ -64,6 +64,8 @@ pub enum KeyAction {
     ToggleFilterActive,
     /// Toggle filter for selected agents
     ToggleFilterSelected,
+    /// Reload application configuration
+    ReloadConfig,
 }
 
 /// Configuration for command execution

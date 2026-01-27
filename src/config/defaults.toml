@@ -384,3 +384,4 @@ full_template = '''  {selection}{status_char} {name}
 "x" = "toggle_filter_active"
 "S" = "toggle_subagent_log"
 "X" = "kill_session"
+"C-r" = "reload_config"

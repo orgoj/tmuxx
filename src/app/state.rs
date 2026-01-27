@@ -807,6 +807,17 @@ impl AppState {
         self.ensure_visible_selection();
     }
 
+    /// Reload application configuration
+    pub fn reload_config(&mut self, config: Config) {
+        self.config = config;
+        // Some state depends on config, refresh it
+        self.sidebar_width = self.config.sidebar_width.clone();
+        // Clear cached menus so they are rebuilt from new config
+        self.menu_tree.filter.clear();
+        self.prompts_tree.filter.clear();
+        self.set_status("Configuration reloaded".to_string());
+    }
+
     /// Refresh the current project TODO content based on the selected agent's path
     pub fn refresh_project_todo(&mut self) {
         if !self.config.todo_from_file {

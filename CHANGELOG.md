@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **Config Hot Reload**: Added `ReloadConfig` action (default binding: `Ctrl+r`) to reload the application configuration from disk without restarting.
 - **Full-Width TODO**: Added `todo_full_width` configuration option (default: `true`). When enabled, the TODO section expands to full width, hiding the right-side activity panel to provide more space for tasks.
 - **Menu/Prompt Preview**: Added a preview box at the bottom of the Command and Prompts menus to show the full command or prompt text of the selected item.
 - **Menu Hints**: Added usage hints to the bottom of "Prompts" and "Command" menus (e.g., explaining `Enter` vs `Alt+Enter` for prompts).

@@ -4,7 +4,8 @@
 - [x] prompt popup dialog nezobrazuje jak vybrat prompt Enter a Alt+Enter s hintem
 - [x] v popupdialogu (prompr / menu) mid ve spodu boz, ktery bude zobrazovat cely command a nebo prompt
 - [x] ve status bar maji byt jen errory cervene, ted je tam skoro vsechno cervene , normalni hlaseni maji byt zlene, opravit
-- [ ] config reload ? jestli je to jednoduche, jinak presunout pozdeji (binding command)
+- [x] config reload ? jestli je to jednoduche, jinak presunout pozdeji (binding command)
+- [ ] aktualizovat definice agentu, udelej si na to skill pomoci /skill:creating-skill jde o to pustit `cargo run -- test --dir tests/fixtures` a pak inteleigentne hledat na tech screen charakteristicke prvky a texty ze kterych je mozne poznat stav a podle toho upravi definition.toml pro agenta
 
 ## 💡 Drobnosti (Tweaks)
 - [x] **TODO Layout**: Přidat možnost zobrazit TODO sekci na plnou šířku (pokud je aktivní, pravý panel s aktivitou se nebude vykreslovat). Defautl on.
@@ -15,6 +16,7 @@
 - [ ] **Vylepšený init-config**: `--init-config` by měl zapsat `defaults.toml` včetně komentářů (z `include_str!`), ne jen serializovaný struct.
 
 ## 🚀 Větší funkce (Features)
+- [ ] Lepsi detekce error v terminalu, obecne udelat pres config, musim umet definovat ze posna slova (error/fail/traceback..) a i nejak regexp jaky text k nim dat, defaultn radek s tim slovem, a s tim souvisi i funkce, ktrea tyto radky oznacuje ve sceenshot preview
 - [ ] **Externí TODO Generátor**: Podpora pro externí programy (např. `beads`), které budou generovat obsah TODO okna dynamicky.
 - [ ] **Action Menu**: Komplexní systém konfigurovatelných akcí (proměnné, bash pipeline). Zozsirni stavajici definice.
 - [ ] **Session Collapse**: Možnost sbalit session v tree view (ponechat jen indikátory stavu). Vyžaduje logiku pro výběr celého session uzlu.
