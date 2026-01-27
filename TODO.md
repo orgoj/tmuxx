@@ -1,100 +1,6 @@
 # TODO - Tmuxx
 
-## 💡 Drobnosti (Tweaks)
-
-- [x] zere to 15% CPU a nastavene mam poll_interval_ms = 5000, to je moc, je treba to optimalizovat, proc to tolik zere, kdyz dam maly pooling?
-
-### External Terminal Wrapper
-**Účel:** Spouštět příkazy v novém okně externího terminálu (wezterm, alacritty, kitty)
-
-**Změny:**
-- [x] `src/app/config.rs` - added `terminal_wrapper`
-- [x] `src/app/key_binding.rs` - added `external_terminal`
-- [x] `src/ui/app.rs` - implemented execution logic
-- [x] `src/config/defaults.toml` - added default config
-- [x] `src/app/config_override.rs` - added override support
-
----
-
-### SSH/Docker/Nix-shell Detection (Indicators)
-**Účel:** Zobrazit symbol když agent běží v SSH/Docker/nix-shell
-
-**Změny:**
-- [x] `src/app/config.rs` - přidat do `AgentConfig` (~řádek 540):
-   ```rust
-   /// Process indicators to show next to agent name
-   /// Key: ancestor process pattern, Value: icon to display
-   #[serde(default)]
-   pub process_indicators: Vec<ProcessIndicator>,
-   ```
-   
-   Nový struct:
-   ```rust
-   #[derive(Debug, Clone, Serialize, Deserialize)]
-   pub struct ProcessIndicator {
-       pub ancestor_pattern: String,  // regex pro ps -o comm=
-       pub icon: String,              // emoji/text k zobrazení
-   }
-   ```
-
-- [x] `src/tmux/pane.rs` - přidat metodu `get_process_ancestors()`:
-   ```rust
-   pub fn get_process_ancestors(&self) -> Vec<String> {
-       // Use ps -o ppid= to walk up process tree
-       // Return list of ancestor command names
-   }
-   ```
-
-- [x] `src/agents/types.rs` - přidat do `MonitoredAgent`:
-   ```rust
-   pub active_indicators: Vec<String>,  // icons to display
-   ```
-
-- [x] `src/ui/components/agent_tree.rs` - v renderování přidat:
-   ```rust
-   // After agent name, append indicators
-   for icon in &agent.active_indicators {
-       spans.push(Span::raw(format!(" {}", icon)));
-   }
-   ```
-
-- [x] `src/config/defaults.toml` - příklad v agent definici:
-   ```toml
-   [[agents]]
-   id = "claude"
-   # ...
-   [[agents.process_indicators]]
-   ancestor_pattern = "ssh"
-   icon = "🌐"
-   [[agents.process_indicators]]
-   ancestor_pattern = "docker"
-   icon = "🐳"
-   ```
-
----
-
-### Vylepšený init-config (preserve comments)
-**Účel:** `--init-config` zachová komentáře z defaults.toml
-
-**Změny v `src/main.rs` (~řádek 106):**
-```rust
-if cli.init_config {
-    let defaults_content = include_str!("config/defaults.toml");
-    let config_path = Config::default_path()
-        .ok_or_else(|| anyhow::anyhow!("Config directory not found"))?;
-    
-    // Create parent directories
-    if let Some(parent) = config_path.parent() {
-        std::fs::create_dir_all(parent)?;
-    }
-    
-    std::fs::write(&config_path, defaults_content)?;
-    println!("Config file created: {}", config_path.display());
-    return Ok(());
-}
-```
-
----
+- [ ] selected se nekdy resetuje? mam vybrane selected poslu y do window a nemam zadny selested, selested je navazany na nactene windows a neni zadny reset niky, musis si pamatovat i kdyz delas reload config nebo cokoliv, musis mit idendifikatory tech termux windows selestovanych, to prepina jen uzivatel ovladenim , to se nemuze stratit
 
 ## 🚀 Větší funkce (Features)
 
@@ -281,14 +187,6 @@ if cli.init_config {
    }
    ```
 
-4. Expand collected vars in command:
-   ```rust
-   let mut expanded = command.clone();
-   for (name, value) in &collected_vars {
-       expanded = expanded.replace(&format!("{{{}}}", name), value);
-   }
-   ```
-
 ---
 
 ### Session Collapse
@@ -356,8 +254,6 @@ KeyAction::Focus => {
     }
 }
 ```
-
-**Poznámka:** Využívá `terminal_wrapper` z External Terminal Wrapper feature
 
 ---
 
