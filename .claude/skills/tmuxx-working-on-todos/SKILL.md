@@ -10,7 +10,9 @@ You use this skill when asked to pick up the next task from the project's roadma
 ## Steps
 
 ### 1. Analysis
-- Read `TODO.md` to identify the first unchecked item.
+- **CRITICAL**: Always read `TODO.md` from the beginning.
+- If you are using this skill repeatedly in the same session, **READ THE FILE AGAIN** before starting a new task. The user may have updated the tasks or reordered them between your actions.
+- Identify the first unchecked item.
 - Analyze the complexity and determine the implementation strategy.
 
 ### 2. Execution
