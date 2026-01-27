@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **Full-Width TODO**: Added `todo_full_width` configuration option (default: `true`). When enabled, the TODO section expands to full width, hiding the right-side activity panel to provide more space for tasks.
 - **Menu Hints**: Added usage hints to the bottom of "Prompts" and "Command" menus (e.g., explaining `Enter` vs `Alt+Enter` for prompts).
 
 ### Fixed

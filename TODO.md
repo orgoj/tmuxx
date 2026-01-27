@@ -2,9 +2,12 @@
 
 ## 🛠 Opravy (Fixes)
 - [x] prompt popup dialog nezobrazuje jak vybrat prompt Enter a Alt+Enter s hintem
+- [ ] v popupdialogu (prompr / menu) mid ve spodu boz, ktery bude zobrazovat cely command a nebo prompt
+- [ ] config reload ? jestli je to jednoduche, jinak presunout pozdeji
+- [ ] ve status bar maji byt jen errory cervene, ted je tam skoro vsechno cervene , normalni hlaseni maji byt zlene, opravit
 
 ## 💡 Drobnosti (Tweaks)
-- [ ] **TODO Layout**: Přidat možnost zobrazit TODO sekci na plnou šířku (pokud je aktivní, pravý panel s aktivitou se nebude vykreslovat). Defautl on.
+- [x] **TODO Layout**: Přidat možnost zobrazit TODO sekci na plnou šířku (pokud je aktivní, pravý panel s aktivitou se nebude vykreslovat). Defautl on.
 - [ ] **Notifikační systém**: Desktopové a terminálové upozornění na události vyžadující pozornost (approval, error). Mozna jen volani cmd na poslani notifikace a s definovatelnym spozdenim (1min). Pro kazde window zapsat cas vzniku aproval a kdyz to prekroci ten cas tak posilat notifikaci.
 - [ ] **SSH Detection**: Výzkum spolehlivé detekce AI agentů běžících uvnitř SSH session.
   - [ ] pro zacatek jen nejaky idikator i windows ze je v process ssh, to by mozna stacil config

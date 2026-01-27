@@ -34,6 +34,7 @@ While designed with first-class support for AI coding agents (Claude Code, Pi, G
     -   **Quick Filters**: Show only "Active" (`x`) or "Selected" (`s`) agents.
     -   **Tree View**: Organized by Session -> Window -> Pane (`c` to toggle compact mode).
 -   **Project Context**: Automatically displays `TODO.md` or `README.md` from the agent's working directory.
+-   **Full-Width TODO**: Option to show TODO list across the entire summary area for better readability (default: `true`).
 -   **Regression Testing**: Built-in suite to verify regex parsing against captured pane snapshots.
 
 ---

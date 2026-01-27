@@ -68,6 +68,10 @@ pub struct Config {
     #[serde(default)]
     pub log_actions: bool,
 
+    /// Whether to show TODO section at full width (hiding activity panel)
+    #[serde(default = "default_true")]
+    pub todo_full_width: bool,
+
     /// Generic agent definitions (Merged from defaults + user config)
     #[serde(default)]
     pub agents: Vec<AgentConfig>,
@@ -312,6 +316,7 @@ struct PartialConfig {
     ignore_self: Option<bool>,
     hide_bottom_input: Option<bool>,
     log_actions: Option<bool>,
+    todo_full_width: Option<bool>,
     agents: Vec<AgentConfig>,
     agent_name_color: Option<String>,
     current_item_bg_color: Option<String>,
@@ -364,6 +369,9 @@ impl PartialConfig {
         }
         if let Some(v) = self.log_actions {
             config.log_actions = v;
+        }
+        if let Some(v) = self.todo_full_width {
+            config.todo_full_width = v;
         }
         if let Some(v) = self.agent_name_color {
             config.agent_name_color = v;

@@ -69,13 +69,27 @@ impl PanePreviewWidget {
             let inner_area = outer_block.inner(area);
             frame.render_widget(outer_block, area);
 
-            // Split into 2 columns: TODO (left 50%) | Activity (right 50%)
-            let columns = Layout::default()
-                .direction(Direction::Horizontal)
-                .constraints([Constraint::Percentage(50), Constraint::Percentage(50)])
-                .split(inner_area);
+            // Determine if we should show TODO in full width
+            let has_todo = if state.config.todo_from_file {
+                state.current_todo.is_some()
+            } else {
+                !summary.tasks.is_empty()
+            };
 
-            // Left column: TODOs (from file or from agent parsing)
+            let use_full_width = state.config.todo_full_width && has_todo;
+
+            // Split into columns: TODO | Activity (if not full width)
+            let columns = if use_full_width {
+                vec![inner_area]
+            } else {
+                Layout::default()
+                    .direction(Direction::Horizontal)
+                    .constraints([Constraint::Percentage(50), Constraint::Percentage(50)])
+                    .split(inner_area)
+                    .to_vec()
+            };
+
+            // Left column (or full): TODOs (from file or from agent parsing)
             let mut todo_lines: Vec<Line> = Vec::new();
             if state.config.todo_from_file {
                 if let Some(todo) = &state.current_todo {
@@ -129,67 +143,71 @@ impl PanePreviewWidget {
                 Paragraph::new(todo_lines).wrap(ratatui::widgets::Wrap { trim: false });
             frame.render_widget(todo_paragraph, columns[0]);
 
-            // Right column: Activity and tools
-            let mut activity_lines: Vec<Line> = Vec::new();
+            if !use_full_width {
+                // Right column: Activity and tools
+                let mut activity_lines: Vec<Line> = Vec::new();
 
-            // Current activity
-            if let Some(activity) = &summary.current_activity {
-                activity_lines.push(Line::from(vec![
-                    Span::styled("▶ ", Style::default().fg(Color::Yellow)),
-                    Span::styled(
-                        activity.clone(),
-                        Style::default()
-                            .fg(Color::Yellow)
-                            .add_modifier(Modifier::BOLD),
-                    ),
-                ]));
-                activity_lines.push(Line::from(""));
-            }
-
-            // Running tools
-            if !summary.tools.is_empty() {
-                activity_lines.push(Line::from(vec![Span::styled(
-                    &state.config.messages.label_tools,
-                    Style::default()
-                        .fg(Color::Gray)
-                        .add_modifier(Modifier::BOLD),
-                )]));
-                for tool in &summary.tools {
+                // Current activity
+                if let Some(activity) = &summary.current_activity {
                     activity_lines.push(Line::from(vec![
-                        Span::styled(" ⏺ ", Style::default().fg(Color::Cyan)),
-                        Span::styled(tool.clone(), Style::default().fg(Color::White)),
+                        Span::styled("▶ ", Style::default().fg(Color::Yellow)),
+                        Span::styled(
+                            activity.clone(),
+                            Style::default()
+                                .fg(Color::Yellow)
+                                .add_modifier(Modifier::BOLD),
+                        ),
                     ]));
+                    activity_lines.push(Line::from(""));
                 }
-            }
 
-            // If no activity info, show status
-            if activity_lines.is_empty() {
-                let status_text = match &agent.status {
-                    AgentStatus::Idle { label } => label.as_deref().unwrap_or("Ready for input"),
-                    AgentStatus::Processing { activity } => activity.as_str(),
-                    AgentStatus::AwaitingApproval { approval_type, .. } => {
-                        activity_lines.push(Line::from(vec![
-                            Span::styled("⚠ ", Style::default().fg(Color::Red)),
-                            Span::styled(
-                                format!("Waiting: {}", approval_type),
-                                Style::default().fg(Color::Red).add_modifier(Modifier::BOLD),
-                            ),
-                        ]));
-                        ""
-                    }
-                    AgentStatus::Error { message } => message.as_str(),
-                    AgentStatus::Unknown => "...",
-                };
-                if !status_text.is_empty() && activity_lines.is_empty() {
+                // Running tools
+                if !summary.tools.is_empty() {
                     activity_lines.push(Line::from(vec![Span::styled(
-                        status_text,
-                        Style::default().fg(Color::Gray),
+                        &state.config.messages.label_tools,
+                        Style::default()
+                            .fg(Color::Gray)
+                            .add_modifier(Modifier::BOLD),
                     )]));
+                    for tool in &summary.tools {
+                        activity_lines.push(Line::from(vec![
+                            Span::styled(" ⏺ ", Style::default().fg(Color::Cyan)),
+                            Span::styled(tool.clone(), Style::default().fg(Color::White)),
+                        ]));
+                    }
                 }
-            }
 
-            let activity_paragraph = Paragraph::new(activity_lines);
-            frame.render_widget(activity_paragraph, columns[1]);
+                // If no activity info, show status
+                if activity_lines.is_empty() {
+                    let status_text = match &agent.status {
+                        AgentStatus::Idle { label } => {
+                            label.as_deref().unwrap_or("Ready for input")
+                        }
+                        AgentStatus::Processing { activity } => activity.as_str(),
+                        AgentStatus::AwaitingApproval { approval_type, .. } => {
+                            activity_lines.push(Line::from(vec![
+                                Span::styled("⚠ ", Style::default().fg(Color::Red)),
+                                Span::styled(
+                                    format!("Waiting: {}", approval_type),
+                                    Style::default().fg(Color::Red).add_modifier(Modifier::BOLD),
+                                ),
+                            ]));
+                            ""
+                        }
+                        AgentStatus::Error { message } => message.as_str(),
+                        AgentStatus::Unknown => "...",
+                    };
+                    if !status_text.is_empty() && activity_lines.is_empty() {
+                        activity_lines.push(Line::from(vec![Span::styled(
+                            status_text,
+                            Style::default().fg(Color::Gray),
+                        )]));
+                    }
+                }
+
+                let activity_paragraph = Paragraph::new(activity_lines);
+                frame.render_widget(activity_paragraph, columns[1]);
+            }
         } else {
             // No agent selected
             let block = Block::default()
