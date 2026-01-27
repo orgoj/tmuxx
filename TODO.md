@@ -8,59 +8,16 @@
 **Účel:** Spouštět příkazy v novém okně externího terminálu (wezterm, alacritty, kitty)
 
 **Změny:**
-1. `src/app/config.rs` - přidat do `Config` struct (~řádek 90):
-   ```rust
-   /// External terminal wrapper command with {cmd} placeholder
-   /// Example: "wezterm start -- bash -lc '{cmd}'"
-   #[serde(default)]
-   pub terminal_wrapper: Option<String>,
-   ```
-
-2. `src/app/key_binding.rs` - přidat do `CommandConfig` (~řádek 75):
-   ```rust
-   /// Run in external terminal window (requires terminal_wrapper in config)
-   #[serde(default)]
-   pub external_terminal: bool,
-   ```
-
-3. `src/ui/app.rs` (~řádek 555, else větev pro background spawn):
-   ```rust
-   } else if execute_command.external_terminal {
-       if let Some(wrapper) = &state.config.terminal_wrapper {
-           let wrapped = wrapper.replace("{cmd}", &expanded);
-           let mut cmd = tokio::process::Command::new("bash");
-           cmd.args(["-c", &wrapped])
-              .stdin(std::process::Stdio::null())
-              .stdout(std::process::Stdio::null())
-              .stderr(std::process::Stdio::null());
-           let _ = cmd.spawn();
-           state.set_status(format!("External: {}", expanded));
-       } else {
-           state.set_error("terminal_wrapper not configured".to_string());
-       }
-   } else {
-       // existing background spawn code
-   }
-   ```
-
-4. `src/config/defaults.toml` - přidat:
-   ```toml
-   # External terminal wrapper (empty = disabled)
-   # terminal_wrapper = "wezterm start -- bash -lc '{cmd}'"
-   terminal_wrapper = ""
-   ```
-
-5. `src/app/config_override.rs` - přidat do `apply_override()`:
-   ```rust
-   "terminal_wrapper" => {
-       self.terminal_wrapper = if value.is_empty() { None } else { Some(value.to_string()) };
-   }
-   ```
+- [x] `src/app/config.rs` - added `terminal_wrapper`
+- [x] `src/app/key_binding.rs` - added `external_terminal`
+- [x] `src/ui/app.rs` - implemented execution logic
+- [x] `src/config/defaults.toml` - added default config
+- [x] `src/app/config_override.rs` - added override support
 
 ---
 
 ### SSH/Docker/Nix-shell Detection (Indicators)
-**Účel:** Zobrazit ikonu když agent běží v SSH/Docker/nix-shell
+**Účel:** Zobrazit symbol když agent běží v SSH/Docker/nix-shell
 
 **Změny:**
 1. `src/app/config.rs` - přidat do `AgentConfig` (~řádek 540):

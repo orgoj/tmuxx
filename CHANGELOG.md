@@ -11,6 +11,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Optimized Redraw Loop**: Significantly reduced CPU usage by only redrawing the TUI when state changes or input occurs, instead of forcing 60 FPS redraws. This allows the application to be idle-efficient while remaining responsive.
 
 ### Added
+- **External Terminal Wrapper**: Added `terminal_wrapper` config option to execute commands in a separate terminal window (e.g. WezTerm, Alacritty) instead of the background or current pane.
+- **External Command Execution**: Added `external_terminal` flag to key bindings and menu items to leverage the wrapper.
 - **Config Hot Reload**: Added `ReloadConfig` action (default binding: `Ctrl+r`) to reload the application configuration from disk without restarting.
 - **Full-Width TODO**: Added `todo_full_width` configuration option (default: `true`). When enabled, the TODO section expands to full width, hiding the right-side activity panel to provide more space for tasks.
 - **Menu/Prompt Preview**: Added a preview box at the bottom of the Command and Prompts menus to show the full command or prompt text of the selected item.

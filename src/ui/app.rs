@@ -489,10 +489,31 @@ async fn run_loop(
                                                   command: execute_command.command.clone(),
                                                   blocking: execute_command.blocking,
                                                   terminal: execute_command.terminal,
+                                                  external_terminal: execute_command.external_terminal,
                                               };
                                               state.log_action(&action);
 
-                                              if execute_command.terminal {
+                                              if execute_command.external_terminal {
+                                                   if let Some(wrapper) = &state.config.terminal_wrapper {
+                                                       let wrapped = wrapper.replace("{cmd}", &expanded);
+                                                       let mut cmd = tokio::process::Command::new("bash");
+                                                       cmd.args(["-c", &wrapped])
+                                                          .stdin(std::process::Stdio::null())
+                                                          .stdout(std::process::Stdio::null())
+                                                          .stderr(std::process::Stdio::null());
+
+                                                       if !path.is_empty() {
+                                                           cmd.current_dir(&path);
+                                                       }
+
+                                                       match cmd.spawn() {
+                                                           Ok(_) => state.set_status(format!("External: {}", expanded)),
+                                                           Err(e) => state.set_error(format!("Failed to spawn external terminal: {}", e)),
+                                                       }
+                                                   } else {
+                                                       state.set_error("terminal_wrapper not configured".to_string());
+                                                   }
+                                              } else if execute_command.terminal {
                                                      // Suspend TUI
                                                      if let Err(e) = crossterm::terminal::disable_raw_mode() {
                                                          state.set_error(format!("Failed to disable raw mode: {}", e));
@@ -960,13 +981,36 @@ async fn run_loop(
                                     command,
                                     blocking,
                                     terminal: is_terminal,
+                                    external_terminal,
                                 } => {
                                     if let Some(agent) = state.selected_agent() {
                                         let expanded = expand_command_variables(&command, agent);
                                         let path = agent.path.clone();
 
-                                        // Case 1: Terminal application (interactive, takes over screen)
-                                        if is_terminal {
+                                        // Case 1: External Terminal (wrapper)
+                                        if external_terminal {
+                                            if let Some(wrapper) = &state.config.terminal_wrapper {
+                                                let wrapped = wrapper.replace("{cmd}", &expanded);
+                                                let mut cmd = tokio::process::Command::new("bash");
+                                                cmd.args(["-c", &wrapped])
+                                                   .stdin(std::process::Stdio::null())
+                                                   .stdout(std::process::Stdio::null())
+                                                   .stderr(std::process::Stdio::null());
+
+                                                if !path.is_empty() {
+                                                    cmd.current_dir(&path);
+                                                }
+
+                                                match cmd.spawn() {
+                                                    Ok(_) => state.set_status(format!("External: {}", expanded)),
+                                                    Err(e) => state.set_error(format!("Failed to spawn external terminal: {}", e)),
+                                                }
+                                            } else {
+                                                state.set_error("terminal_wrapper not configured".to_string());
+                                            }
+                                        }
+                                        // Case 2: Terminal application (interactive, takes over screen)
+                                        else if is_terminal {
                                             // Suspend TUI
                                             if let Err(e) = disable_raw_mode() {
                                                 state.set_error(format!("Failed to disable raw mode: {}", e));
@@ -1519,10 +1563,12 @@ fn map_key_to_action(
                     command,
                     blocking,
                     terminal,
+                    external_terminal,
                 }) => Action::ExecuteCommand {
                     command: command.clone(),
                     blocking: *blocking,
                     terminal: *terminal,
+                    external_terminal: *external_terminal,
                 },
                 KeyAction::ToggleMenu => Action::ToggleMenu,
                 KeyAction::TogglePrompts => Action::TogglePrompts,

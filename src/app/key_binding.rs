@@ -76,6 +76,8 @@ pub struct CommandConfig {
     pub blocking: bool,
     #[serde(default)]
     pub terminal: bool,
+    #[serde(default)]
+    pub external_terminal: bool,
 }
 
 /// Holds all key binding configuration
@@ -225,6 +227,7 @@ mod tests {
                 command: "zede ${SESSION_DIR}".to_string(),
                 blocking: false,
                 terminal: false,
+                external_terminal: false,
             }),
         );
         bindings.insert(
@@ -233,6 +236,7 @@ mod tests {
                 command: "wezterm cli attach ${SESSION_NAME}".to_string(),
                 blocking: true,
                 terminal: false,
+                external_terminal: false,
             }),
         );
 
@@ -252,10 +256,12 @@ mod tests {
                 command,
                 blocking,
                 terminal,
+                external_terminal,
             })) => {
                 assert_eq!(command, "zede ${SESSION_DIR}");
                 assert!(!blocking);
                 assert!(!terminal);
+                assert!(!external_terminal);
             }
             _ => panic!("Expected ExecuteCommand action"),
         }
@@ -264,10 +270,12 @@ mod tests {
                 command,
                 blocking,
                 terminal,
+                external_terminal,
             })) => {
                 assert_eq!(command, "wezterm cli attach ${SESSION_NAME}");
                 assert!(blocking);
                 assert!(!terminal);
+                assert!(!external_terminal);
             }
             _ => panic!("Expected ExecuteCommand action"),
         }

@@ -1,0 +1,170 @@
+ poll_interval_ms = 500
+ cyclic_navigation = false
+ capture_lines = 200
+ show_detached_sessions = true
+ debug_mode = false
+ truncate_long_lines = true
+ popup_trigger_key = "/"
+ ignore_self = true
+ log_actions = true
+ ... (415 more lines, ctrl+o to expand)
+
+
+
+ edit src/config/defaults.toml:12
+
+      ...
+    8 popup_trigger_key = "/"
+    9 ignore_self = true
+   10 log_actions = true
+   11 hide_bottom_input = true
+ + 12 # External terminal wrapper (empty = disabled)
+ + 13 # terminal_wrapper = "wezterm start -- bash -lc '{cmd}'"
+ + 14 terminal_wrapper = ""
+ + 15
+   12 todo_full_width = true
+   13 agent_name_color = "#000000"
+   14 current_item_bg_color = "#cacaca"
+   15 sidebar_width = 60
+      ...
+
+
+
+ edit src/app/config_override.rs:22
+
+      ...
+   18     IgnoreSessions(Vec<String>),
+   19     IgnoreSelf(bool),
+   20     LogActions(bool),
+   21     SidebarWidth(super::config::SidebarWidth),
+ + 22     TerminalWrapper(Option<String>),
+   22 }
+   23
+   24 impl ConfigOverride {
+   25     /// Parse a KEY=VALUE string into a ConfigOverride
+      ...
+
+
+
+ edit src/app/config_override.rs:133
+
+      ...
+  129                     super::config::SidebarWidth::Fixed(w)
+  130                 };
+  131                 Ok(ConfigOverride::SidebarWidth(val))
+  132             }
+ +133             "terminalwrapper" | "wrapper" => {
+ +134                 let val = if value.is_empty() { None } else { Some(value.to_string()) };
+ +135                 Ok(ConfigOverride::TerminalWrapper(val))
+ +136             }
+  133             _ => Err(anyhow!(
+ -134                 "Unknown config key: '{}'. Valid keys: poll_interval_ms, capture_lines, show_detached_sessions, debug_mode, truncate_long_lines, max_line_width,
+ popup_trigger_key, ignore_sessions, ignore_self, log_actions, sidebar_width, keybindings.KEY (or kb.KEY)",
+ +138                 "Unknown config key: '{}'. Valid keys: poll_interval_ms, capture_lines, show_detached_sessions, debug_mode, truncate_long_lines, max_line_width,
+ popup_trigger_key, ignore_sessions, ignore_self, log_actions, sidebar_width, terminal_wrapper, keybindings.KEY (or kb.KEY)",
+  135                 key
+  136             )),
+  137         }
+  138     }
+  139
+  140     /// Apply this override to a Config
+  141     pub fn apply(self, config: &mut Config) {
+  142         match self {
+  143             ConfigOverride::PollInterval(val) => config.poll_interval_ms = val,
+  144             ConfigOverride::CaptureLines(val) => config.capture_lines = val,
+  145             ConfigOverride::ShowDetachedSessions(val) => config.show_detached_sessions = val,
+  146             ConfigOverride::DebugMode(val) => config.debug_mode = val,
+  147             ConfigOverride::TruncateLongLines(val) => config.truncate_long_lines = val,
+  148             ConfigOverride::MaxLineWidth(val) => config.max_line_width = val,
+  149             ConfigOverride::KeyBinding(key, action) => {
+  150                 config.key_bindings.bindings.insert(key, action);
+  151             }
+  152             ConfigOverride::PopupTriggerKey(val) => config.popup_trigger_key = val,
+  153             ConfigOverride::IgnoreSessions(sessions) => config.ignore_sessions = sessions,
+  154             ConfigOverride::IgnoreSelf(val) => config.ignore_self = val,
+  155             ConfigOverride::LogActions(val) => config.log_actions = val,
+  156             ConfigOverride::SidebarWidth(val) => config.sidebar_width = val,
+ +161             ConfigOverride::TerminalWrapper(val) => config.terminal_wrapper = val,
+  157         }
+  158     }
+  159 }
+  160
+      ...
+
+
+
+
+ $ cargo check && cargo clippy && cargo fmt
+
+ ... (7 earlier lines, ctrl+o to expand)
+ For more information about this error, try `rustc --explain E0063`.
+ error: could not compile `tmuxx` (lib) due to 1 previous error
+
+
+ Command exited with code 101
+
+
+
+ read src/app/config_override.rs:200-299
+
+                 "prev_agent" => NavAction::PrevAgent,
+                 _ => return Err(anyhow!("Invalid navigation action, use 'next_agent' or 'prev_agent'")),
+             };
+             Ok(KeyAction::Navigate(nav))
+         }
+         s if s.starts_with("command:") => {
+             // Format: command:CMD or command:CMD:blocking
+             let cmd_part = s.strip_prefix("command:").unwrap();
+             let (command, blocking) = if let Some((cmd, "blocking")) = cmd_part.rsplit_once(':') {
+                 (cmd.to_string(), true)
+ ... (92 more lines, ctrl+o to expand)
+
+
+
+ edit src/app/config_override.rs:217
+
+      ...
+  213             Ok(KeyAction::ExecuteCommand(CommandConfig {
+  214                 command,
+  215                 blocking,
+  216                 terminal: false, // Default to false for overrides for now, or would need to parse
+ +217                 external_terminal: false,
+  217             }))
+  218         }
+  219         _ => Err(anyhow!(
+  220             "Invalid key action: '{}'. Valid formats: approve, reject, approve_all, rename_session, refresh, send_number:N, send_keys:KEYS, kill_app:METHOD,
+ navigate:ACTION, command:CMD[:blocking]",
+      ...
+
+
+
+
+ $ grep "CommandConfig {" src/app/key_binding.rs
+
+ pub struct CommandConfig {
+             KeyAction::ExecuteCommand(CommandConfig {
+             KeyAction::ExecuteCommand(CommandConfig {
+             Some(KeyAction::ExecuteCommand(CommandConfig {
+             Some(KeyAction::ExecuteCommand(CommandConfig {
+
+
+
+ read src/app/key_binding.rs:150-449
+
+
+     #[test]
+     fn test_keys_for_action() {
+         let mut bindings = HashMap::new();
+         bindings.insert("y".to_string(), KeyAction::Approve);
+         bindings.insert("Y".to_string(), KeyAction::Approve);
+         let kb = KeyBindings { bindings };
+
+         let approve_keys = kb.keys_for_action(&KeyAction::Approve);
+         assert!(approve_keys.contains(&"y".to_string()));
+ ... (136 more lines, ctrl+o to expand)
+
+
+ ⠼ Working...
+
+╭─ π  | ◈ Gemini 3 Pro High (Antigravity) | thinking:off | 📁 tmuxx | ⎇ main *7 | ◫ 7.3%/1.0M ⚡ | ⊛ 1.7M | (sub) ────────────────────────────────────────────────────────────────╮
+╰─                                                                                                                                                                               ─╯

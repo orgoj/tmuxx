@@ -19,6 +19,7 @@ pub enum ConfigOverride {
     IgnoreSelf(bool),
     LogActions(bool),
     SidebarWidth(super::config::SidebarWidth),
+    TerminalWrapper(Option<String>),
 }
 
 impl ConfigOverride {
@@ -129,8 +130,12 @@ impl ConfigOverride {
                 };
                 Ok(ConfigOverride::SidebarWidth(val))
             }
+            "terminalwrapper" | "wrapper" => {
+                let val = if value.is_empty() { None } else { Some(value.to_string()) };
+                Ok(ConfigOverride::TerminalWrapper(val))
+            }
             _ => Err(anyhow!(
-                "Unknown config key: '{}'. Valid keys: poll_interval_ms, capture_lines, show_detached_sessions, debug_mode, truncate_long_lines, max_line_width, popup_trigger_key, ignore_sessions, ignore_self, log_actions, sidebar_width, keybindings.KEY (or kb.KEY)",
+                "Unknown config key: '{}'. Valid keys: poll_interval_ms, capture_lines, show_detached_sessions, debug_mode, truncate_long_lines, max_line_width, popup_trigger_key, ignore_sessions, ignore_self, log_actions, sidebar_width, terminal_wrapper, keybindings.KEY (or kb.KEY)",
                 key
             )),
         }
@@ -153,6 +158,7 @@ impl ConfigOverride {
             ConfigOverride::IgnoreSelf(val) => config.ignore_self = val,
             ConfigOverride::LogActions(val) => config.log_actions = val,
             ConfigOverride::SidebarWidth(val) => config.sidebar_width = val,
+            ConfigOverride::TerminalWrapper(val) => config.terminal_wrapper = val,
         }
     }
 }
@@ -208,6 +214,7 @@ fn parse_key_action(value: &str) -> Result<KeyAction> {
                 command,
                 blocking,
                 terminal: false, // Default to false for overrides for now, or would need to parse
+                external_terminal: false,
             }))
         }
         _ => Err(anyhow!(

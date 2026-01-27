@@ -116,6 +116,7 @@ pub enum Action {
         command: String,
         blocking: bool,
         terminal: bool,
+        external_terminal: bool,
     },
     /// Show modal textarea dialog
     ShowModalTextarea {

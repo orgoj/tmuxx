@@ -68,6 +68,11 @@ pub struct Config {
     #[serde(default)]
     pub log_actions: bool,
 
+    /// External terminal wrapper command with {cmd} placeholder
+    /// Example: "wezterm start -- bash -lc '{cmd}'"
+    #[serde(default)]
+    pub terminal_wrapper: Option<String>,
+
     /// Whether to show TODO section at full width (hiding activity panel)
     #[serde(default = "default_true")]
     pub todo_full_width: bool,

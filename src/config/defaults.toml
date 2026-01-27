@@ -9,6 +9,10 @@ popup_trigger_key = "/"
 ignore_self = true
 log_actions = true
 hide_bottom_input = true
+# External terminal wrapper (empty = disabled)
+# terminal_wrapper = "wezterm start -- bash -lc '{cmd}'"
+terminal_wrapper = ""
+
 todo_full_width = true
 agent_name_color = "#000000"
 current_item_bg_color = "#cacaca"
