@@ -1,3 +1,5 @@
+allow-edit ./**
+
 deny scripts/cp-bin.sh * "User does this when application works!"
 allow ./scripts/reload-test.sh
 

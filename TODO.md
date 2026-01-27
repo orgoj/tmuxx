@@ -257,6 +257,8 @@ KeyAction::Focus => {
 
 ## 🔮 Nápady a Roadmap (Ideas)
 
+- detekce zmeny stavu s agent na shell? asi drzet nejaky priznak a mozna je to na error alert, urcite kdyz tam je exit code
+
 ### AI Integrace
 - **AI-Powered Workflows**: Analýza obrazovky pomocí AI a navrhování akcí
 - **Context-aware Suggestions**: Návrhy příkazů na základě stavu agenta
