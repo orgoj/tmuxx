@@ -1,23 +1,21 @@
 # TODO - Tmuxx
 
 ## 🛠 Opravy (Fixes)
-- [x] **Modal/Help Scrolling**: Opravit zavírání Help okna šipkami. V readonly režimu šipky nesmí hýbat kurzorem, ale pouze scrollovat text.
-- [ ] **Preview Scrolling**: Implementovat plynulý scroll v preview oblasti s automatickým scrollováním na konec po zalomení textu.
+- [ ] prompt popup dialog nezobrazuje jak vybrat prompt Enter a Alt+Enter s hintem
 
 ## 💡 Drobnosti (Tweaks)
-- [ ] **TODO Layout**: Přidat možnost zobrazit TODO sekci na plnou šířku (pokud je aktivní, pravý panel s aktivitou se nebude vykreslovat).
-- [ ] **Session Collapse**: Možnost sbalit session v tree view (ponechat jen indikátory stavu). Vyžaduje logiku pro výběr celého session uzlu.
-- [ ] **CLI Argumenty**: Přidat přímý argument `--filter <PATTERN>` (nyní nutno přes `--set filter_pattern=...`).
+- [ ] **TODO Layout**: Přidat možnost zobrazit TODO sekci na plnou šířku (pokud je aktivní, pravý panel s aktivitou se nebude vykreslovat). Defautl on.
+- [ ] **Notifikační systém**: Desktopové a terminálové upozornění na události vyžadující pozornost (approval, error). Mozna jen volani cmd na poslani notifikace a s definovatelnym spozdenim (1min). Pro kazde window zapsat cas vzniku aproval a kdyz to prekroci ten cas tak posilat notifikaci.
 - [ ] **SSH Detection**: Výzkum spolehlivé detekce AI agentů běžících uvnitř SSH session.
+  - [ ] pro zacatek jen nejaky idikator i windows ze je v process ssh, to by mozna stacil config
+  - [ ] pak tento ukol dej nakonec a musime udelat nejak lepsi praci s ssh aby jsme umeli detekovat remote agenta v ssh
+- [ ] **Vylepšený init-config**: `--init-config` by měl zapsat `defaults.toml` včetně komentářů (z `include_str!`), ne jen serializovaný struct.
 
 ## 🚀 Větší funkce (Features)
-- [ ] **Notifikační systém**: Desktopové a terminálové upozornění na události vyžadující pozornost (approval, error).
 - [ ] **Externí TODO Generátor**: Podpora pro externí programy (např. `beads`), které budou generovat obsah TODO okna dynamicky.
+- [ ] **Action Menu**: Komplexní systém konfigurovatelných akcí (proměnné, bash pipeline). Zozsirni stavajici definice.
+- [ ] **Session Collapse**: Možnost sbalit session v tree view (ponechat jen indikátory stavu). Vyžaduje logiku pro výběr celého session uzlu.
 - [ ] **Focus (f) - Outside Tmux**: Automatické otevírání nového okna terminálu (Kitty, Alacritty) s připojením k session, pokud `tmuxx` běží mimo tmux.
-- [ ] **Action Menu**: Komplexní systém konfigurovatelných akcí (proměnné, bash pipeline).
-
-### Configuration
-- [ ] **Vylepšený init-config**: `--init-config` (nebo `--write-config`) by měl zapsat `defaults.toml` včetně komentářů (z `include_str!`), ne jen serializovaný struct.
 
 ## 🔮 Nápady a Roadmap (Ideas)
 
