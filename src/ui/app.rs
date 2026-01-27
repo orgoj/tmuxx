@@ -327,39 +327,6 @@ async fn run_loop(
 
                     // Handle keyboard events
                     if let Event::Key(key) = event {
-                        // Special handling for help scrolling (readonly modal textarea)
-                        if state.show_help {
-                            if let Some(modal) = &state.modal_textarea {
-                                if modal.readonly {
-                                    match key.code {
-                                        KeyCode::Up => {
-                                            if let Some(m) = state.modal_textarea.as_mut() {
-                                                m.textarea.scroll((0, -1));
-                                            }
-                                        }
-                                        KeyCode::Down => {
-                                            if let Some(m) = state.modal_textarea.as_mut() {
-                                                m.textarea.scroll((0, 1));
-                                            }
-                                        }
-                                        KeyCode::PageUp => {
-                                            if let Some(m) = state.modal_textarea.as_mut() {
-                                                m.textarea.scroll((0, -10));
-                                            }
-                                        }
-                                        KeyCode::PageDown => {
-                                            if let Some(m) = state.modal_textarea.as_mut() {
-                                                m.textarea.scroll((0, 10));
-                                            }
-                                        }
-                                        _ => {
-                                            // Other keys go to action processing for Esc
-                                        }
-                                    }
-                                }
-                            }
-                            // Continue to action processing for Esc
-                        }
 
                         // Special handling for modal textarea (both editable and readonly)
                         if state.modal_textarea.is_some() {
@@ -1399,7 +1366,14 @@ fn map_key_to_action(
     if state.show_help {
         return match code {
             KeyCode::Esc => Action::HideHelp,
-            KeyCode::Up | KeyCode::Down | KeyCode::PageUp | KeyCode::PageDown => Action::None,
+            KeyCode::Up
+            | KeyCode::Down
+            | KeyCode::PageUp
+            | KeyCode::PageDown
+            | KeyCode::Left
+            | KeyCode::Right
+            | KeyCode::Home
+            | KeyCode::End => Action::None,
             _ => Action::HideHelp, // Any other key closes help
         };
     }

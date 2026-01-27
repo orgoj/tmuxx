@@ -1,6 +1,6 @@
 ---
 name: tmuxx-bump-version
-description: Synchronize version across Cargo.toml, CHANGELOG.md, and other files. STRICT: Never modify existing releases.
+description: "Synchronize version across Cargo.toml, CHANGELOG.md, and other files. STRICT: Never modify existing releases."
 ---
 
 # Bump Project Version

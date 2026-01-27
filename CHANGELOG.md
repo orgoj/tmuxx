@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+- **Help/Modal Scrolling**: Fixed arrow keys in readonly modals (like Help) to scroll text instead of moving the cursor.
+- **Help Window Closing**: Prevented `Left`/`Right`/`Home`/`End` keys from accidentally closing the Help window.
+
+
 ## [0.2.1] - 2026-01-27
 ### Added
 - **Kill Session Support**: Added ability to kill the entire tmux session of the selected agent (default binding: `X` or `Shift+x`).

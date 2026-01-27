@@ -59,11 +59,11 @@ impl ModalTextareaState {
 
             // In readonly mode, only allow scrolling
             Input { key: Key::Up, .. } if self.readonly => {
-                self.textarea.move_cursor(tui_textarea::CursorMove::Up);
+                self.textarea.scroll((-1, 0));
                 false
             }
             Input { key: Key::Down, .. } if self.readonly => {
-                self.textarea.move_cursor(tui_textarea::CursorMove::Down);
+                self.textarea.scroll((1, 0));
                 false
             }
             Input {
