@@ -181,6 +181,32 @@ merge_with_defaults = true  # Append to default prompts instead of replacing the
     text = "Create unit tests for this module."
 ```
 
+### External Terminal Wrapper
+
+When `tmuxx` runs inside tmux, it cannot easily spawn new graphical windows (like WezTerm or Alacritty) directly from the background unless properly wrapped.
+
+You can configure a global wrapper command in `config.toml`:
+
+```toml
+# Wrapper command with {cmd} placeholder
+terminal_wrapper = "wezterm start -- bash -lc '{cmd}'"
+```
+
+Then, use `external_terminal = true` in any command configuration:
+
+```toml
+[menu.items]
+name = "Open Lazygit"
+execute_command = { command = "lazygit", external_terminal = true }
+```
+
+Or in key bindings:
+
+```toml
+[key_bindings]
+"g" = { execute_command = { command = "lazygit", external_terminal = true } }
+```
+
 ### Power User Tips
 
 You can define custom keybindings to execute external commands using variables like `${SESSION_DIR}`, `${PANE_TARGET}`, etc.
