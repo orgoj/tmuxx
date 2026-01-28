@@ -1,7 +1,7 @@
 # TODO - Tmuxx
 
 - [x] spatna detekce u claude opravit working/approve je nekdy spatny mamm failing screenshot
-- [ ] posilani kaves do claude nefunguje nekdy vubec (123yn) enter S-m asi funguje to je jedina jistota, kontrola oprava
+- [x] posilani kaves do claude nefunguje nekdy vubec (123yn) enter S-m asi funguje to je jedina jistota, kontrola oprava
 - [x] definice pro gemini ( a nejaka zalozni detekce, to mam pre ssh) ( a nevidim ssh oznaceni to jeste neni implementovane?)
   - [x] mam ktomu i screen ale spatne zarazene protoze jeste neni agent gemini (a proc neni v puvodnim kodu tmuxcc asi byl, mrkni na to do commitu)
 

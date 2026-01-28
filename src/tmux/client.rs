@@ -119,6 +119,24 @@ impl TmuxClient {
         Ok(())
     }
 
+    /// Sends multiple keys to a specific pane in one tmux command
+    pub fn send_keys_many(&self, target: &str, keys: &[&str]) -> Result<()> {
+        let mut cmd = Command::new("tmux");
+        cmd.arg("send-keys").arg("-t").arg(target);
+        for key in keys {
+            cmd.arg(key);
+        }
+
+        let output = cmd.output().context("Failed to execute tmux send-keys")?;
+
+        if !output.status.success() {
+            let stderr = String::from_utf8_lossy(&output.stderr);
+            anyhow::bail!("tmux send-keys failed for {}: {}", target, stderr);
+        }
+
+        Ok(())
+    }
+
     /// Selects (focuses) a specific pane
     pub fn select_pane(&self, target: &str) -> Result<()> {
         let output = Command::new("tmux")
