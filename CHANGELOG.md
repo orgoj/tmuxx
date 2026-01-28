@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.1] - 2026-01-28
+
+### Changed
+- **Improved Error Messages**: Added context to config loading errors, now showing the file path when reading or parsing fails.
+- **Code Readability**: Replaced magic numbers in UI layout with named constants (SUMMARY_HEIGHT, PREVIEW_MIN_HEIGHT, INPUT_BORDER_HEIGHT).
+
 ## [0.3.0] - 2026-01-28
 
 ### Added
