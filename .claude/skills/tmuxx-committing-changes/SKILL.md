@@ -30,10 +30,9 @@ cargo fmt
 ```
 
 #### B. Staging
-```bash
-git add -A
-git status --short
-```
+- Use `git add -A` for complete changes.
+- **CRITICAL**: Review staged changes with `git status`.
+- **Accidental Staging**: Unstage unrelated changes (e.g., `.dippy`, `.pi/` internal files if not requested) using `git restore --staged <file>`.
 
 #### C. Committing
 Write a clear commit message following this format:

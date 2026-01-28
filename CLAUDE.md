@@ -77,11 +77,12 @@ tmux panes → TmuxClient.list_panes() → PaneInfo
 - `Error { message }`: Agent encountered an error
 - `Unknown`: Cannot determine status
 
-`ApprovalType` variants:
-- `FileEdit/FileCreate/FileDelete`: File operations
-- `ShellCommand`: Bash command execution
-- `McpTool`: MCP server tool calls
-- `UserQuestion { choices, multi_select }`: AskUserQuestion tool with options
+#### Structural Splitter Model
+State detection uses a "Splitter Model" to avoid noise from terminal history:
+1. **Splitter**: A primary rule (e.g., `separator_line`, `powerline_box`) divides the buffer into `body` (agent response) and `prompt` (interactive UI).
+2. **Refinements**: Granular rules target specific groups and `location` (e.g., `LastLine`, `FirstLineOfLastBlock`).
+3. **Regex Anchoring**: Status markers (e.g., `?`) MUST be anchored to the end of the string (`\z`) after accounting for prompt lines.
+4. **Priority**: Critical human interaction markers (Approvals) always have Rule 0 priority over background activity (Working).
 
 ### Subagent Tracking
 
@@ -119,10 +120,10 @@ Parsers check ALL detection strings to handle various detection scenarios.
 
 ### Multi-Agent Selection
 
-- `AppState.selected_agents: HashSet<usize>` tracks multi-selection
+- `AppState.selected_agents: HashSet<String>` tracks multi-selection by unique IDs
 - Space key toggles selection, Ctrl+a selects all
 - Batch operations (y/n for approval/rejection) iterate selected agents
-- Selected agents highlighted in UI with different colors
+- **Selection Persistence**: Selection survives monitor updates and renames using a fallback chain: Unique ID → PID → tmux Target.
 
 ### Input Buffer Design
 
@@ -148,6 +149,8 @@ Parsers check ALL detection strings to handle various detection scenarios.
 ### Testing Discipline
 
 - **INVOKE tmuxx-testing skill**: MANDATORY before ANY testing - contains session structure, send-keys rules, tmux safety
+- **100% Pass Rate**: 100% regression test pass rate (`tmuxx test`) is mandatory before any commit.
+- **Debug Mode**: Use `tmuxx test -d` to debug splitter/refinement matching issues.
 - See tmuxx-testing skill for complete testing workflow and safety rules
 
 ## Common Pitfalls
@@ -199,8 +202,9 @@ All skills are in `.claude/skills/`:
 
 3. **`tmuxx-commit`** - Pre-commit checklist and git workflow
    - **INVOKE before every commit!**
+   - **Commit Format**: `<type>: description`, followed by Problem/Solution/Changes blocks.
    - CHANGELOG.md updates, README.md updates, cargo build/clippy/fmt
-   - Commit message format, git remotes
+   - Git remotes and lock management
 
 4. **`tmuxx-library-research`** - Library research workflow
    - **INVOKE before implementing features!**
