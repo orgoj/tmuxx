@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- **Gemini Agent Support**: Added full support for Google Gemini CLI agent. Includes robust content-based detection for various model versions and specialized state rules for Idle, Working, and Questions.
+- **Improved AI State Detection**:
+  - **Claude**: Added detection for "approve edits" and "unfinished tasks" (◻) states.
+  - **Pi (Powerline)**: Improved robustness of state detection, correctly identifying initialization screens and working states.
+
 ### Changed
 - **Robust Selection Tracking**: Improved selection persistence. The current cursor position and multi-selection now survive tmux session renames and agent restarts by falling back to PID and Target (session:window.pane) matching if the unique agent ID changes.
 

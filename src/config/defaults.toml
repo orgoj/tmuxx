@@ -96,21 +96,21 @@ priority = 100
   [[agents.state_rules.refinements]]
   group = "body"
   location = "first_line_of_last_block"
-  pattern = '''[✽✻✢*∴⏺●·]\s*\w+…'''
+  pattern = '''[✽✻✢*∴⏺●·✶]\s*\w+…'''
   status = "working"
   type = "working"
 
   # --- Refinement 2: ACTION REQUIRED (TUI menu in prompt area) ---
   [[agents.state_rules.refinements]]
   group = "prompt"
-  pattern = '''(?:Enter to select|Esc to cancel|❯\s*1\.\s*Yes)'''
+  pattern = '''(?:Enter to select|Esc to cancel|❯\s*1\.\s*Yes|approve edits)'''
   status = "menu"
   type = "approval"
 
   # --- Refinement 3: ACTION REQUIRED (TUI menu in body area) ---
   [[agents.state_rules.refinements]]
   group = "body"
-  pattern = '''(?:Enter to select|Esc to cancel|❯\s*1\.\s*Yes)'''
+  pattern = '''(?:Enter to select|Esc to cancel|❯\s*1\.\s*Yes|approve edits)'''
   status = "menu"
   type = "approval"
 
@@ -118,7 +118,7 @@ priority = 100
   [[agents.state_rules.refinements]]
   group = "body"
   location = "last_block"
-  pattern = '''◻'''
+  pattern = '''◻|unfinished tasks'''
   status = "unfinished tasks"
   type = "approval"
 
@@ -287,13 +287,47 @@ id = "gemini"
 name = "Gemini"
 background_color = "#fcfce0"
 priority = 90
+  default_type = "working"
+
   [[agents.matchers]]
   type = "command"
   pattern = "(?i)gemini|google"
+
+  [[agents.matchers]]
+  type = "content"
+  pattern = '''(?i)no sandbox \(see /docs\)|[\w.-]+ /model'''
+
+  [[agents.process_indicators]]
+  ancestor_pattern = "ssh"
+  icon = "🌐"
+
   [[agents.state_rules]]
-  status = "Gemini"
+  status = "idle"
   type = "idle"
-  pattern = '''(?s).*[>]\s*\z'''
+  last_lines = 40
+  pattern = '''(?s).*[>]\s*(?:Type your message or @path/to/file)?.* /model\s*\z'''
+  splitter = "none"
+
+  [[agents.state_rules.refinements]]
+  group = "body"
+  location = "last_line"
+  pattern = '''✦|Working|Thinking'''
+  status = "Working..."
+  type = "working"
+
+  [[agents.state_rules.refinements]]
+  group = "body"
+  pattern = '''(?m)^> \s*$'''
+  status = "idle"
+  type = "idle"
+
+  [[agents.state_rules.refinements]]
+  group = "body"
+  location = "last_line"
+  pattern = '''\?'''
+  status = "Question"
+  type = "approval"
+
 
 [[agents]]
 id = "opencode"
