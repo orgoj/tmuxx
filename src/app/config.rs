@@ -8,6 +8,17 @@ use super::key_binding::KeyBindings;
 use super::menu_config::MenuConfig;
 use super::session_pattern::SessionPattern;
 
+/// Notification mode for desktop notifications
+#[derive(Debug, Clone, Serialize, Deserialize, Default, PartialEq)]
+#[serde(rename_all = "lowercase")]
+pub enum NotificationMode {
+    /// Send one notification until user interaction clears the flag
+    #[default]
+    First,
+    /// Send notification for each agent that needs attention
+    Each,
+}
+
 /// Application configuration
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -128,6 +139,19 @@ pub struct Config {
     /// UI message templates
     #[serde(default)]
     pub messages: MessageConfig,
+
+    /// Command template for notifications.
+    /// Placeholders: {title}, {message}, {agent}, {session}, {target}, {path}, {approval_type}, {count}
+    #[serde(default)]
+    pub notification_command: Option<String>,
+
+    /// Delay before notification in milliseconds. Default: 60000 (1 minute)
+    #[serde(default = "default_notification_delay")]
+    pub notification_delay_ms: u64,
+
+    /// Notification mode: First (one notification until interaction) or Each (per-agent)
+    #[serde(default)]
+    pub notification_mode: NotificationMode,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -306,6 +330,10 @@ fn default_buffer_size() -> usize {
     16384
 }
 
+fn default_notification_delay() -> u64 {
+    60000
+}
+
 #[derive(Deserialize, Default)]
 #[serde(default)]
 struct PartialConfig {
@@ -338,6 +366,10 @@ struct PartialConfig {
     indicators: Option<StatusIndicators>,
     timing: Option<TimingConfig>,
     messages: Option<MessageConfig>,
+
+    notification_command: Option<String>,
+    notification_delay_ms: Option<u64>,
+    notification_mode: Option<NotificationMode>,
 }
 
 impl PartialConfig {
@@ -427,6 +459,15 @@ impl PartialConfig {
         }
         if let Some(v) = self.messages {
             config.messages = v;
+        }
+        if let Some(v) = self.notification_command {
+            config.notification_command = Some(v);
+        }
+        if let Some(v) = self.notification_delay_ms {
+            config.notification_delay_ms = v;
+        }
+        if let Some(v) = self.notification_mode {
+            config.notification_mode = v;
         }
 
         if !self.agents.is_empty() {

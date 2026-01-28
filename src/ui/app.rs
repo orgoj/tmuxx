@@ -1,4 +1,5 @@
 use std::io;
+use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 use std::time::Duration;
 
@@ -56,6 +57,10 @@ pub async fn run_app(config: Config) -> Result<()> {
     // Create channel for monitor updates
     let (tx, mut rx) = mpsc::channel(32);
 
+    // Create shared flag for user interaction (notification reset)
+    let user_interacted = Arc::new(AtomicBool::new(false));
+    let user_interacted_clone = user_interacted.clone();
+
     // Start monitor task
     let monitor = MonitorTask::new(
         tmux_client.clone(),
@@ -63,6 +68,7 @@ pub async fn run_app(config: Config) -> Result<()> {
         tx,
         Duration::from_millis(config.poll_interval_ms),
         config.clone(),
+        user_interacted_clone,
     );
     let monitor_handle = tokio::spawn(async move {
         monitor.run().await;
@@ -78,6 +84,7 @@ pub async fn run_app(config: Config) -> Result<()> {
         &mut rx,
         &tmux_client,
         &mut system_stats,
+        &user_interacted,
     )
     .await;
 
@@ -100,6 +107,7 @@ async fn run_loop(
     rx: &mut mpsc::Receiver<crate::monitor::MonitorUpdate>,
     tmux_client: &TmuxClient,
     system_stats: &mut SystemStatsCollector,
+    user_interacted: &Arc<AtomicBool>,
 ) -> Result<()> {
     let mut needs_redraw = true;
 
@@ -267,6 +275,11 @@ async fn run_loop(
                 while event::poll(Duration::from_millis(0))? {
                     let event = event::read()?;
                     needs_redraw = true;
+
+                    // Signal user interaction to reset notification state
+                    if matches!(event, Event::Key(_) | Event::Mouse(_)) {
+                        user_interacted.store(true, Ordering::Relaxed);
+                    }
 
                     // Handle mouse events
                     if let Event::Mouse(mouse) = event {

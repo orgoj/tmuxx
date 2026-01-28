@@ -1,12 +1,14 @@
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
+use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 use std::time::{Duration, Instant};
 
 use regex::Regex;
 use tokio::sync::mpsc;
-use tracing::{debug, error, warn};
+use tracing::{debug, error, info, warn};
 
 use crate::agents::{AgentStatus, MonitoredAgent};
+use crate::app::config::NotificationMode;
 use crate::app::{AgentTree, Config};
 use crate::parsers::ParserRegistry;
 use crate::tmux::{refresh_process_cache, TmuxClient};
@@ -30,6 +32,14 @@ pub struct MonitorTask {
     /// Track when each agent was last seen as "active" (Processing/AwaitingApproval)
     /// Key: agent target string
     last_active: HashMap<String, Instant>,
+    /// When approval was first detected (by target)
+    approval_since: HashMap<String, Instant>,
+    /// Agents already notified in "each" mode (by target)
+    notified_agents: HashSet<String>,
+    /// Global flag for "first" mode
+    global_notification_sent: bool,
+    /// Shared flag - UI sets true on interaction, monitor reads and clears
+    user_interacted: Arc<AtomicBool>,
 }
 
 impl MonitorTask {
@@ -39,6 +49,7 @@ impl MonitorTask {
         tx: mpsc::Sender<MonitorUpdate>,
         poll_interval: Duration,
         config: Config,
+        user_interacted: Arc<AtomicBool>,
     ) -> Self {
         // Get current session once at startup (for ignore_self feature)
         let current_session = tmux_client.get_current_session().ok().flatten();
@@ -51,6 +62,10 @@ impl MonitorTask {
             config,
             current_session,
             last_active: HashMap::new(),
+            approval_since: HashMap::new(),
+            notified_agents: HashSet::new(),
+            global_notification_sent: false,
+            user_interacted,
         }
     }
 
@@ -215,6 +230,121 @@ impl MonitorTask {
         // Sort agents by target for consistent ordering
         tree.root_agents.sort_by(|a, b| a.target.cmp(&b.target));
 
+        // Notification logic
+        self.handle_notifications(&tree);
+
         Ok(tree)
+    }
+
+    /// Handle desktop notifications for agents awaiting approval
+    fn handle_notifications(&mut self, tree: &AgentTree) {
+        // Only if notification_command is configured
+        if self.config.notification_command.is_none() {
+            return;
+        }
+
+        let awaiting: Vec<_> = tree
+            .root_agents
+            .iter()
+            .filter(|a| a.status.needs_attention())
+            .collect();
+
+        let now = Instant::now();
+
+        // Track when approval started for each agent
+        for agent in &awaiting {
+            self.approval_since
+                .entry(agent.target.clone())
+                .or_insert(now);
+        }
+        // Remove tracking for cleared agents
+        self.approval_since
+            .retain(|t, _| awaiting.iter().any(|a| &a.target == t));
+
+        // Check if UI cleared the flag (user interacted)
+        if self.user_interacted.swap(false, Ordering::Relaxed) {
+            self.global_notification_sent = false;
+            self.notified_agents.clear();
+        }
+
+        // Notification logic per mode
+        match self.config.notification_mode {
+            NotificationMode::First => {
+                if !self.global_notification_sent {
+                    for agent in &awaiting {
+                        if let Some(since) = self.approval_since.get(&agent.target) {
+                            if since.elapsed().as_millis()
+                                >= self.config.notification_delay_ms as u128
+                            {
+                                self.send_notification(agent, awaiting.len());
+                                self.global_notification_sent = true;
+                                break;
+                            }
+                        }
+                    }
+                }
+            }
+            NotificationMode::Each => {
+                for agent in &awaiting {
+                    if !self.notified_agents.contains(&agent.target) {
+                        if let Some(since) = self.approval_since.get(&agent.target) {
+                            if since.elapsed().as_millis()
+                                >= self.config.notification_delay_ms as u128
+                            {
+                                self.send_notification(agent, awaiting.len());
+                                self.notified_agents.insert(agent.target.clone());
+                            }
+                        }
+                    }
+                }
+                // Clear notified status for agents no longer awaiting
+                self.notified_agents
+                    .retain(|t| awaiting.iter().any(|a| &a.target == t));
+            }
+        }
+    }
+
+    /// Escape a string for safe use in shell commands (single-quote escaping)
+    fn shell_escape(s: &str) -> String {
+        // Replace single quotes with '\'' (end quote, escaped quote, start quote)
+        format!("'{}'", s.replace('\'', "'\\''"))
+    }
+
+    /// Send a desktop notification for an agent
+    fn send_notification(&self, agent: &MonitoredAgent, count: usize) {
+        let cmd_template = match &self.config.notification_command {
+            Some(cmd) => cmd,
+            None => return,
+        };
+
+        let approval_type = match &agent.status {
+            AgentStatus::AwaitingApproval { approval_type, .. } => approval_type.short_desc(),
+            AgentStatus::Error { .. } => "error",
+            _ => "attention",
+        };
+
+        // Shell-escape all dynamic placeholder values to prevent injection
+        let cmd = cmd_template
+            .replace("{title}", "tmuxx") // Hardcoded, safe
+            .replace(
+                "{message}",
+                &Self::shell_escape(&format!("{} needs approval", agent.name)),
+            )
+            .replace("{agent}", &Self::shell_escape(&agent.name))
+            .replace("{session}", &Self::shell_escape(&agent.session))
+            .replace("{target}", &Self::shell_escape(&agent.target))
+            .replace("{path}", &Self::shell_escape(&agent.path))
+            .replace("{approval_type}", approval_type) // Internal enum, safe
+            .replace("{count}", &count.to_string()); // Number, safe
+
+        debug!("Sending notification: {}", cmd);
+
+        match std::process::Command::new("bash")
+            .args(["-c", &cmd])
+            .spawn()
+        {
+            Ok(_) => info!("Notification sent for agent: {}", agent.name),
+            Err(e) => warn!("Failed to spawn notification command: {}", e),
+        }
     }
 }

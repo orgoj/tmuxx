@@ -19,6 +19,12 @@ current_item_bg_color = "#cacaca"
 sidebar_width = 60
 capture_buffer_size = 16384
 
+# Notification settings (disabled by default - no command configured)
+# Uncomment and set your notification command to enable:
+# notification_command = "notify-send -u critical 'tmuxx' '{message}'"
+notification_delay_ms = 60000
+notification_mode = "first"
+
 [indicators]
 idle = "●"
 processing = "◐"

@@ -225,6 +225,33 @@ Or in key bindings:
 "g" = { execute_command = { command = "lazygit", external_terminal = true } }
 ```
 
+### Desktop Notifications
+
+Get notified when agents await approval for too long:
+
+```toml
+# Linux with notify-send
+notification_command = "notify-send -u critical 'tmuxx' '{agent} needs {approval_type}'"
+notification_delay_ms = 30000  # 30 seconds before notification
+notification_mode = "first"    # "first" = one notification until interaction, "each" = per-agent
+
+# macOS
+notification_command = "osascript -e 'display notification \"{message}\" with title \"{title}\"'"
+
+# Custom script
+notification_command = "~/.local/bin/my-notify.sh '{agent}' '{approval_type}'"
+```
+
+**Available placeholders:**
+- `{title}` - always "tmuxx"
+- `{message}` - human-readable message (e.g., "Claude needs approval")
+- `{agent}` - agent name
+- `{session}` - tmux session name
+- `{target}` - tmux target (e.g., "main:0.1")
+- `{path}` - agent working directory
+- `{approval_type}` - type of approval needed (Edit, Shell, etc.)
+- `{count}` - number of agents awaiting attention
+
 ### Power User Tips
 
 You can define custom keybindings to execute external commands using variables like `${SESSION_DIR}`, `${PANE_TARGET}`, etc.

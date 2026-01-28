@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- **Desktop Notifications**: Added support for desktop notifications when agents await approval for too long. Configure with `notification_command` (command template with placeholders), `notification_delay_ms` (delay before notification), and `notification_mode` ("first" for one notification until user interaction, "each" for per-agent notifications). User interaction (any key/mouse event) resets the notification state.
+
 ## [0.3.1] - 2026-01-28
 
 ### Changed

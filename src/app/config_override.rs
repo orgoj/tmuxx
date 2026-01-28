@@ -1,5 +1,6 @@
 use anyhow::{anyhow, Result};
 
+use super::config::NotificationMode;
 use super::key_binding::{CommandConfig, KeyAction, KillMethod, NavAction};
 
 use super::Config;
@@ -20,6 +21,9 @@ pub enum ConfigOverride {
     LogActions(bool),
     SidebarWidth(super::config::SidebarWidth),
     TerminalWrapper(Option<String>),
+    NotificationCommand(Option<String>),
+    NotificationDelayMs(u64),
+    NotificationMode(NotificationMode),
 }
 
 impl ConfigOverride {
@@ -134,8 +138,38 @@ impl ConfigOverride {
                 let val = if value.is_empty() { None } else { Some(value.to_string()) };
                 Ok(ConfigOverride::TerminalWrapper(val))
             }
+            "notificationcommand" | "notifycmd" => {
+                let val = if value.is_empty() {
+                    None
+                } else {
+                    Some(value.to_string())
+                };
+                Ok(ConfigOverride::NotificationCommand(val))
+            }
+            "notificationdelayms" | "notifydelay" => {
+                let val = value.parse::<u64>().map_err(|_| {
+                    anyhow!(
+                        "Invalid value for notification_delay_ms: '{}'. Expected milliseconds.",
+                        value
+                    )
+                })?;
+                Ok(ConfigOverride::NotificationDelayMs(val))
+            }
+            "notificationmode" | "notifymode" => {
+                let mode = match value.to_lowercase().as_str() {
+                    "first" => NotificationMode::First,
+                    "each" => NotificationMode::Each,
+                    _ => {
+                        return Err(anyhow!(
+                            "Invalid notification_mode: '{}'. Use 'first' or 'each'.",
+                            value
+                        ))
+                    }
+                };
+                Ok(ConfigOverride::NotificationMode(mode))
+            }
             _ => Err(anyhow!(
-                "Unknown config key: '{}'. Valid keys: poll_interval_ms, capture_lines, show_detached_sessions, debug_mode, truncate_long_lines, max_line_width, popup_trigger_key, ignore_sessions, ignore_self, log_actions, sidebar_width, terminal_wrapper, keybindings.KEY (or kb.KEY)",
+                "Unknown config key: '{}'. Valid keys: poll_interval_ms, capture_lines, show_detached_sessions, debug_mode, truncate_long_lines, max_line_width, popup_trigger_key, ignore_sessions, ignore_self, log_actions, sidebar_width, terminal_wrapper, notification_command, notification_delay_ms, notification_mode, keybindings.KEY (or kb.KEY)",
                 key
             )),
         }
@@ -159,6 +193,9 @@ impl ConfigOverride {
             ConfigOverride::LogActions(val) => config.log_actions = val,
             ConfigOverride::SidebarWidth(val) => config.sidebar_width = val,
             ConfigOverride::TerminalWrapper(val) => config.terminal_wrapper = val,
+            ConfigOverride::NotificationCommand(val) => config.notification_command = val,
+            ConfigOverride::NotificationDelayMs(val) => config.notification_delay_ms = val,
+            ConfigOverride::NotificationMode(val) => config.notification_mode = val,
         }
     }
 }
@@ -488,5 +525,57 @@ mod tests {
             }
             _ => panic!("Expected Refresh action"),
         }
+    }
+
+    #[test]
+    fn test_parse_notification_config() {
+        // Test notification_command
+        let override_val =
+            ConfigOverride::parse("notification_command", "notify-send '{message}'").unwrap();
+        match override_val {
+            ConfigOverride::NotificationCommand(Some(cmd)) => {
+                assert_eq!(cmd, "notify-send '{message}'");
+            }
+            _ => panic!("Expected NotificationCommand"),
+        }
+
+        // Test empty notification_command (disables notifications)
+        let override_val = ConfigOverride::parse("notifycmd", "").unwrap();
+        match override_val {
+            ConfigOverride::NotificationCommand(None) => {}
+            _ => panic!("Expected None for empty notification_command"),
+        }
+
+        // Test notification_delay_ms
+        let override_val = ConfigOverride::parse("notification_delay_ms", "30000").unwrap();
+        match override_val {
+            ConfigOverride::NotificationDelayMs(val) => {
+                assert_eq!(val, 30000);
+            }
+            _ => panic!("Expected NotificationDelayMs"),
+        }
+
+        // Test notification_mode
+        let override_val = ConfigOverride::parse("notification_mode", "first").unwrap();
+        match override_val {
+            ConfigOverride::NotificationMode(mode) => {
+                assert_eq!(mode, NotificationMode::First);
+            }
+            _ => panic!("Expected NotificationMode::First"),
+        }
+
+        let override_val = ConfigOverride::parse("notifymode", "each").unwrap();
+        match override_val {
+            ConfigOverride::NotificationMode(mode) => {
+                assert_eq!(mode, NotificationMode::Each);
+            }
+            _ => panic!("Expected NotificationMode::Each"),
+        }
+
+        // Test invalid notification_mode
+        assert!(ConfigOverride::parse("notification_mode", "invalid").is_err());
+
+        // Test invalid notification_delay_ms
+        assert!(ConfigOverride::parse("notification_delay_ms", "not_a_number").is_err());
     }
 }
