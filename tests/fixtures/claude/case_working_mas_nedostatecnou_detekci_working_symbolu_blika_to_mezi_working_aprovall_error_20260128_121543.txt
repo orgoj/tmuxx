@@ -1,0 +1,170 @@
+         "summary": "Resolve repetitive tasks with simple, text-based commands from a command line interface with Appfire's Atlassian Command Line Interface (CLI)."
+       }
+     ]
+  ⎿  PostToolUse:Bash hook succeeded
+
+∴ Thinking…
+
+  Vidím že:
+  1. ACLI je od Atlassianu (oficiální)
+  2. Appfire má jak Jira CLI, Confluence CLI, tak Bitbucket CLI
+  3. Existuje "Bitbucket Cloud CLI"
+
+  Teď potřebuji zjistit:
+  1. ACLI - Confluence a Bitbucket support, comment editing
+  2. Appfire CLI - všechny produkty
+
+  Zkusím získat více informací o ACLI z README.
+
+● Read(/tmp/acli-commands.md)
+  ⎿  Read 26 lines
+  ⎿  PostToolUse:Callback hook succeeded: Success
+
+● Bash(zai-cli search "appfire atlassian cli jira confluence bitbucket pricing" --count 5)
+  ⎿  PreToolUse:Bash hook succeeded: Success
+  ⎿ [
+      {
+        "rank": 1,
+        "title": "Pricing updates",
+        "url": "https://appfire.com/pricing-updates",
+        "summary": "Jira and Confluence Data Center app pricing now supports tiers for up to 150,000 users with an Unlimited tier for 150,001+ users. Cloud ...",
+        "date": "2025年7月1日"
+      },
+      {
+        "rank": 2,
+        "title": "2025 app pricing: Confluence Command Line Interface (CLI)",
+        "url": "https://appfire.com/pricing-updates/confluence-command-line-interface",
+        "summary": "2025 app pricing: Confluence Command Line Interface (CLI). The following prices are effective July 1st 2025.",
+        "date": "2025年7月1日"
+      },
+      {
+        "rank": 3,
+        "title": "Licenses - Appfire Command Line Interface (CLI) - Confluence",
+        "url": "https://appfire.atlassian.net/wiki/spaces/ACLI/pages/60565972/Atlassian+CLI+License+for+Versions+6.x",
+        "summary": "The license and price model has changed starting 2016-10-17 together with the launch of version 6.0. See the FAQ section for more details.",
+        "date": "2025年5月5日"
+      },
+      {
+        "rank": 4,
+        "title": "Atlassian CLI License for Versions 3.0 - 3.9",
+        "url": "https://appfire.atlassian.net/wiki/spaces/ACLI/pages/60563061/Atlassian+CLI+License+for+Versions+3.0+-+3.9",
+        "summary": "These can be purchased through the Atlassian Marketplace. There is no additional charge for Atlassian Command Line Interface (CLI) use once one ...",
+        "date": "2022年11月28日"
+      },
+      {
+        "rank": 5,
+        "title": "Atlassian Command Line Interface (CLI)",
+        "url": "https://marketplace.atlassian.com/apps/10886/atlassian-command-line-interface-cli",
+        "summary": "This app is included with the purchase of any Atlassian CLI apps for Jira, Confluence, Bitbucket, Bamboo, etc. Not purchased separately. Prefer to work in
+     the ..."
+      }
+    ]
+  ⎿  PostToolUse:Bash hook succeeded
+
+∴ Thinking…
+
+  Teď potřebuji zjistit více o Appfire CLI - vidím že má produkty pro Jira, Confluence, Bitbucket. Zkusím najít GitHub repo pro ACLI nebo více informací.
+
+● Bash(zai-cli search "acli atlassian github repository" --count 5)
+  ⎿  PreToolUse:Bash hook succeeded: Success
+  ⎿ [
+      {
+        "rank": 1,
+        "title": "terabyte/atlassian-cli: Ruby CLI toolkit for dealing with ...",
+        "url": "https://github.com/terabyte/atlassian-cli",
+        "summary": "This program is an easy-to-use, scriptable API for interacting with JIRA (and eventually other Atlassian products) via the REST API."
+      },
+      {
+        "rank": 2,
+        "title": "atlassian/gajira-cli",
+        "url": "https://github.com/atlassian/gajira-cli",
+        "summary": "Github Actions Jira CLI. ⚠️─ This repository is no longer maintained and all Gajira actions have been deprecated."
+      },
+      {
+        "rank": 3,
+        "title": "pchuri/confluence-cli: A powerful command-line interface ...",
+        "url": "https://github.com/pchuri/confluence-cli",
+        "summary": "A powerful command-line interface for Atlassian Confluence that allows you to read, search, and manage your Confluence content from the terminal.
+    Features."
+      },
+      {
+        "rank": 4,
+        "title": "Atlassian Command Line Interface (CLI)",
+        "url": "https://developer.atlassian.com/cloud/acli/guides/introduction/",
+        "summary": "Streamline your workflow and save valuable time by using the command line to interact with Atlassian organization and products.",
+        "date": "2025年6月12日"
+      },
+      {
+        "rank": 5,
+        "title": "atlassian/homebrew-acli",
+        "url": "https://github.com/atlassian/homebrew-acli",
+        "summary": "Atlassian Command-Line Interface (ACLI or Atlassian CLI) is a powerful software tool that allows you to interact with your Atlassian products directly
+    through ..."
+      }
+    ]
+  ⎿  PostToolUse:Bash hook succeeded
+
+● Bash(zai-cli read "https://www.atlassian.com/blog/jira/atlassian-command-line-interface" --clean | jq -r '.content' > /tmp/acli-blog.md && wc -l /tmp/acli-blog.md)
+  ⎿  PreToolUse:Bash hook succeeded: Success
+  ⎿  36 /tmp/acli-blog.md
+  ⎿  PostToolUse:Bash hook succeeded
+
+∴ Thinking…
+
+  Našel jsem:
+  1. ACLI homebrew repo - oficiální od Atlassianu
+  2. gajira-cli - deprecated GitHub Actions
+  3. confluence-cli - third party Confluence CLI
+  4. atlassian-cli (terabyte) - Ruby CLI toolkit
+
+  Teď si přečtu blog post o ACLI abych pochopal co umí.
+
+● Read(/tmp/acli-blog.md)
+  ⎿  Read 37 lines
+  ⎿  PostToolUse:Callback hook succeeded: Success
+
+● github - Get file or directory contents (MCP)(owner: "atlassian", path: "README.md", repo: "homebrew-acli")
+  ⎿  PreToolUse:mcp__github__get_file_contents hook succeeded: Success
+  ⎿  successfully downloaded text file (SHA: b7b01a51fcdd823edff380a5e8ab73c899e14f25)
+  ⎿  [Resource from github at repo://atlassian/homebrew-acli/ca43ee352f27bdda7d63973aa91ee1f13e76bbac/contents/README.md] # ACLI Homebrew Tap
+
+     [![Atlassian license](https://img.shields.io/badge/license-Apache%202.0-blue.svg?style=flat-square)](LICENSE)[![Go
+     Reference](https://pkg.go.dev/badge/github.com/spf13/cobra.svg)](https://pkg.go.dev/github.com/spf13/cobra)
+
+     A custom tap for [Homebrew](https://brew.sh/).
+
+     Atlassian Command-Line Interface (ACLI or Atlassian CLI) is a powerful software tool that allows you to interact with your
+     Atlassian products directly through your keyboard. It is designed to enhance control, efficiency, and cost-effectiveness
+     across all your Atlassian products. Streamline your workflow and save valuable time by reducing the risk of errors
+     associated with manual operations.
+
+     ## Installation
+
+     Via Homebrew
+
+     ```shell
+     $ brew tap atlassian-labs/acli
+
+     $ brew install acli
+     ```
+
+     ## License
+
+     Copyright (c) 2025 Atlassian US., Inc.
+     Apache 2.0 licensed, see [LICENSE](LICENSE) file.
+
+     <br/>
+
+     [![With â¤ï¸ from Atlassian](https://raw.githubusercontent.com/atlassian-internal/oss-assets/master/banner-cheers.png)](https://www.atlassian.com)
+
+  ⎿  PostToolUse:mcp__github__get_file_contents hook succeeded
+
+✶ Improvising… (esc to interrupt · ctrl+t to hide tasks · 3m 48s · ↑ 1.0k tokens · thought for 7s)
+  ⎿  ◻ Research Jira CLI tools
+
+───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+❯ 
+───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+  ? for shortcuts                                                                                                                                                        0 tokens
+                                                                                                                                                 current: 2.1.22 · latest: 2.1.22
+

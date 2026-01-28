@@ -1,0 +1,170 @@
+      58 - [[acli]] pro Jira (comment editing)
+      59 - [[confluence-cli]] pro Confluence
+      60 - ❌ Bitbucket - není open source řešení
+      61
+      62 **2. Appfire CLI (placené):**
+      63 - ✅ Vše v jednom (Jira + Confluence + Bitbucket)
+      64 - ✅ Comment editing
+      65 - ❌ Placené (enterprise pricing)
+      66
+      67 **3. Hybrid řešení:**
+      68 - [[acli]] pro Jira (zdarma, official)
+      69 - [[confluence-cli]] pro Confluence (zdarma)
+      70 - GitHub CLI / gh pro Bitbucket (zdarma, official)
+      71
+      72 - ## Závěr
+      73
+      74 Pro tvé potřeby (comment editing + Confluence) doporučuji:
+      75 1. **acli** pro Jira (oficiální, comment editing, zdarma)
+      76 2. **confluence-cli** pro Confluence (open source, zdarma)
+      77 3. Pro Bitbucket zvážit gh CLI nebo Appfire Bitbucket CLI (pokud opravdu potřebuješ)
+      78
+      79 Pokud potřebuješ vše v jednom a máš budget → **Appfire CLI** (ale drahé).
+  ⎿  PostToolUse:Write hook succeeded: Success
+
+∴ Thinking…
+
+  Dobře, teď aktualizuji task aby byl completed a dám uživateli shrnutí.
+
+∴ Thinking…
+
+  Teď bych měl uživateli dát shrnutí výsledků.
+
+● ✅ Hotovo! Vytvořil jsem 4 stránky + srovnání:
+
+  Vytvořené stránky:
+
+  1. [[jira-cli]] - Nejpopulárnější open-source (5027⭐)
+    - ❌ NEUMÍ edit komentářů (jen add)
+    - ❌ Žádná Confluence
+    - ✅ Zdarma
+  2. [[acli]] - Oficiální Atlassian CLI
+    - ✅ UMÍ edit komentářů (acli jira workitem comment update)
+    - ❌ Žádná Confluence (zatím)
+    - ✅ Zdarma pro Jira Cloud
+  3. [[confluence-cli]] - Open-source Confluence CLI
+    - ✅ Full CRUD pro Confluence
+    - ❌ Comments edit až v roadmap
+    - ✅ Zdarma (25⭐)
+  4. [[appfire-cli]] - Placené enterprise řešení
+    - ✅ Comment editing
+    - ✅ Confluence
+    - ✅ Bitbucket
+    - ❌ Placené
+  5. [[srovnani-jira-cli-nastroju]] - Srovnávací tabulka s doporučením
+
+  Hlavní zjištění:
+
+  Pro tvé požadavky (edit komentářů + Confluence):
+  - acli pro Jira (oficiální, comment editing, zdarma)
+  - confluence-cli pro Confluence (zdarma)
+  - Pokud potřebuješ Bitbucket → Appfire (placené) nebo gh CLI
+
+  Oficiální Atlassian MCP skutečně NEUMÍ edit komentářů, ale ACLI to umí.
+
+✻ Cogitated for 1m 14s
+
+❯ jak ty tools resi autorizaci, jde to nejak pres moje prihlaseni?
+  ⎿  UserPromptSubmit hook succeeded: Success
+
+∴ Thinking…
+
+  Uživatel se ptá na autorizaci - jak ty CLI nástroje řeší autentizaci, jestli to jde přes jeho existující přihlášení.
+
+  Musím se podívat do dokumentace který jsem už stáhl:
+
+  1. jira-cli - README jsem četl, má tam:
+    - API token (JIRA_API_TOKEN)
+    - .netrc file
+    - keychain
+    - Basic auth, bearer (PAT), mtls
+  2. acli - mám blog post a homebrew README
+  3. confluence-cli - README jsem četl, má tam:
+    - Environment variables (CONFLUENCE_API_TOKEN, CONFLUENCE_EMAIL)
+    - Interactive setup (confluence init)
+
+  Podíval bych se detailněji na ty dokumentace a zjistil jak přesně to funguje.
+
+● Good question! Podívám se do dokumentace jak řeší autorizaci:
+
+● Bash(grep -A 20 "Authentication\|auth\|token\|login" /tmp/acli-blog.md | head -40)
+  ⎿  (No content)
+
+● Bash(grep -A 20 "Getting Your API Token\|Configuration\|Authentication" /home/michael/A/pages/confluence-cli.md)
+  ⎿     - **Authentication** - Basic (email + token) nebo Bearer (PAT)
+
+     - ## Integrace
+     … +18 lines (ctrl+o to expand)
+  ⎿  PreToolUse:Bash hook succeeded: Success
+  ⎿  PostToolUse:Bash hook succeeded
+  ⎿  PreToolUse:Bash hook succeeded: Success
+  ⎿  PostToolUse:Bash hook succeeded
+
+∴ Thinking…
+
+  Potřebuji se podívat detailněji na jira-cli README, který jsem stáhl dříve. Byl v resource content z MCP GitHub call.
+
+● Podívám se do jira-cli README detailně na autorizaci:
+
+● Bash(grep -A 30 "Getting started\|Authentication\|API Token" /tmp/aiblueprint-readme.md 2>/dev/null || echo "File not found")
+  ⎿  File not found
+  ⎿  PreToolUse:Bash hook succeeded: Success
+  ⎿  PostToolUse:Bash hook succeeded
+
+● Bash(cat > /tmp/auth-check.sh << 'EOF'
+      #!/bin/bash
+      echo "=== jira-cli authentication ==="
+      echo "Z README:"
+      echo "- Jira API token (JIRA_API_TOKEN environment variable)"
+      echo "- .netrc file"
+      echo "- keychain"
+      echo "- Basic auth, bearer (PAT), mtls"
+      echo ""
+      echo "=== confluence-cli authentication ==="
+      echo "Z README:"
+      echo "- CONFLUENCE_API_TOKEN"
+      echo "- CONFLUENCE_EMAIL"
+      echo "- confluence init wizard"
+      echo ""
+      echo "=== Co potřebuješ ==="
+      echo "Atlassian API Token: https://id.atlassian.com/manage-profile/security/api-tokens"
+      EOF
+      bash /tmp/auth-check.sh)
+  ⎿  Running PreToolUse hook…
+       · PreToolUse:Bash: /home/michael/work/ai/CLAUDE/TOOLS/dippy/bin/dippy-hook
+  ⎿  Running…
+
+───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+ Bash command
+
+   cat > /tmp/auth-check.sh << 'EOF'
+   #!/bin/bash
+   echo "=== jira-cli authentication ==="
+   echo "Z README:"
+   echo "- Jira API token (JIRA_API_TOKEN environment variable)"
+   echo "- .netrc file"
+   echo "- keychain"
+   echo "- Basic auth, bearer (PAT), mtls"
+   echo ""
+   echo "=== confluence-cli authentication ==="
+   echo "Z README:"
+   echo "- CONFLUENCE_API_TOKEN"
+   echo "- CONFLUENCE_EMAIL"
+   echo "- confluence init wizard"
+   echo ""
+   echo "=== Co potřebuješ ==="
+   echo "Atlassian API Token: https://id.atlassian.com/manage-profile/security/api-tokens"
+   EOF
+   bash /tmp/auth-check.sh
+   Summarize authentication methods
+
+ Hook PreToolUse:Bash requires confirmation for this command:
+ 🐤 bash interactive
+ /hooks to update
+
+ Do you want to proceed?
+ ❯ 1. Yes
+   2. No
+
+ Esc to cancel · Tab to amend · ctrl+e to explain
+

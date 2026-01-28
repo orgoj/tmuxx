@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+- **Robust Selection Tracking**: Improved selection persistence. The current cursor position and multi-selection now survive tmux session renames and agent restarts by falling back to PID and Target (session:window.pane) matching if the unique agent ID changes.
+
 ### Fixed
 - **Persistent Selection**: Selection is now managed by unique agent IDs instead of list indices. This ensures that the current cursor and multi-selection persist across monitor updates, configuration reloads, and window actions (like Approve/Reject). Multi-selection is no longer cleared automatically after sending 'y'/'n', satisfying user request for persistence.
 

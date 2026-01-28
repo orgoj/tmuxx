@@ -1,0 +1,154 @@
+BASHRC.D: homebrew init
+BASHRC.D: brew completions
+BASHRC.D: mise
+BASHRC.D: GO init
+BASHRC.D: bun
+BASHRC.D: cargo
+BASHRC.D: chezmoi
+BASHRC.D: cass completions
+BASHRC.D: ntm shell integration
+BASHRC.D: direnv init
+BASHRC.D: fzf init
+BASHRC.D: MOP
+BASHRC.D: pipx
+BASHRC.D: pnpm
+BASHRC.D: z+zi command
+BASHRC.D: starship
+
+michael@wdt/mp2/mpaheca 17GiB/31GiB on gcp:
+> ssh mpaheca
+Welcome to Ubuntu 24.04.3 LTS (GNU/Linux 5.15.0-134-generic x86_64)
+
+ * Documentation:  https://help.ubuntu.com
+ * Management:     https://landscape.canonical.com
+ * Support:        https://ubuntu.com/pro
+Last login: Tue Jan 27 09:06:34 2026 from 109.105.48.65
+
+
+--------------------------------------------------------------------------------
+Pro praci s MP virtualem pouzivejte prikaz mp viz: mp help
+Typicka prace na projectu:
+mp workon <projekt>
+mp serve
+otevrit URL: http://<projekt>.mpUSER:4200/
+mp build
+otevrit URL: http://<projekt>.mpUSER:8080/
+--------------------------------------------------------------------------------
+
+
+MP2 docker --.bash_profile
+Logged as heca
+Welcome in mp! --mploader
+Git user: Michael Heca
+2048 SHA256:a54IWa49zMU0fVgnIirRzwqaoEl3XonHVTjxzMZ0/QY heca@wdt.cz (RSA)
+Welcome HECA!
+LOAD: /home/user/.bashrc.d/mise
+Init mise version manager https://mise.jdx.dev/
+2048 SHA256:a54IWa49zMU0fVgnIirRzwqaoEl3XonHVTjxzMZ0/QY heca@wdt.cz (RSA)
+heca@mpaheca:~
+$ s
+│                                                                                                                                                                                                                   │
+│ Changes not staged for commit:                                                                                                                                                                                    │
+│   (use "git add <file>..." to update what will be committed)                                                                                                                                                      │
+│   (use "git restore <file>..." to discard changes in working directory)                                                                                                                                           │
+│         modified:   .gitignore                                                                                                                                                                                    │
+│         modified:   client/src/styles/outlined.css                                                                                                                                                                │
+│         modified:   requirements_dev.txt                                                                                                                                                                          │
+│                                                                                                                                                                                                                   │
+│ no changes added to commit (use "git add" and/or "git commit -a")                                                                                                                                                 │
+│ On branch a17                                                                                                                                                                                                     │
+│ Your branch is up to date with 'origin/a17'.                                                                                                                                                                      │
+│                                                                                                                                                                                                                   │
+│ Changes to be committed:                                                                                                                                                                                          │
+│   (use "git restore --staged <file>..." to unstage)                                                                                                                                                               │
+│         modified:   .gitignore                                                                                                                                                                                    │
+│         modified:   client/src/styles/outlined.css                                                                                                                                                                │
+│         modified:   requirements_dev.txt                                                                                                                                                                          │
+╰───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+╭───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
+│ ✓  Shell git commit -m "ENH: Impementace reduce_matsyms MPI-1858" && git status [in /home/user/workspace/karch-cz]                                                                                                │
+│                                                                                                                                                                                                                   │
+│ [a17 963ce5a] ENH: Impementace reduce_matsyms MPI-1858                                                                                                                                                            │
+│  3 files changed, 4 insertions(+), 1 deletion(-)                                                                                                                                                                  │
+│ On branch a17                                                                                                                                                                                                     │
+│ Your branch is ahead of 'origin/a17' by 1 commit.                                                                                                                                                                 │
+│   (use "git push" to publish your local commits)                                                                                                                                                                  │
+│                                                                                                                                                                                                                   │
+│ nothing to commit, working tree clean                                                                                                                                                                             │
+╰───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+✦ Změny byly uloženy s commit zprávou:
+  ENH: Impementace reduce_matsyms MPI-1858
+
+> a napis mi prompt pro dalsi projektu ve kterych potrebuji udelat tuto zmenu
+
+✦ Zde je prompt, který můžeš použít v dalších projektech. Je stručný a obsahuje přesně ty kroky, které jsme dělali:
+
+  ---
+
+  Prompt:
+
+  Nastav v tomto projektu optimalizaci Material Symbolů (reduce_matsyms) podle úkolu MPI-1858:
+
+   1. V souboru client/src/styles/outlined.css změň src: url(...) u fontu "Material Symbols Outlined" na lokální cestu: src: url("../assets/static/MaterialSymbolsOutlined.woff2") format("woff2");
+   2. Do requirements_dev.txt přidej balíčky fonttools a brotli.
+   3. Do .gitignore přidej ignorování generovaného fontu: client/src/assets/static/MaterialSymbolsOutlined.woff2.
+   4. Změny commitni se zprávou: ENH: Impementace reduce_matsyms MPI-1858
+
+  (Poznámka: Úpravu builderu v mp-prebuild neřeš, ta je společná).
+
+> co to je za informaci "podle ukolu MPI-1858" ty jsi ten ukol ani nevidel, delal jsi to podle commit, chci poradny presny prompt jak to ma udelat!
+
+✦ Máš pravdu, tady je přesný technický prompt, který agentovi (nebo vývojáři) jasně řekne, co a jak má změnit bez odkazování na neviděné zadání:
+
+  ---
+
+  Prompt:
+
+  V tomto projektu implementuj optimalizaci Material Symbolů pomocí lokální redukce fontu. Proveď tyto konkrétní změny:
+
+   1. Úprava `client/src/styles/outlined.css`:
+      Uvnitř @font-face pro "Material Symbols Outlined" nahraď vzdálenou URL adresu (Google Fonts) lokální cestou k budoucímu vygenerovanému souboru:
+       * Původní src: url("https://fonts.gstatic.com/...")
+       * Nové src: url("../assets/static/MaterialSymbolsOutlined.woff2") format("woff2");
+
+   2. Aktualizace `requirements_dev.txt`:
+      Přidej tyto dvě knihovny potřebné pro běh skriptu na redukci fontu (pokud tam již nejsou):
+   1     fonttools
+   2     brotli
+
+   3. Úprava `.gitignore`:
+      Přidej řádek pro ignorování generovaného binárního souboru fontu:
+      client/src/assets/static/MaterialSymbolsOutlined.woff2
+
+   4. Commit:
+      Změny commitni s touto zprávou: ENH: Impementace reduce_matsyms MPI-1858
+
+> a odkaz na ten projekt a commit podle ktereho jsi to delal
+
+✦ Zde je přesný prompt pro další projekty, který obsahuje odkaz na zdrojový projekt i konkrétní commit:
+
+  ---
+
+  Prompt pro Gemini:
+
+  Implementuj v tomto projektu optimalizaci Material Symbolů (reduce_matsyms) přesně podle vzoru z projektu /home/user/workspace/abapneu-cz (commit c28302517fadddc56b72a0d3803376abfc3bbe45).
+
+  Proveď tyto kroky:
+
+   1. Úprava `client/src/styles/outlined.css`: U fontu "Material Symbols Outlined" nahraď vzdálenou URL adresu (Google Fonts) za lokální cestu k souboru:
+      src: url("../assets/static/MaterialSymbolsOutlined.woff2") format("woff2");
+   2. Aktualizace `requirements_dev.txt`: Přidej knihovny fonttools a brotli (každou na nový řádek).
+   3. Úprava `.gitignore`: Přidej řádek pro ignorování generovaného fontu:
+      client/src/assets/static/MaterialSymbolsOutlined.woff2
+   4. Commit: Změny commitni pod zprávou:
+      ENH: Impementace reduce_matsyms MPI-1858
+
+  ---
+
+ 1 GEMINI.md file
+╭───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
+│ >   Type your message or @path/to/file                                                                                                                                                                            │
+╰───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+ ~/workspace/karch-cz (a17*)                                                                  no sandbox (see /docs)                                                                   gemini-3-flash-preview /model
+
+

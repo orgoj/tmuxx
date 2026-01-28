@@ -147,8 +147,16 @@ pub struct AppState {
     pub selected_index: usize,
     /// ID of the currently selected agent (cursor position)
     pub selected_agent_id: Option<String>,
+    /// PID of the currently selected agent (cursor position)
+    pub selected_agent_pid: Option<u32>,
+    /// Target of the currently selected agent (session:window.pane)
+    pub selected_agent_target: Option<String>,
     /// Multi-selected agent IDs
     pub selected_agents: HashSet<String>,
+    /// Multi-selected agent PIDs (for robust tracking across renames)
+    pub selected_pids: HashSet<u32>,
+    /// Multi-selected agent targets (for robust tracking across restarts)
+    pub selected_targets: HashSet<String>,
     /// Which panel is focused
     pub focused_panel: FocusedPanel,
     /// Input buffer (always available)
@@ -224,7 +232,11 @@ impl AppState {
             agents: AgentTree::new(),
             selected_index: 0,
             selected_agent_id: None,
+            selected_agent_pid: None,
+            selected_agent_target: None,
             selected_agents: HashSet::new(),
+            selected_pids: HashSet::new(),
+            selected_targets: HashSet::new(),
             focused_panel: FocusedPanel::Sidebar,
             input_buffer: String::new(),
             cursor_position: 0,
@@ -463,32 +475,87 @@ impl AppState {
     }
 
     fn update_selected_id(&mut self) {
-        self.selected_agent_id = self
-            .agents
-            .get_agent(self.selected_index)
-            .map(|a| a.id.clone());
+        let agent = self.agents.get_agent(self.selected_index);
+        self.selected_agent_id = agent.map(|a| a.id.clone());
+        self.selected_agent_pid = agent.map(|a| a.pid);
+        self.selected_agent_target = agent.map(|a| a.target.clone());
     }
 
     /// Synchronize selected_index and selected_agent_id after agent list updates
     pub fn sync_selection(&mut self) {
+        // --- Part 1: Sync single selection (cursor) ---
+
+        // Try to find the same agent using different keys in order of preference
+        let mut found_pos = None;
+
+        // 1. Try to find by ID (exact match)
         if let Some(id) = &self.selected_agent_id {
-            // Try to find the agent with this ID in the new list
             if let Some(pos) = self.agents.root_agents.iter().position(|a| &a.id == id) {
-                self.selected_index = pos;
-                return;
+                found_pos = Some(pos);
             }
         }
 
-        // Fallback: If ID not found or None, clamp current index
-        if self.agents.root_agents.is_empty() {
-            self.selected_index = 0;
-            self.selected_agent_id = None;
-        } else {
-            if self.selected_index >= self.agents.root_agents.len() {
-                self.selected_index = self.agents.root_agents.len().saturating_sub(1);
+        // 2. Try to find by PID (handles session renames)
+        if found_pos.is_none() {
+            if let Some(pid) = self.selected_agent_pid {
+                if let Some(pos) = self.agents.root_agents.iter().position(|a| a.pid == pid) {
+                    found_pos = Some(pos);
+                }
             }
-            self.update_selected_id();
         }
+
+        // 3. Try to find by target (handles agent restarts in same pane)
+        if found_pos.is_none() {
+            if let Some(target) = &self.selected_agent_target {
+                if let Some(pos) = self
+                    .agents
+                    .root_agents
+                    .iter()
+                    .position(|a| &a.target == target)
+                {
+                    found_pos = Some(pos);
+                }
+            }
+        }
+
+        if let Some(pos) = found_pos {
+            self.selected_index = pos;
+            self.update_selected_id();
+        } else {
+            // Fallback: If not found, clamp current index
+            if self.agents.root_agents.is_empty() {
+                self.selected_index = 0;
+                self.selected_agent_id = None;
+                self.selected_agent_pid = None;
+                self.selected_agent_target = None;
+            } else {
+                if self.selected_index >= self.agents.root_agents.len() {
+                    self.selected_index = self.agents.root_agents.len().saturating_sub(1);
+                }
+                self.update_selected_id();
+            }
+        }
+
+        // --- Part 2: Sync multi-selection ---
+
+        let mut new_selected_agents = HashSet::new();
+        let mut new_selected_pids = HashSet::new();
+        let mut new_selected_targets = HashSet::new();
+
+        for agent in &self.agents.root_agents {
+            if self.selected_agents.contains(&agent.id)
+                || self.selected_pids.contains(&agent.pid)
+                || self.selected_targets.contains(&agent.target)
+            {
+                new_selected_agents.insert(agent.id.clone());
+                new_selected_pids.insert(agent.pid);
+                new_selected_targets.insert(agent.target.clone());
+            }
+        }
+
+        self.selected_agents = new_selected_agents;
+        self.selected_pids = new_selected_pids;
+        self.selected_targets = new_selected_targets;
     }
 
     /// Toggles selection of the current agent (only if visible)
@@ -500,10 +567,17 @@ impl AppState {
 
         if let Some(agent) = self.selected_agent() {
             let id = agent.id.clone();
+            let pid = agent.pid;
+            let target = agent.target.clone();
+
             if self.selected_agents.contains(&id) {
                 self.selected_agents.remove(&id);
+                self.selected_pids.remove(&pid);
+                self.selected_targets.remove(&target);
             } else {
                 self.selected_agents.insert(id);
+                self.selected_pids.insert(pid);
+                self.selected_targets.insert(target);
             }
         }
 
@@ -516,14 +590,21 @@ impl AppState {
 
     /// Selects all visible agents (respects filter)
     pub fn select_all(&mut self) {
-        let visible_ids: Vec<String> = self
+        let visible_agents: Vec<(String, u32, String)> = self
             .visible_indices
             .iter()
-            .filter_map(|&idx| self.agents.root_agents.get(idx).map(|a| a.id.clone()))
+            .filter_map(|&idx| {
+                self.agents
+                    .root_agents
+                    .get(idx)
+                    .map(|a| (a.id.clone(), a.pid, a.target.clone()))
+            })
             .collect();
 
-        for id in visible_ids {
+        for (id, pid, target) in visible_agents {
             self.selected_agents.insert(id);
+            self.selected_pids.insert(pid);
+            self.selected_targets.insert(target);
         }
 
         if self.filter_selected {
@@ -534,6 +615,8 @@ impl AppState {
     /// Clears all selections
     pub fn clear_selection(&mut self) {
         self.selected_agents.clear();
+        self.selected_pids.clear();
+        self.selected_targets.clear();
         if self.filter_selected {
             self.update_visible_indices();
             self.ensure_visible_selection();
