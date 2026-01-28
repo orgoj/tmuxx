@@ -27,6 +27,11 @@ use super::components::{
 };
 use super::Layout;
 
+// Layout constants
+const SUMMARY_HEIGHT: u16 = 15;
+const PREVIEW_MIN_HEIGHT: u16 = 5;
+const INPUT_BORDER_HEIGHT: u16 = 2;
+
 /// Runs the main application loop
 pub async fn run_app(config: Config) -> Result<()> {
     // Setup terminal
@@ -136,9 +141,9 @@ async fn run_loop(
                     let preview_chunks = ratatui::layout::Layout::default()
                         .direction(ratatui::layout::Direction::Vertical)
                         .constraints([
-                            ratatui::layout::Constraint::Length(15),
-                            ratatui::layout::Constraint::Min(5),
-                            ratatui::layout::Constraint::Length(input_height + 2),
+                            ratatui::layout::Constraint::Length(SUMMARY_HEIGHT),
+                            ratatui::layout::Constraint::Min(PREVIEW_MIN_HEIGHT),
+                            ratatui::layout::Constraint::Length(input_height + INPUT_BORDER_HEIGHT),
                         ])
                         .split(preview);
                     if state.show_summary_detail {
