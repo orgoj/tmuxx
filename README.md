@@ -92,6 +92,7 @@ All bindings are configurable in `config.toml`. Defaults:
 | **Navigation** | | |
 | `Up` / `Down` | Prev/Next | Navigate agent list |
 | `Home` / `End` | First/Last | Jump to start/end of list |
+| `Enter` | Send Enter | Send carriage return to selected agent (configurable) |
 | `f` | Focus | Switch tmux focus to selected pane (works if tmuxx is inside tmux) |
 | `Space` | Select | Toggle selection (multiselect) |
 | **Actions** | | |

@@ -421,6 +421,7 @@ full_template = '''  {selection}{status_char} {name}
 [key_bindings]
 "Home" = { navigate = "first_agent" }
 "End" = { navigate = "last_agent" }
+"Enter" = { send_keys = "Enter" }
 "c" = "toggle_pane_tree_mode"
 "y" = "approve"
 "Y" = "approve"

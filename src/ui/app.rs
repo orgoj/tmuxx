@@ -1490,29 +1490,42 @@ fn map_key_to_action(
     }
 
     // Sidebar focused - check popup trigger key first
-    if let KeyCode::Char(c) = code {
-        // Build key string with modifier prefix for binding lookup
-        // Support both implicit and explicit Shift:
-        // - Implicit: 'T' (without Alt/Ctrl) means Shift+t
-        // - Explicit: 'S-t' also means Shift+t (with modifier prefix)
-        let ctrl = modifiers.contains(KeyModifiers::CONTROL);
-        let alt = modifiers.contains(KeyModifiers::ALT);
-        let shift = modifiers.contains(KeyModifiers::SHIFT);
-        let is_uppercase = c.is_ascii_uppercase();
-        let base_lowercase = c.to_ascii_lowercase();
+    let key_str = match code {
+        KeyCode::Char(c) => {
+            let ctrl = modifiers.contains(KeyModifiers::CONTROL);
+            let alt = modifiers.contains(KeyModifiers::ALT);
+            let shift = modifiers.contains(KeyModifiers::SHIFT);
+            let is_uppercase = c.is_ascii_uppercase();
+            let base_lowercase = c.to_ascii_lowercase();
 
-        let key_str = match (ctrl, alt, shift, is_uppercase) {
-            (true, _, _, _) => format!("C-{}", base_lowercase),
-            (false, true, true, _) => format!("M-S-{}", base_lowercase), // explicit S- prefix
-            (false, true, false, true) => format!("M-{}", base_lowercase), // implicit: M-T
-            (false, true, false, false) => format!("M-{}", base_lowercase),
-            (false, false, true, _) => c.to_uppercase().to_string(), // Shift+t -> T instead of S-t
-            (false, false, false, true) => c.to_string(),            // implicit: T
-            (false, false, false, false) => c.to_string(),           // just: t
-        };
+            match (ctrl, alt, shift, is_uppercase) {
+                (true, _, _, _) => format!("C-{}", base_lowercase),
+                (false, true, true, _) => format!("M-S-{}", base_lowercase),
+                (false, true, false, true) => format!("M-{}", base_lowercase),
+                (false, true, false, false) => format!("M-{}", base_lowercase),
+                (false, false, true, _) => c.to_uppercase().to_string(),
+                (false, false, false, true) => c.to_string(),
+                (false, false, false, false) => c.to_string(),
+            }
+        }
+        KeyCode::Enter => "Enter".to_string(),
+        KeyCode::Tab => "Tab".to_string(),
+        KeyCode::BackTab => "BackTab".to_string(),
+        KeyCode::Esc => "Esc".to_string(),
+        KeyCode::Backspace => "Backspace".to_string(),
+        KeyCode::Delete => "Delete".to_string(),
+        KeyCode::Insert => "Insert".to_string(),
+        KeyCode::Home => "Home".to_string(),
+        KeyCode::End => "End".to_string(),
+        KeyCode::PageUp => "PageUp".to_string(),
+        KeyCode::PageDown => "PageDown".to_string(),
+        KeyCode::F(n) => format!("F{}", n),
+        _ => String::new(),
+    };
 
+    if !key_str.is_empty() {
         // Check popup trigger key (only for unmodified keys)
-        if !ctrl && !alt && key_str == config.popup_trigger_key {
+        if key_str == config.popup_trigger_key {
             return Action::ShowPopupInput {
                 title: "Filter Agents".to_string(),
                 prompt: "Pattern (name/session/window/dir):".to_string(),
@@ -1590,14 +1603,6 @@ fn map_key_to_action(
         KeyCode::Char('c') if modifiers.contains(KeyModifiers::CONTROL) => Action::Quit,
 
         KeyCode::Tab => Action::NextAgent,
-
-        KeyCode::Enter => {
-            if !state.input_buffer.is_empty() {
-                Action::SendInput
-            } else {
-                Action::SendKeys("Enter".to_string())
-            }
-        }
 
         // Left/Right arrows for focus navigation
         KeyCode::Right => {
