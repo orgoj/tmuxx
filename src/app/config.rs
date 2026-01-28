@@ -1,4 +1,4 @@
-use anyhow::Result;
+use anyhow::{Context, Result};
 use serde::{Deserialize, Serialize};
 use std::collections::HashSet;
 use std::path::PathBuf;
@@ -925,8 +925,10 @@ impl Config {
 
     /// Loads config from a specific path
     pub fn load_from(path: &PathBuf) -> Result<Self> {
-        let content = std::fs::read_to_string(path)?;
-        let config: Config = toml::from_str(&content)?;
+        let content = std::fs::read_to_string(path)
+            .with_context(|| format!("Failed to read config from {}", path.display()))?;
+        let config: Config = toml::from_str(&content)
+            .with_context(|| format!("invalid config in {}", path.display()))?;
         Ok(config)
     }
 
