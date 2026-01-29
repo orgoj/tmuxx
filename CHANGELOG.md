@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.4.0] - 2026-01-29
+
 ### Added
 - **Desktop Notifications**: Added support for desktop notifications when agents await approval for too long. Configure with `notification_command` (command template with placeholders), `notification_delay_ms` (delay before notification), and `notification_mode` ("first" for one notification until user interaction, "each" for per-agent notifications). User interaction (any key/mouse event) resets the notification state.
 - **Universal Agent Key Configuration**: Per-agent customization of key sequences for approval, rejection, number sending, and text input. Configure via `[agents.keys]` in agent definitions with `approve`, `reject`, `number` (with `{n}` placeholder), and `input` (with `{input}` placeholder) arrays. Claude agent now sends just the number without Enter for menu selections.
