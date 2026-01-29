@@ -108,10 +108,7 @@ pub async fn run_learn(args: LearnArgs) -> Result<()> {
         title_indicators: None,
         default_status: None,
         default_type: None,
-        keys: AgentKeys {
-            approve: Some("y".to_string()),
-            reject: Some("n".to_string()),
-        },
+        keys: AgentKeys::default(),
         layout: None,
         summary_rules: None,
         highlight_rules: Vec::new(),

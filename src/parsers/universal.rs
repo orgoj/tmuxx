@@ -728,4 +728,24 @@ impl AgentParser for UniversalParser {
     fn process_indicators(&self) -> Vec<crate::app::config::ProcessIndicator> {
         self.config.process_indicators.clone()
     }
+
+    fn approval_keys(&self) -> &str {
+        // Return first key for display in approval prompt
+        self.config
+            .keys
+            .approve
+            .first()
+            .map(|s| s.as_str())
+            .unwrap_or("y")
+    }
+
+    fn rejection_keys(&self) -> &str {
+        // Return first key for display in approval prompt
+        self.config
+            .keys
+            .reject
+            .first()
+            .map(|s| s.as_str())
+            .unwrap_or("n")
+    }
 }

@@ -788,8 +788,11 @@ async fn run_loop(
                                         if let Some(agent) = state.agents.get_agent(idx) {
                                             if agent.status.needs_attention() {
                                                 let target = agent.target.clone();
+                                                let keys = state.get_agent_keys(agent);
+                                                let key_refs: Vec<&str> =
+                                                    keys.approve.iter().map(|s| s.as_str()).collect();
                                                 if let Err(e) =
-                                                    tmux_client.send_keys_many(&target, &["y", "Enter"])
+                                                    tmux_client.send_keys_many(&target, &key_refs)
                                                 {
                                                     state.set_error(format!("Failed to approve: {}", e));
                                                     break;
@@ -804,8 +807,11 @@ async fn run_loop(
                                         if let Some(agent) = state.agents.get_agent(idx) {
                                             if agent.status.needs_attention() {
                                                 let target = agent.target.clone();
+                                                let keys = state.get_agent_keys(agent);
+                                                let key_refs: Vec<&str> =
+                                                    keys.reject.iter().map(|s| s.as_str()).collect();
                                                 if let Err(e) =
-                                                    tmux_client.send_keys_many(&target, &["n", "Enter"])
+                                                    tmux_client.send_keys_many(&target, &key_refs)
                                                 {
                                                     state.set_error(format!("Failed to reject: {}", e));
                                                     break;
@@ -817,8 +823,11 @@ async fn run_loop(
                                 Action::ApproveAll => {
                                     for agent in &state.agents.root_agents {
                                         if agent.status.needs_attention() {
+                                            let keys = state.get_agent_keys(agent);
+                                            let key_refs: Vec<&str> =
+                                                keys.approve.iter().map(|s| s.as_str()).collect();
                                             if let Err(e) =
-                                                tmux_client.send_keys_many(&agent.target, &["y", "Enter"])
+                                                tmux_client.send_keys_many(&agent.target, &key_refs)
                                             {
                                                 state.set_error(format!(
                                                     "Failed to approve {}: {}",
@@ -901,7 +910,11 @@ async fn run_loop(
                                         let res = if input.is_empty() {
                                             tmux_client.send_keys(&target, "Enter")
                                         } else {
-                                            tmux_client.send_keys_many(&target, &[&input, "Enter"])
+                                            let keys = state.get_agent_keys(agent);
+                                            let expanded = keys.expand_input(&input);
+                                            let key_refs: Vec<&str> =
+                                                expanded.iter().map(|s| s.as_str()).collect();
+                                            tmux_client.send_keys_many(&target, &key_refs)
                                         };
                                         if let Err(e) = res {
                                             state.set_error(format!("Failed to send input: {}", e));
@@ -911,9 +924,11 @@ async fn run_loop(
                                 Action::SendNumber(num) => {
                                     if let Some(agent) = state.selected_agent() {
                                         let target = agent.target.clone();
-                                        let num_str = num.to_string();
-                                        if let Err(e) =
-                                            tmux_client.send_keys_many(&target, &[&num_str, "Enter"])
+                                        let keys = state.get_agent_keys(agent);
+                                        let expanded = keys.expand_number(num);
+                                        let key_refs: Vec<&str> =
+                                            expanded.iter().map(|s| s.as_str()).collect();
+                                        if let Err(e) = tmux_client.send_keys_many(&target, &key_refs)
                                         {
                                             state.set_error(format!("Failed to send number: {}", e));
                                         }

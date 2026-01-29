@@ -3,10 +3,14 @@ use crate::monitor::SystemStats;
 use crate::ui::components::{MenuTreeState, ModalTextareaState};
 // use ratatui::style::{Color, Style};
 use std::collections::HashSet;
+use std::sync::OnceLock;
 use std::time::Instant;
 
-use super::config::SidebarWidth;
+use super::config::{AgentKeys, SidebarWidth};
 use super::Config;
+
+/// Static default keys for agents without explicit config
+static DEFAULT_KEYS: OnceLock<AgentKeys> = OnceLock::new();
 
 /// Which panel is currently focused
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
@@ -398,6 +402,16 @@ impl AppState {
         } else {
             None
         }
+    }
+
+    /// Get keys config for an agent by its config_id
+    pub fn get_agent_keys(&self, agent: &MonitoredAgent) -> &AgentKeys {
+        self.config
+            .agents
+            .iter()
+            .find(|a| a.id == agent.config_id)
+            .map(|a| &a.keys)
+            .unwrap_or_else(|| DEFAULT_KEYS.get_or_init(AgentKeys::default))
     }
 
     /// Selects the next visible agent (respects filter)

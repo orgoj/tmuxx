@@ -668,10 +668,69 @@ pub enum MatcherConfig {
     Content { pattern: String },
 }
 
-#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+/// Keys to send for agent interactions
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct AgentKeys {
-    pub approve: Option<String>,
-    pub reject: Option<String>,
+    /// Keys to send for approval (e.g., ["y", "Enter"])
+    #[serde(default = "default_approve_keys")]
+    pub approve: Vec<String>,
+
+    /// Keys to send for rejection (e.g., ["n", "Enter"])
+    #[serde(default = "default_reject_keys")]
+    pub reject: Vec<String>,
+
+    /// Template for number sending - {n} replaced with number (e.g., ["{n}", "Enter"])
+    #[serde(default = "default_number_keys")]
+    pub number: Vec<String>,
+
+    /// Template for text input - {input} replaced with text (e.g., ["{input}", "Enter"])
+    #[serde(default = "default_input_keys")]
+    pub input: Vec<String>,
+}
+
+fn default_approve_keys() -> Vec<String> {
+    vec!["y".into(), "Enter".into()]
+}
+
+fn default_reject_keys() -> Vec<String> {
+    vec!["n".into(), "Enter".into()]
+}
+
+fn default_number_keys() -> Vec<String> {
+    vec!["{n}".into(), "Enter".into()]
+}
+
+fn default_input_keys() -> Vec<String> {
+    vec!["{input}".into(), "Enter".into()]
+}
+
+impl AgentKeys {
+    /// Expand number template, replacing {n} with the actual number
+    pub fn expand_number(&self, num: u8) -> Vec<String> {
+        self.number
+            .iter()
+            .map(|k| k.replace("{n}", &num.to_string()))
+            .collect()
+    }
+
+    /// Expand input template, replacing {input} with the actual text
+    pub fn expand_input(&self, text: &str) -> Vec<String> {
+        self.input
+            .iter()
+            .map(|k| k.replace("{input}", text))
+            .collect()
+    }
+}
+
+impl Default for AgentKeys {
+    fn default() -> Self {
+        Self {
+            approve: default_approve_keys(),
+            reject: default_reject_keys(),
+            number: default_number_keys(),
+            input: default_input_keys(),
+        }
+    }
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -1173,5 +1232,86 @@ mod tests {
         let result = Config::load_from(&config_path);
         assert!(result.is_err());
         assert!(result.unwrap_err().to_string().contains("invalid"));
+    }
+
+    #[test]
+    fn test_agent_keys_default() {
+        let keys = AgentKeys::default();
+        assert_eq!(keys.approve, vec!["y", "Enter"]);
+        assert_eq!(keys.reject, vec!["n", "Enter"]);
+        assert_eq!(keys.number, vec!["{n}", "Enter"]);
+        assert_eq!(keys.input, vec!["{input}", "Enter"]);
+    }
+
+    #[test]
+    fn test_agent_keys_expand_number() {
+        let keys = AgentKeys::default();
+
+        // Default template with Enter
+        let expanded = keys.expand_number(5);
+        assert_eq!(expanded, vec!["5", "Enter"]);
+
+        // Test single digit
+        let expanded = keys.expand_number(0);
+        assert_eq!(expanded, vec!["0", "Enter"]);
+
+        // Custom template without Enter (Claude style)
+        let claude_keys = AgentKeys {
+            number: vec!["{n}".into()],
+            ..Default::default()
+        };
+        let expanded = claude_keys.expand_number(3);
+        assert_eq!(expanded, vec!["3"]);
+    }
+
+    #[test]
+    fn test_agent_keys_expand_input() {
+        let keys = AgentKeys::default();
+
+        // Simple text
+        let expanded = keys.expand_input("hello");
+        assert_eq!(expanded, vec!["hello", "Enter"]);
+
+        // Text with spaces
+        let expanded = keys.expand_input("hello world");
+        assert_eq!(expanded, vec!["hello world", "Enter"]);
+
+        // Empty text
+        let expanded = keys.expand_input("");
+        assert_eq!(expanded, vec!["", "Enter"]);
+    }
+
+    #[test]
+    fn test_agent_keys_toml_deserialization() {
+        // Test parsing new format
+        let toml_str = r#"
+            approve = ["y", "Enter"]
+            reject = ["n", "Enter"]
+            number = ["{n}"]
+            input = ["{input}", "Enter"]
+        "#;
+        let keys: AgentKeys = toml::from_str(toml_str).unwrap();
+        assert_eq!(keys.approve, vec!["y", "Enter"]);
+        assert_eq!(keys.number, vec!["{n}"]);
+
+        // Test partial config (uses defaults for missing fields)
+        let partial_toml = r#"
+            approve = ["y"]
+        "#;
+        let keys: AgentKeys = toml::from_str(partial_toml).unwrap();
+        assert_eq!(keys.approve, vec!["y"]);
+        assert_eq!(keys.reject, vec!["n", "Enter"]); // default
+        assert_eq!(keys.number, vec!["{n}", "Enter"]); // default
+    }
+
+    #[test]
+    fn test_agent_keys_in_agent_config() {
+        // Load defaults and verify Claude agent has custom number keys
+        let config = Config::load_defaults();
+        let claude = config.agents.iter().find(|a| a.id == "claude").unwrap();
+
+        // Claude should have custom number keys (no Enter)
+        assert_eq!(claude.keys.number, vec!["{n}"]);
+        assert_eq!(claude.keys.approve, vec!["y", "Enter"]);
     }
 }

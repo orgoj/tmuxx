@@ -173,11 +173,10 @@ priority = 100
   color = "cyan"
 
   [agents.keys]
-  approve = "y"
-  reject = "n"
-
-  # Support standard prompts: $, #, %, >, ❯
-  pattern = '''(?s).*[$#%>❯]\s*\z'''
+  approve = ["y", "Enter"]
+  reject = ["n", "Enter"]
+  number = ["{n}"]  # Claude menus select on number press, no Enter needed
+  input = ["{input}", "Enter"]
 
 [[agents]]
 id = "pi-powerline"
