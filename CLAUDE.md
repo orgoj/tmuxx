@@ -171,6 +171,7 @@ Parsers check ALL detection strings to handle various detection scenarios.
 14. **Single Method Fix Tunnel Vision**: When fixing one method, audit entire API for same pattern - often multiple methods have the same issue
 15. **Designing Before Understanding Use Case**: Ask "what will this be used for?" before architecture design - specific use cases beat generic abstractions
 16. **TODO.md Unauthorized Modification**: NEVER modify TODO.md without explicit user approval - when asked to "check" or "verify", report findings and ASK what to do next
+17. **Planning without checking git status**: Always run `git status` and `git diff` before writing plans - implementation may already exist
 
 ## Development Workflow
 
@@ -255,7 +256,9 @@ All skills are in `.claude/skills/`:
 - **User feedback validation**: Runtime testing reveals UX issues code review misses - visual verification is CRITICAL
 - **Implementation from memory**: Research current docs, don't guess (use `tmuxx-library-research` skill!)
 - **Testing environment**: Use ct-multi (5 windows) for multi-window features
-- **### CRITICAL SAFETY (NON-NEGOTIABLE)
+- **Branch workflow for risky changes**: Use backup → feature → merge pattern for safe rollback path
+
+### CRITICAL SAFETY (NON-NEGOTIABLE)
 
 1.  **NEVER kill test sessions!** (`ct-test`, `ct-multi`, etc.)
 2.  **NEVER kill user-started processes** (even if triggered by testing) unless EXPLICITLY ordered.

@@ -40,4 +40,4 @@ tmp/
 .claude/settings.mop-diary.json
 .claude/settings.mop-reflect.json
 .claude/plans/.claude/
-
+.mopc

@@ -9,12 +9,16 @@ You use this skill to create a detailed technical roadmap for a task. Planning p
 
 ## Steps
 
-### 1. Analysis
+### 1. Pre-Analysis Check
+- **Run `git status` and `git diff`** to verify if implementation already exists
+- If user mentions plan is "already done" or "reworked", check code diffs FIRST
+
+### 2. Codebase Analysis
 - Explore the codebase to find existing patterns and verify method signatures.
 - **NEVER** assume a method exists without checking with `rg` or `read`.
 - Identify all files that will be touched.
 
-### 2. Execution
+### 3. Execution
 
 #### A. Brainstorming
 Ask the user clarifying questions about:
@@ -29,7 +33,7 @@ The plan **MUST** include:
 - A list of all files to be modified.
 - Error handling strategy (e.g., using `deny_unknown_fields`).
 
-### 3. Verification (Technical Review)
+### 4. Verification (Technical Review)
 - Present the plan to the user.
 - **Expect and embrace corrections** (typically 5-7).
 - Apply all corrections to the plan before proceeding to implementation.

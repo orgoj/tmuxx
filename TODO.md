@@ -1,45 +1,8 @@
 # TODO - Tmuxx
 
+- [ ] claude porad nefunguji klavesy, posila 1 2 3 skutecne jen cisla do claude?
+
 ## 🚀 Větší funkce (Features)
-
-### Global Highlight Rules
-**Účel:** Globální pravidla pro zvýraznění error/fail/exception ve všech agentech
-
-**Změny:**
-1. `src/app/config.rs` - přidat do `Config` (~řádek 95):
-   ```rust
-   /// Global highlight rules applied to all agents
-   #[serde(default)]
-   pub global_highlight_rules: Vec<HighlightRule>,
-   ```
-
-2. `src/ui/components/pane_preview.rs` - v renderování (~řádek 200):
-   ```rust
-   // Merge agent-specific + global rules
-   let all_rules: Vec<_> = agent_config
-       .highlight_rules.iter()
-       .chain(state.config.global_highlight_rules.iter())
-       .collect();
-   ```
-
-3. `src/config/defaults.toml`:
-   ```toml
-   [[global_highlight_rules]]
-   pattern = "(?i)error"
-   color = "red"
-   modifiers = ["bold"]
-   
-   [[global_highlight_rules]]
-   pattern = "(?i)fail(ed|ure)?"
-   color = "red"
-   
-   [[global_highlight_rules]]
-   pattern = "(?i)(traceback|exception|panic)"
-   color = "yellow"
-   modifiers = ["bold"]
-   ```
-
----
 
 ### Notification System
 **Účel:** Desktop notifikace když agent čeká na approval příliš dlouho
@@ -101,6 +64,45 @@
                .spawn();
        }
    }
+   ```
+
+---
+
+### Global Highlight Rules
+**Účel:** Globální pravidla pro zvýraznění error/fail/exception ve všech agentech
+
+**Změny:**
+1. `src/app/config.rs` - přidat do `Config` (~řádek 95):
+   ```rust
+   /// Global highlight rules applied to all agents
+   #[serde(default)]
+   pub global_highlight_rules: Vec<HighlightRule>,
+   ```
+
+2. `src/ui/components/pane_preview.rs` - v renderování (~řádek 200):
+   ```rust
+   // Merge agent-specific + global rules
+   let all_rules: Vec<_> = agent_config
+       .highlight_rules.iter()
+       .chain(state.config.global_highlight_rules.iter())
+       .collect();
+   ```
+
+3. `src/config/defaults.toml`:
+   ```toml
+   [[global_highlight_rules]]
+   pattern = "(?i)error"
+   color = "red"
+   modifiers = ["bold"]
+   
+   [[global_highlight_rules]]
+   pattern = "(?i)fail(ed|ure)?"
+   color = "red"
+   
+   [[global_highlight_rules]]
+   pattern = "(?i)(traceback|exception|panic)"
+   color = "yellow"
+   modifiers = ["bold"]
    ```
 
 ---
@@ -257,6 +259,7 @@ KeyAction::Focus => {
 
 ## 🔮 Nápady a Roadmap (Ideas)
 
+- stav start
 - detekce zmeny stavu s agent na shell? asi drzet nejaky priznak a mozna je to na error alert, urcite kdyz tam je exit code
 
 ### AI Integrace

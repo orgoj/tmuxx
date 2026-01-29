@@ -5,10 +5,17 @@ allow ./scripts/reload-test.sh
 
 allow tmuxx test *
 
-allow cargo test *
 allow cargo build *
 allow cargo clippy *
+allow cargo fmt *
 allow cargo run -- test *
+allow cargo test *
+
+allow cargo +stable build *
+allow cargo +stable clippy *
+allow cargo +stable fmt *
+allow cargo +stable run -- test *
+allow cargo +stable test *
 
 allow touch src/**
 
