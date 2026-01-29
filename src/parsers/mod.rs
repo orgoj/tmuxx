@@ -265,4 +265,28 @@ mod tests {
         };
         assert!(registry.find_parser_for_pane(&child_claude_pane).is_some());
     }
+
+    #[test]
+    fn test_global_highlight_rules() {
+        use crate::app::config::HighlightRule;
+        let mut config = Config::load_defaults();
+        config.global_highlight_rules = vec![HighlightRule {
+            pattern: "GLOBAL_ERROR".to_string(),
+            color: "red".to_string(),
+            modifiers: vec!["bold".to_string()],
+        }];
+
+        let registry = ParserRegistry::with_config(&config);
+        let parser = registry.all_parsers().next().unwrap();
+
+        // Should match global rule
+        let style = parser.highlight_line("This is a GLOBAL_ERROR message").unwrap();
+        assert_eq!(style.fg, Some(ratatui::style::Color::Red));
+        assert!(style
+            .add_modifier
+            .contains(ratatui::style::Modifier::BOLD));
+
+        // Should NOT match random text
+        assert!(parser.highlight_line("Normal text").is_none());
+    }
 }
