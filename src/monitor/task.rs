@@ -17,6 +17,7 @@ use crate::tmux::{refresh_process_cache, TmuxClient};
 #[derive(Debug, Clone)]
 pub struct MonitorUpdate {
     pub agents: AgentTree,
+    pub external_todo: Option<String>,
 }
 
 /// Background task that monitors tmux panes for AI agents
@@ -40,6 +41,8 @@ pub struct MonitorTask {
     global_notification_sent: bool,
     /// Shared flag - UI sets true on interaction, monitor reads and clears
     user_interacted: Arc<AtomicBool>,
+    /// Last time the external TODO command was run
+    last_todo_refresh: Option<Instant>,
 }
 
 impl MonitorTask {
@@ -66,15 +69,57 @@ impl MonitorTask {
             notified_agents: HashSet::new(),
             global_notification_sent: false,
             user_interacted,
+            last_todo_refresh: None,
         }
     }
 
     /// Runs the monitoring loop
     pub async fn run(mut self) {
         loop {
+            let mut external_todo = None;
+
+            // Check if we need to refresh external TODO
+            if let Some(cmd_str) = &self.config.todo_command {
+                let now = Instant::now();
+                let should_refresh = match self.last_todo_refresh {
+                    None => true,
+                    Some(last) => {
+                        now.duration_since(last)
+                            >= Duration::from_millis(self.config.todo_refresh_interval_ms)
+                    }
+                };
+
+                if should_refresh {
+                    self.last_todo_refresh = Some(now);
+                    match tokio::process::Command::new("bash")
+                        .args(["-c", cmd_str])
+                        .output()
+                        .await
+                    {
+                        Ok(output) => {
+                            if output.status.success() {
+                                external_todo =
+                                    Some(String::from_utf8_lossy(&output.stdout).to_string());
+                            } else {
+                                warn!(
+                                    "External TODO command failed: {}",
+                                    String::from_utf8_lossy(&output.stderr)
+                                );
+                            }
+                        }
+                        Err(e) => {
+                            warn!("Failed to run external TODO command: {}", e);
+                        }
+                    }
+                }
+            }
+
             match self.poll_agents().await {
                 Ok(tree) => {
-                    let update = MonitorUpdate { agents: tree };
+                    let update = MonitorUpdate {
+                        agents: tree,
+                        external_todo,
+                    };
                     if self.tx.send(update).await.is_err() {
                         debug!("Monitor channel closed, stopping");
                         break;

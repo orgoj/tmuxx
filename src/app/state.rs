@@ -981,6 +981,11 @@ impl AppState {
 
     /// Refresh the current project TODO content based on the selected agent's path
     pub fn refresh_project_todo(&mut self) {
+        // If external TODO command is configured, it takes precedence and is managed by MonitorTask
+        if self.config.todo_command.is_some() {
+            return;
+        }
+
         if !self.config.todo_from_file {
             self.current_todo = None;
             return;

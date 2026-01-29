@@ -156,6 +156,18 @@ pub struct Config {
     /// Notification mode: First (one notification until interaction) or Each (per-agent)
     #[serde(default)]
     pub notification_mode: NotificationMode,
+
+    /// External command to generate TODO content (e.g. "task export status:pending")
+    #[serde(default)]
+    pub todo_command: Option<String>,
+
+    /// Refresh interval for external TODO command in milliseconds
+    #[serde(default = "default_todo_refresh")]
+    pub todo_refresh_interval_ms: u64,
+}
+
+fn default_todo_refresh() -> u64 {
+    30000
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -375,6 +387,8 @@ struct PartialConfig {
     notification_command: Option<String>,
     notification_delay_ms: Option<u64>,
     notification_mode: Option<NotificationMode>,
+    todo_command: Option<String>,
+    todo_refresh_interval_ms: Option<u64>,
 }
 
 impl PartialConfig {
@@ -476,6 +490,12 @@ impl PartialConfig {
         }
         if let Some(v) = self.notification_mode {
             config.notification_mode = v;
+        }
+        if let Some(v) = self.todo_command {
+            config.todo_command = Some(v);
+        }
+        if let Some(v) = self.todo_refresh_interval_ms {
+            config.todo_refresh_interval_ms = v;
         }
 
         if !self.agents.is_empty() {

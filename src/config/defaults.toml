@@ -55,6 +55,10 @@ label_agents = "agents"
 todo_from_file = true
 todo_files = ["TODO.md", "NOTES.md", "TASKS.md", "README.md"]
 
+# External command to generate TODO content (precedes file-based TODO if set)
+# todo_command = "task export status:pending"
+todo_refresh_interval_ms = 30000
+
 [[global_highlight_rules]]
 pattern = "(?i)error|fail|exception|panic|⚠"
 color = "red"

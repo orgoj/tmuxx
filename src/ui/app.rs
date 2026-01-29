@@ -264,6 +264,11 @@ async fn run_loop(
                 // Update cached visibility projection after agent list changes
                 state.update_visible_indices();
 
+                // Handle external TODO content
+                if let Some(todo) = update.external_todo {
+                    state.current_todo = Some(todo);
+                }
+
                 // Refresh TODO content for the newly selected/updated agent
                 state.refresh_project_todo();
                 needs_redraw = true;
