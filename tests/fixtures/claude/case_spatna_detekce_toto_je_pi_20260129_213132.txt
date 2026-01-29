@@ -1,0 +1,205 @@
+ ... (746 more lines, ctrl+o to expand)
+
+
+ Refactoring UniversalParser's Creation
+
+ I'm currently working on modifying UniversalParser::new to accept global_rules: &[HighlightRule]. I've realized HighlightRule is defined within crate::app::config, so I'll need to account for this dependency.
+ I'll need to figure out what type the rules come in, I suppose.
+
+ Implementing Global Rules
+
+ I've updated UniversalParser::new to accept global_rules: &[HighlightRule] and integrated the AgentConfig. Now, I'm compiling and appending the global rules to the highlight_rules vector within the constructor.
+ I've utilized filter_map to handle regex compilation, and added the fallback logic to include the global rules.
+
+
+
+
+ edit src/parsers/universal.rs:5
+
+    1 use regex::Regex;
+    2 use tracing::warn;
+    3
+    4 use crate::agents::{AgentStatus, AgentType, ApprovalType, Subagent};
+ -  5 use crate::app::config::{AgentConfig, MatcherConfig};
+ +  5 use crate::app::config::{AgentConfig, HighlightRule, MatcherConfig};
+    6 use crate::parsers::{safe_tail, AgentParser, AgentSummary, MatchStrength};
+    7
+    8 /// Split content on structural separator area (the Claude/Pi prompt sandwich)
+    9 /// This looks from the bottom and identifies the start of the UI chrome.
+      ...
+
+ ⠧ Working...
+
+
+ edit src/parsers/universal.rs:136
+
+      ...
+  132     header_separator: Option<Regex>,
+  133 }
+  134
+  135 impl UniversalParser {
+ -136     pub fn new(config: AgentConfig, capture_buffer_size: usize) -> Self {
+ +136     pub fn new(config: AgentConfig, capture_buffer_size: usize, global_rules: &[HighlightRule]) -> Self {
+  137         let mut matchers = Vec::new();
+  138         for m in &config.matchers {
+  139             match m {
+  140                 MatcherConfig::Command { pattern } => match Regex::new(pattern) {
+      ...
+
+ ⠸ Working...
+
+
+ edit src/parsers/universal.rs:267
+
+      ...
+  263                 tool_use,
+  264             }
+  265         });
+  266
+ -267         let highlight_rules= config
+ +267         let mut highlight_rules: Vec<CompiledHighlightRule> = config
+  268             .highlight_rules
+  269             .iter()
+  270             .filter_map(|r| {
+  271                 Regex::new(&r.pattern).ok().map(|re| CompiledHighlightRule {
+  272                     re,
+  273                     color: r.color.clone(),
+  274                     modifiers: r.modifiers.clone(),
+  275                 })
+  276             })
+  277             .collect();
+  278
+ +279         // Add global rules as fallback
+ +280         for r in global_rules {
+ +281             if let Ok(re) = Regex::new(&r.pattern) {
+ +282                 highlight_rules.push(CompiledHighlightRule {
+ +283                     re,
+ +284                     color: r.color.clone(),
+ +285                     modifiers: r.modifiers.clone(),
+ +286                 });
+ +287             }
+ +288         }
+ +289
+  279         let layout_rules = config.layout.as_ref().map(|l| CompiledLayoutRules {
+  280             footer_separator: l.footer_separator.as_ref().and_then(|p| Regex::new(p).ok()),
+  281             header_separator: l.header_separator.as_ref().and_then(|p| Regex::new(p).ok()),
+  282         });
+      ...
+
+ ⠸ Working...
+
+
+ read src/parsers/mod.rs
+
+ mod universal;
+
+ pub use universal::UniversalParser;
+
+ use crate::agents::{AgentStatus, AgentType, Subagent};
+ use crate::app::Config;
+ use crate::tmux::PaneInfo;
+
+ /// Safely get the last N characters of a string (handles multi-byte chars)
+ pub(crate) fn safe_tail(s: &str, max_chars: usize) -> &str {
+ ... (258 more lines, ctrl+o to expand)
+
+
+ Refining Configuration Parsing
+
+ I've been working on ParserRegistry::with_config. I've added code to iterate through the agents config and push each agent's UniversalParser into the parsers vector using Box::new, passing agent config and
+ capture buffer sizes as arguments. It's a key step to make this module more generic.
+
+
+
+
+ edit src/parsers/mod.rs:146
+
+      ...
+  142         for agent_config in &config.agents {
+  143             parsers.push(Box::new(UniversalParser::new(
+  144                 agent_config.clone(),
+  145                 config.capture_buffer_size,
+ +146                 &config.global_highlight_rules,
+  146             )));
+  147         }
+  148
+  149         Self { parsers }
+      ...
+
+ ⠴ Working...
+
+
+ read src/config/defaults.toml
+
+ # tmuxx default configuration
+ # Note: Structural detection is used instead of line counts for robust agent monitoring.
+
+ poll_interval_ms = 500
+ cyclic_navigation = false
+ capture_lines = 200
+ show_detached_sessions = true
+ debug_mode = false
+ truncate_long_lines = true
+ popup_trigger_key = "/"
+ ... (461 more lines, ctrl+o to expand)
+
+
+ Adding Highlight Rules
+
+ I've decided to incorporate global_highlight_rules directly before the [[agents]] section in the config. My current focus is on defining initial patterns for error highlighting, aiming for red, bold text for key
+ words like "error," "fail," "exception," and "panic".
+
+
+
+
+ edit src/config/defaults.toml:58
+
+      ...
+   54 # Display TODO from project files (TODO.md, etc.)
+   55 todo_from_file = true
+   56 todo_files = ["TODO.md", "NOTES.md", "TASKS.md", "README.md"]
+   57
+ + 58 [[global_highlight_rules]]
+ + 59 pattern = "(?i)error|fail|exception|panic"
+ + 60 color = "red"
+ + 61 modifiers = ["bold"]
+ + 62
+ + 63 [[global_highlight_rules]]
+ + 64 pattern = "(?i)warning|warn"
+ + 65 color = "yellow"
+ + 66
+ + 67 [[global_highlight_rules]]
+ + 68 pattern = "(?i)success|ok|passed"
+ + 69 color = "green"
+ + 70
+   58 [[agents]]
+   59 id = "claude"
+   60 name = "Claude"
+   61 background_color = "#fce4fc"
+      ...
+
+ ⠏ Working...
+
+
+ read src/ui/components/pane_preview.rs
+
+ use ratatui::{
+     layout::{Constraint, Direction, Layout, Rect},
+     style::{Color, Modifier, Style},
+     text::{Line, Span},
+     widgets::{Block, BorderType, Borders, Paragraph},
+     Frame,
+ };
+ use unicode_width::{UnicodeWidthChar, UnicodeWidthStr};
+
+ use crate::agents::AgentStatus;
+ ... (376 more lines, ctrl+o to expand)
+
+
+ ⠼ Working...
+
+─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+
+─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+~/work/ai/TOOLS/tmuxx (main)
+↑97k ↓3.2k R261k $0.188 (sub) 3.5%/1.0M (auto)                                                                                                                              (google-antigravity) gemini-3-flash • low
