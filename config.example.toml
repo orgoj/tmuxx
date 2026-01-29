@@ -2,7 +2,7 @@
 # User: Michael Heca (orgoj)
 
 # Polling interval in milliseconds
-poll_interval_ms = 2000
+poll_interval_ms = 5000
 
 # Number of lines to capture from each pane
 # capture_lines = 100
@@ -19,6 +19,10 @@ truncate_long_lines = true
 # Enable TODO file reading from project root
 todo_from_file = true
 todo_files = ["TODO.md", "NOTES.md", "README.md", "TASKS.md"]
+
+# Notification command
+# Placeholders: {title}, {message}, {agent}, {session}, {target}, {path}, {approval_type}, {count}
+notification_command = "notify-send \"{title}\" \"{message}\" -u normal -i terminal"
 
 # Key bindings configuration
 [key_bindings]
@@ -56,7 +60,7 @@ D = { send_keys = "C-d" }
 E = { send_keys = "Escape" }
 G = { send_keys = "C-g" }
 M = { send_keys = "Enter" }
-K = { kill_app = { method = "sigterm" } } # Kill application in pane (SIGTERM)
+# K = { kill_app = { method = "sigterm" } } # Kill application in pane (SIGTERM)
 T = { send_keys = "Tab" }
 "M-t" = { send_keys = "S-Tab" }
 
@@ -66,23 +70,56 @@ A = { execute_command = { command = "zed -n ${SESSION_DIR}/.dippy" } }
 e = { execute_command = { command = "pcmanfm-qt ${SESSION_DIR}" } }
 d = { execute_command = { command = "lazyclaude -m --directory '${SESSION_DIR}'", terminal = true } }
 g = { execute_command = { command = "git gui" } }
-t = { execute_command = { command = "wezterm start -- bash -lc 'tmux attach -t ${PANE_TARGET}'" } }
+"C-t" = { execute_command = { command = "wezterm start -- bash -lc 'tmux attach -t ${PANE_TARGET}'" } }
+t = { execute_command = { command = "WT --jump ${SESSION_NAME}" } }
 v = { execute_command = { command = "code ${SESSION_DIR}" } }
 z = { execute_command = { command = "zed ${SESSION_DIR}" } }
+"C-u" = { execute_command = { command = "wezterm start -- bash -lc 'bash -c \"antigravity-usage; read -p Enter...\"'" }}
 
 
 [menu]
+merge_with_defaults = true
+
 [[menu.items]]
 name = "Main"
 [[menu.items.items]]
 name = "Dippy user dir"
-execute_command = { command = "zed ~/.dippy/" }
+execute_command = { command = "zed -n ~/.dippy/" }
+[[menu.items.items]]
+name = "Pi user dir"
+execute_command = { command = "zed -n ~/.pi/" }
+[[menu.items.items]]
+name = "Antigravity usage"
+execute_command = { command = "xtrans-watch -n 60 antigravity-usage" }
 
 [[menu.items]]
 name = "Tmuxx"
 [[menu.items.items]]
 name = "User config zed"
-execute_command = { command = "zed ~/.config/tmuxx/" }
+execute_command = { command = "zed -n ~/.config/tmuxx/" }
 [[menu.items.items]]
 name = "Src zed"
-execute_command = { command = "zed ~/projects/tmuxx" }
+execute_command = { command = "zed -n /home/michael/work/ai/TOOLS/tmuxx" }
+
+
+[prompts]
+merge_with_defaults = true
+
+  [[prompts.items]]
+  name = "pi"
+
+    [[prompts.items.items]]
+    name = "work on todo"
+    text = "/skill:tmuxx-working-on-todos"
+
+    [[prompts.items.items]]
+    name = "reload skills"
+    text = "/reload"
+
+    [[prompts.items.items]]
+    name = "diary"
+    text = "/skill:selflearn-diary"
+
+    [[prompts.items.items]]
+    name = "reflect"
+    text = "/skill:selflearn-reflect"
