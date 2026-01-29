@@ -195,25 +195,6 @@ priority = 100
   task_completed = '''(?m)^[ \t]*[│]*[ \t]*[☑✓][ \t]*(.*)$'''
   tool_use = '''(?m)^[ \t]*[│]*[ \t]*⏺[ \t]*(?:[Cc]ompleted[ \t]+)?(.*?)(?:[ \t]*\(.*?\))?[ \t]*$'''
 
-  [[agents.highlight_rules]]
-  pattern = '''^\+.*'''
-  color = "green"
-  [[agents.highlight_rules]]
-  pattern = '''^-.*'''
-  color = "red"
-  [[agents.highlight_rules]]
-  pattern = '''^@@.*'''
-  color = "cyan"
-  [[agents.highlight_rules]]
-  pattern = '''(?i)\[y/n\]'''
-  color = "yellow"
-  [[agents.highlight_rules]]
-  pattern = '''(?i)⚠|error'''
-  color = "red"
-  [[agents.highlight_rules]]
-  pattern = '''^[❯>].*'''
-  color = "cyan"
-
   [agents.keys]
   approve = ["y", "Enter"]
   reject = ["n", "Enter"]
