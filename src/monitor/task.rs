@@ -215,6 +215,7 @@ impl MonitorTask {
                     parser.agent_type(),
                     parser.agent_background_color().map(|s| s.to_string()),
                     pane.pid,
+                    parser.is_ai(),
                 );
                 agent.status = status;
                 agent.subagents = subagents;

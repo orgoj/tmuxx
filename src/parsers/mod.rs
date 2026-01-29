@@ -98,6 +98,11 @@ pub trait AgentParser: Send + Sync {
         Vec::new()
     }
 
+    /// Returns whether this is an AI agent
+    fn is_ai(&self) -> bool {
+        true
+    }
+
     /// Returns whether this parser requires content validation
     fn requires_content_check(&self) -> bool {
         false

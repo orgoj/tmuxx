@@ -5,6 +5,12 @@ All notable changes to **Tmuxx** (formerly tmuxcc) will be documented in this fi
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.4.5] - 2026-01-29
+
+### Added
+- **AI vs Generic Process Distinction**: Added `is_ai` flag to agent definitions. This allows tmuxx to distinguish between actual AI agents (Claude, Pi, Gemini) and generic background processes (shell, htop, etc.).
+- **Improved Header Stats**: The UI header now displays AI agents and other processes separately (e.g., "4 agents | 3 other"), providing a clearer overview of the monitored environment.
+
 ## [0.4.4] - 2026-01-29
 
 ### Fixed

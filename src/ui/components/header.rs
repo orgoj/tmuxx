@@ -12,7 +12,8 @@ pub struct HeaderWidget;
 
 impl HeaderWidget {
     pub fn render(frame: &mut Frame, area: Rect, state: &AppState) {
-        let total = state.agents.root_agents.len();
+        let ai_count = state.agents.ai_agent_count();
+        let generic_count = state.agents.generic_count();
         let processing = state.agents.processing_count();
         let pending = state.agents.active_count();
         let time = Local::now().format("%H:%M").to_string();
@@ -26,10 +27,18 @@ impl HeaderWidget {
             ),
             Span::styled("│", Style::default().fg(Color::DarkGray)),
             Span::styled(
-                format!(" {} agents ", total),
+                format!(" {} agents ", ai_count),
                 Style::default().fg(Color::White),
             ),
         ];
+
+        if generic_count > 0 {
+            spans.push(Span::styled("│", Style::default().fg(Color::DarkGray)));
+            spans.push(Span::styled(
+                format!(" {} other ", generic_count),
+                Style::default().fg(Color::DarkGray),
+            ));
+        }
 
         // Filter status
         if state.filter_active {

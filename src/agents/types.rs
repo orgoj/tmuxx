@@ -190,6 +190,8 @@ pub struct MonitoredAgent {
     pub path: String,
     /// Type of AI agent
     pub agent_type: AgentType,
+    /// Whether this is an AI agent or just a generic process
+    pub is_ai: bool,
     /// Current status
     pub status: AgentStatus,
     /// Detected subagents
@@ -225,6 +227,7 @@ impl MonitoredAgent {
         agent_type: AgentType,
         background_color: Option<String>,
         pid: u32,
+        is_ai: bool,
     ) -> Self {
         let now = Instant::now();
         Self {
@@ -240,6 +243,7 @@ impl MonitoredAgent {
             pane,
             path,
             agent_type,
+            is_ai,
             status: AgentStatus::Unknown,
             subagents: Vec::new(),
             last_content: String::new(),
@@ -384,9 +388,11 @@ mod tests {
             AgentType::Named("Claude Code".to_string()),
             None,
             12345,
+            true,
         );
         assert_eq!(agent.target, "main:0.1");
         assert_eq!(agent.active_subagent_count(), 0);
         assert_eq!(agent.short_path(), "project");
+        assert!(agent.is_ai);
     }
 }

@@ -82,6 +82,16 @@ impl AgentTree {
         self.root_agents.iter().map(|a| 1 + a.subagents.len()).sum()
     }
 
+    /// Returns the number of AI agents
+    pub fn ai_agent_count(&self) -> usize {
+        self.root_agents.iter().filter(|a| a.is_ai).count()
+    }
+
+    /// Returns the number of generic (non-AI) processes
+    pub fn generic_count(&self) -> usize {
+        self.root_agents.iter().filter(|a| !a.is_ai).count()
+    }
+
     /// Returns the number of active agents (those needing attention)
     pub fn active_count(&self) -> usize {
         self.root_agents
@@ -1037,6 +1047,7 @@ mod tests {
             AgentType::Named("Claude".to_string()),
             None,
             1000,
+            true,
         ));
         state.agents.root_agents.push(MonitoredAgent::new(
             "2".to_string(),
@@ -1052,6 +1063,7 @@ mod tests {
             AgentType::Named("OpenCode".to_string()),
             None,
             1001,
+            true,
         ));
         state.update_visible_indices();
 
@@ -1080,6 +1092,7 @@ mod tests {
             AgentType::Named("Agent".to_string()),
             None,
             1000 + pane_index,
+            true,
         )
     }
 

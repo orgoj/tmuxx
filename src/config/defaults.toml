@@ -372,6 +372,7 @@ priority = 80
 [[agents]]
 id = "generic_shell"
 name = "shell"
+is_ai = false
 background_color = "#eaffe3"
 priority = 10
   # Default for Terminal: if no prompt is seen, it's busy (processing)

@@ -597,6 +597,10 @@ pub struct AgentConfig {
     #[serde(rename = "default_type", default)]
     pub default_type: Option<RuleType>,
 
+    /// Whether this agent is considered an AI agent (default: true)
+    #[serde(default = "default_true")]
+    pub is_ai: bool,
+
     /// How to detect subagents
     #[serde(default)]
     pub subagent_rules: Option<SubagentRules>,

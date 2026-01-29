@@ -748,4 +748,8 @@ impl AgentParser for UniversalParser {
             .map(|s| s.as_str())
             .unwrap_or("n")
     }
+
+    fn is_ai(&self) -> bool {
+        self.config.is_ai
+    }
 }

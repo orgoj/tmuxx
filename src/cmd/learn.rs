@@ -108,6 +108,7 @@ pub async fn run_learn(args: LearnArgs) -> Result<()> {
         title_indicators: None,
         default_status: None,
         default_type: None,
+        is_ai: true,
         keys: AgentKeys::default(),
         layout: None,
         summary_rules: None,
