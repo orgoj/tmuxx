@@ -1,0 +1,170 @@
+
+● ✅ Vytvořil jsem stránku ClawdHub.md
+
+  Co jsem zjistil:
+  - ClawdHub.com je web registry/marketplace pro Claude Code skills
+  - Obsahuje 5+ skills (GEO Optimization, W&B Monitor, ADHD Body Doubling, Wed, Taskleef)
+  - Každý skill má popis a trigger keywords
+
+  Vytvořená stránka:
+  - Type: [[software-list]] (registry)
+  - URL: https://clawdhub.com/
+  - Tags: Claude-Code, skills, marketplace, registry
+  - Příklady skills s popisem
+  - Link na claudemarketplaces.com v "Viz také" (další marketplace)
+
+  Stránka je v /home/michael/A/pages/ClawdHub.md.
+
+✻ Brewed for 1m 35s
+
+❯ /logseq-add-tool https://clawd.bot/
+https://docs.molt.bot/install
+https://clawdhub.com/skills
+https://clawdhub.com/VACInc/simple-backup
+https://clawdhub.com/jrbobbyhansen-pixel/memory-setup
+https://clawdhub.com/byteroverinc/byterover
+  ⎿  UserPromptSubmit hook succeeded: Success
+
+● Zpracovávám 6 URLs. Nejprve načtu logseq-notes skill pro LogSeq fundamenty.
+
+● Skill(logseq-notes)
+  ⎿  Successfully loaded skill
+
+● Začínám zpracovávat 6 URLs. Vytvořím tasky pro sledování postupu.
+
+● Teď začnu zpracovávat jednotlivé URLs. Začnu s https://clawd.bot/.
+
+● Bash(zai-cli read https://clawd.bot/ > /tmp/clawd-bot.md 2>&1; echo "Exit: $?")
+  ⎿  PreToolUse:Bash hook succeeded: Success
+  ⎿  Exit: 0
+  ⎿  PostToolUse:Bash hook succeeded
+
+● Read(/tmp/clawd-bot.md)
+  ⎿  Read 2 lines
+  ⎿  PostToolUse:Callback hook succeeded: Success
+
+● Vidím, že clawd.bot je marketing/testimonials stránka pro Moltbot. Zkontroluju, jestli už stránka Moltbot existuje (vím že jsem ji právě před chvílí přejmenoval z Clawdbot).
+
+● Search(pattern: "pages/Moltbot.md")
+  ⎿  Found 1 file (ctrl+o to expand)
+  ⎿  PostToolUse:Callback hook succeeded: Success
+
+● Moltbot stránka existuje. Clawd.bot je jen redirect/marketing stránka, nebudu vytvářet samostatnou stránku. Aktualizuju Moltbot stránku s URL clawd.bot jako alias.
+
+● Reading Plan(pages/Moltbot.md)
+  ⎿  Read 73 lines
+  ⎿  PostToolUse:Callback hook succeeded: Success
+
+● Vidím chybu na řádku 2 - alias je špatně. Opravím a přidám website URL.
+
+● Updated plan
+  ⎿  PreToolUse:Edit hook succeeded: Success
+  ⎿  Added 2 lines, removed 1 line
+      1  type:: [[software-tool]]
+      2 -alias:: Moltbot
+      2 +alias:: Clawdbot
+      3  url:: https://github.com/clawdbot/clawdbot
+      4 +website:: https://clawd.bot/
+      5  stars:: 4728
+      6  forks:: 741
+      7  last-commit:: 2026-01-17
+  ⎿  PostToolUse:Edit hook succeeded: Success
+
+● Updated plan
+  ⎿  PreToolUse:Edit hook succeeded: Success
+  ⎿  Added 1 line, removed 1 line
+      14
+      15  - ## Popis
+      16  - Personal AI assistant běžící na vlastních zařízeních. Odpovídá přes kanály které už používáte (WhatsApp, Telegram, Slack, Discord, Signal, iMessage, MS Teams, W
+          ebChat). Voice wake a talk mode na macOS/iOS/Android. Live Canvas pro vizuální workspace. Local-first gateway jako control plane.
+      17 -- **Poznámka:** Moltbot byl dříve znám jako Moltbot. Nezávislý projekt, není spojen s Anthropic.
+      17 +- **Poznámka:** Moltbot byl dříve znán jako Clawdbot. Nezávislý projekt, není spojen s Anthropic.
+      18
+      19  - ## Proč je tak chválený
+      20    - **Persistent memory** - pamatuje si kontext across sessions
+  ⎿  PostToolUse:Edit hook succeeded: Success
+
+● Teď zpracovávám https://docs.molt.bot/install
+
+● Bash(zai-cli read https://docs.molt.bot/install > /tmp/molt-install.md 2>&1; echo "Exit: $?")
+  ⎿  PreToolUse:Bash hook succeeded: Success
+  ⎿  Exit: 0
+  ⎿  PostToolUse:Bash hook succeeded
+
+● Bash(wc -l /tmp/molt-install.md)
+  ⎿  1 /tmp/molt-install.md
+
+● Read(/tmp/molt-install.md)
+  ⎿  Read 2 lines
+  ⎿  PreToolUse:Bash hook succeeded: Success
+  ⎿  PostToolUse:Bash hook succeeded
+  ⎿  PostToolUse:Callback hook succeeded: Success
+
+● Toto je instalační dokumentace pro Moltbot, ne samostatný produkt. Aktualizuju Moltbot stránku o docs URL.
+
+● Updated plan
+  ⎿  PreToolUse:Edit hook succeeded: Success
+  ⎿  Added 1 line
+      2  alias:: Clawdbot
+      3  url:: https://github.com/clawdbot/clawdbot
+      4  website:: https://clawd.bot/
+      5 +docs:: https://docs.molt.bot/
+      6  stars:: 4728
+      7  forks:: 741
+      8  last-commit:: 2026-01-17
+  ⎿  PostToolUse:Edit hook succeeded: Success
+
+● Teď zpracovávám https://clawdhub.com/skills
+
+● Bash(zai-cli read https://clawdhub.com/skills > /tmp/clawdhub-skills.md 2>&1; echo "Exit: $?")
+  ⎿  PreToolUse:Bash hook succeeded: Success
+  ⎿  Exit: 0
+  ⎿  PostToolUse:Bash hook succeeded
+
+● Read(/tmp/clawdhub-skills.md)
+  ⎿  Read 2 lines
+  ⎿  PostToolUse:Callback hook succeeded: Success
+
+● Toto je stejná stránka jako ClawdHub.md kterou jsem už vytvořil. URL /skills je jen alias. Aktualizuju ClawdHub stránku.
+
+● Reading Plan(pages/ClawdHub.md)
+  ⎿  Read 32 lines
+  ⎿  PostToolUse:Callback hook succeeded: Success
+
+● Updated plan
+  ⎿  PreToolUse:Edit hook succeeded: Success
+  ⎿  Added 1 line, removed 1 line
+       7  search_enabled:: yes
+       8
+       9  - ## Popis
+      10 -- Registry a marketplace Claude Code skills. Obsahuje kolekci skills pro produktivitu, ML monitoring, optimalizaci obsahu, a další use cases. Každý skill má popis
+         - a trigger keywords pro snadné použití.
+      10 +- Registry a marketplace Claude Code skills s vector search. Obsahuje kolekci skills pro produktivitu, ML monitoring, optimalizaci obsahu, a další use cases. Každ
+         +ý skill má popis a trigger keywords pro snadné použití.
+      11
+      12  - ## Klíčové vlastnosti
+      13    - Kategorizované skills (produktivita, ML, marketing, task management)
+  ⎿  PostToolUse:Edit hook succeeded: Success
+
+● Teď zpracovávám jednotlivé skills z ClawdHub. Začnu s https://clawdhub.com/VACInc/simple-backup
+
+● Bash(zai-cli read https://clawdhub.com/VACInc/simple-backup > /tmp/simple-backup.md 2>&1; echo "Exit: $?")
+  ⎿  Running PreToolUse hook…
+       · PreToolUse:Bash: /home/michael/work/ai/CLAUDE/TOOLS/dippy/bin/dippy-hook
+  ⎿  Running…
+     ctrl+b ctrl+b (twice) to run in background
+
+✻ Processing simple-backup skill… (esc to interrupt · ctrl+t to hide tasks · 3m 1s · ↓ 1.2k tokens)
+  ⎿  ◼ Process https://clawdhub.com/VACInc/simple-backup
+     ◻ Process https://clawdhub.com/jrbobbyhansen-pixel/memory-setup
+     ◻ Process https://clawdhub.com/byteroverinc/byterover
+     ✔ Process https://clawd.bot/
+     ✔ Process https://docs.molt.bot/install
+     ✔ Process https://clawdhub.com/skills
+
+───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+❯ 
+───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+  1 file +1 -1                                                                                                                                                      112200 tokens
+                                                                                                                                                 current: 2.1.22 · latest: 2.1.22
+

@@ -1,0 +1,170 @@
+
+ ❌ SKIP: Universal Parser Split
+
+ - Too complex, high risk of breaking parser tests
+ - Regression test suite depends on exact parser behavior
+ - Risk: VERY HIGH
+
+ ❌ SKIP: Agent Tree Cloning Optimization
+
+ - Requires changing MonitorUpdate structure
+ - Timing-sensitive tests could break
+ - Profile first to confirm it's actually a problem
+ - Risk: HIGH
+
+ ❌ SKIP: Template System for UI Strings
+
+ - Requires new dependency (tinytemplate/handlebars)
+ - Config format changes
+ - Migration path unclear
+ - Risk: MEDIUM
+
+ ---
+ 4. PRIORITY SAFE REFACTORING PLAN
+
+ Phase 1: Zero-Risk Improvements (Commit Each Separately)
+
+ Commit 1: Add Error Context
+ - File: src/app/config.rs
+ - Change: Add .with_context() to load_from()
+ - Test: cargo test must pass
+ - Rollback: git revert HEAD
+ - Estimated time: 5 minutes
+
+ Commit 2: Named Constants for Layout
+ - File: src/ui/app.rs
+ - Change: Replace magic numbers with named constants
+ - Test: cargo test must pass
+ - Verification: Visual inspection only
+ - Estimated time: 5 minutes
+
+ Commit 3: Organize AppState with Comments
+ - File: src/app/state.rs
+ - Change: Add // region comments
+ - Test: cargo test (should be no-op)
+ - Verification: git diff shows only comments
+ - Estimated time: 10 minutes
+
+ Commit 4: Fix input_backspace()
+ - File: src/app/state.rs
+ - Change: Reuse cursor_left() logic
+ - Test: cargo test (especially input-related tests)
+ - Manual test: Type text, use backspace
+ - Estimated time: 10 minutes
+
+ Phase 2: Optional Improvements (If Time Permits)
+
+ Commit 5: Add Documentation Comments
+ - File: Multiple files
+ - Change: Add /// doc comments to public APIs
+ - Test: cargo doc builds without warnings
+ - Estimated time: 30 minutes
+
+ ---
+ 5. VERIFICATION CHECKLIST
+
+ Before merging each commit:
+ - cargo build succeeds
+ - cargo test passes (100% pass rate)
+ - cargo clippy passes (no warnings)
+ - git diff reviewed for unexpected changes
+ - Manual test relevant functionality (if applicable)
+
+ After all commits:
+ - Run full regression test: tmuxx test
+ - Manual smoke test with live agents
+ - Check memory usage (no regressions)
+
+ ---
+ 6. EMERGENCY ROLLBACK PLAN
+
+ If tests break after any commit:
+ # Identify broken commit
+ git bisect start
+ git bisect bad HEAD
+ git bisect good <last-known-good>
+
+ # Rollback single commit
+ git revert HEAD
+
+ # Or rollback everything
+ git reset --hard <last-known-good>
+
+ Before starting:
+ # Create backup branch
+ git checkout -b backup-before-safe-refactor
+ git checkout main
+ git checkout -b safe-refactoring
+
+ After successful completion:
+ # Merge to main
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

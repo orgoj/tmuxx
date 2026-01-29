@@ -1,0 +1,170 @@
+      737  pub struct StateRule {
+      738      pub status: String,
+  ⎿  PostToolUse:Edit hook succeeded: Success
+
+● Now let me add the get_agent_keys helper to AppState. First, let me check the imports at the top of state.rs:
+
+● Reading Plan(src/app/state.rs)
+  ⎿  Read 50 lines
+  ⎿  PostToolUse:Callback hook succeeded: Success
+
+● Now I need to add the OnceLock import and the get_agent_keys method. Let me add the import first:
+
+● Updated plan
+  ⎿  PreToolUse:Edit hook succeeded: Success
+  ⎿  Added 5 lines, removed 1 line
+       3  use crate::ui::components::{MenuTreeState, ModalTextareaState};
+       4  // use ratatui::style::{Color, Style};
+       5  use std::collections::HashSet;
+       6 +use std::sync::OnceLock;
+       7  use std::time::Instant;
+       8
+       8 -use super::config::SidebarWidth;
+       9 +use super::config::{AgentKeys, SidebarWidth};
+      10  use super::Config;
+      11
+      12 +/// Static default keys for agents without explicit config
+      13 +static DEFAULT_KEYS: OnceLock<AgentKeys> = OnceLock::new();
+      14 +
+      15  /// Which panel is currently focused
+      16  #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+      17  pub enum FocusedPanel {
+  ⎿  PostToolUse:Edit hook succeeded: Success
+
+● Now I need to add the get_agent_keys method to AppState. Let me find a good place to add it - after the selected_agent methods:
+
+● Reading Plan(src/app/state.rs)
+  ⎿  Read 30 lines
+  ⎿  PostToolUse:Callback hook succeeded: Success
+
+● Updated plan
+  ⎿  PreToolUse:Edit hook succeeded: Success
+  ⎿  Added 10 lines
+      404          }
+      405      }
+      406
+      407 +    /// Get keys config for an agent by its config_id
+      408 +    pub fn get_agent_keys(&self, agent: &MonitoredAgent) -> &AgentKeys {
+      409 +        self.config
+      410 +            .agents
+      411 +            .iter()
+      412 +            .find(|a| a.id == agent.config_id)
+      413 +            .map(|a| &a.keys)
+      414 +            .unwrap_or_else(|| DEFAULT_KEYS.get_or_init(AgentKeys::default))
+      415 +    }
+      416 +
+      417      /// Selects the next visible agent (respects filter)
+      418      pub fn select_next(&mut self) {
+      419          if self.visible_indices.is_empty() {
+  ⎿  PostToolUse:Edit hook succeeded: Success
+
+● Now I need to update the Action handlers in app.rs. Let me look at the exact lines again from the persisted output:
+
+● Reading Plan(src/ui/app.rs)
+  ⎿  Read 160 lines
+  ⎿  PostToolUse:Callback hook succeeded: Success
+
+● Now I'll update the Action handlers. Let me start with Approve:
+
+● Updated plan
+  ⎿  PreToolUse:Edit hook succeeded: Success
+  ⎿  Added 4 lines, removed 1 line
+      788                                          if let Some(agent) = state.agents.get_agent(idx) {
+      789                                              if agent.status.needs_attention() {
+      790                                                  let target = agent.target.clone();
+      791 +                                                let keys = state.get_agent_keys(agent);
+      792 +                                                let key_refs: Vec<&str> =
+      793 +                                                    keys.approve.iter().map(|s| s.as_str()).collect();
+      794                                                  if let Err(e) =
+      792 -                                                    tmux_client.send_keys_many(&target, &["y", "Enter"])
+      795 +                                                    tmux_client.send_keys_many(&target, &key_refs)
+      796                                                  {
+      797                                                      state.set_error(format!("Failed to approve: {}", e));
+      798                                                      break;
+  ⎿  PostToolUse:Edit hook succeeded: Success
+
+● Updated plan
+  ⎿  PreToolUse:Edit hook succeeded: Success
+  ⎿  Added 4 lines, removed 1 line
+      807                                          if let Some(agent) = state.agents.get_agent(idx) {
+      808                                              if agent.status.needs_attention() {
+      809                                                  let target = agent.target.clone();
+      810 +                                                let keys = state.get_agent_keys(agent);
+      811 +                                                let key_refs: Vec<&str> =
+      812 +                                                    keys.reject.iter().map(|s| s.as_str()).collect();
+      813                                                  if let Err(e) =
+      811 -                                                    tmux_client.send_keys_many(&target, &["n", "Enter"])
+      814 +                                                    tmux_client.send_keys_many(&target, &key_refs)
+      815                                                  {
+      816                                                      state.set_error(format!("Failed to reject: {}", e));
+      817                                                      break;
+  ⎿  PostToolUse:Edit hook succeeded: Success
+
+● Updated plan
+  ⎿  PreToolUse:Edit hook succeeded: Success
+  ⎿  Added 4 lines, removed 1 line
+      823                                  Action::ApproveAll => {
+      824                                      for agent in &state.agents.root_agents {
+      825                                          if agent.status.needs_attention() {
+      826 +                                            let keys = state.get_agent_keys(agent);
+      827 +                                            let key_refs: Vec<&str> =
+      828 +                                                keys.approve.iter().map(|s| s.as_str()).collect();
+      829                                              if let Err(e) =
+      827 -                                                tmux_client.send_keys_many(&agent.target, &["y", "Enter"])
+      830 +                                                tmux_client.send_keys_many(&agent.target, &key_refs)
+      831                                              {
+      832                                                  state.set_error(format!(
+      833                                                      "Failed to approve {}: {}",
+  ⎿  PostToolUse:Edit hook succeeded: Success
+
+● Now update SendInput and SendNumber:
+
+● Updated plan
+  ⎿  PreToolUse:Edit hook succeeded: Success
+  ⎿  Added 5 lines, removed 1 line
+      910                                          let res = if input.is_empty() {
+      911                                              tmux_client.send_keys(&target, "Enter")
+      912                                          } else {
+      913 -                                            tmux_client.send_keys_many(&target, &[&input, "Enter"])
+      913 +                                            let keys = state.get_agent_keys(agent);
+      914 +                                            let expanded = keys.expand_input(&input);
+      915 +                                            let key_refs: Vec<&str> =
+      916 +                                                expanded.iter().map(|s| s.as_str()).collect();
+      917 +                                            tmux_client.send_keys_many(&target, &key_refs)
+      918                                          };
+      919                                          if let Err(e) = res {
+      920                                              state.set_error(format!("Failed to send input: {}", e));
+  ⎿  PostToolUse:Edit hook succeeded: Success
+
+● Updated plan
+  ⎿  PreToolUse:Edit hook succeeded: Success
+  ⎿  Added 5 lines, removed 3 lines
+      924                                  Action::SendNumber(num) => {
+      925                                      if let Some(agent) = state.selected_agent() {
+      926                                          let target = agent.target.clone();
+      927 -                                        let num_str = num.to_string();
+      928 -                                        if let Err(e) =
+      929 -                                            tmux_client.send_keys_many(&target, &[&num_str, "Enter"])
+      927 +                                        let keys = state.get_agent_keys(agent);
+      928 +                                        let expanded = keys.expand_number(num);
+      929 +                                        let key_refs: Vec<&str> =
+      930 +                                            expanded.iter().map(|s| s.as_str()).collect();
+      931 +                                        if let Err(e) = tmux_client.send_keys_many(&target, &key_refs)
+      932                                          {
+      933                                              state.set_error(format!("Failed to send number: {}", e));
+      934                                          }
+  ⎿  PostToolUse:Edit hook succeeded: Success
+
+✻ Updating defaults.toml… (2m 35s · ↓ 4.9k tokens)
+  ⎿  ✔ Update Action handlers in app.rs
+     ◼ Update defaults.toml with new keys format
+     ◻ Add unit tests for AgentKeys
+     ✔ Rewrite AgentKeys struct with Vec<String> fields
+     ✔ Add get_agent_keys helper to AppState
+
+───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+❯ 
+───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+  ⏵⏵ accept edits on (shift+Tab to cycle) · 19 files +152 -56 · esc to interrupt                                                                                    126347 tokens
+                                                                                                                                                 current: 2.1.23 · latest: 2.1.23
+

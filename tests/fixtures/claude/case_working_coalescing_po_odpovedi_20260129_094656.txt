@@ -1,0 +1,205 @@
+
+  Postup:
+  1. pnpm install
+  2. pnpm ui:build (kvůli UI)
+  3. pnpm build
+  4. pnpm moltbot onboard (pro konfiguraci)
+  5. Nastavit WhatsApp allowlist
+
+  Pro aktualizaci: git pull && pnpm install && pnpm build
+
+● Rozjetí z tohoto zdrojáku
+
+  1. Instalace závislostí a build
+
+  cd /home/michael/work/ai/MOLTBOT/moltbot
+  pnpm install
+  pnpm ui:build    # UI komponenty
+  pnpm build       # TypeScript kompilace
+
+  2. Onboarding wizard
+
+  pnpm moltbot onboard
+
+  Wizard tě provede:
+  - Auth (doporučuji Anthropic API key nebo OpenAI OAuth)
+  - Gateway nastavení
+  - WhatsApp login (QR kód)
+
+  3. Ruční konfigurace WhatsApp s tvým číslem
+
+  Po onboardingu uprav ~/.clawdbot/moltbot.json:
+
+  {
+    "channels": {
+      "whatsapp": {
+        "dmPolicy": "allowlist",
+        "allowFrom": ["+420608860800"],
+        "configWrites": false
+      }
+    }
+  }
+
+  Nebo přes CLI:
+  pnpm moltbot config set channels.whatsapp.dmPolicy allowlist
+  pnpm moltbot config set channels.whatsapp.allowFrom '["+420608860800"]'
+
+  4. WhatsApp login (QR kód)
+
+  pnpm moltbot channels login
+
+  Naskenuj QR v WhatsApp → Nastavení → Propojená zařízení.
+
+  5. Spuštění gateway
+
+  node moltbot.mjs gateway --port 18789 --verbose
+
+  Nebo pro pozadí:
+  pnpm moltbot onboard --install-daemon
+
+  6. Ověření
+
+  pnpm moltbot status --all
+  pnpm moltbot channels status --probe
+
+  ---
+  Aktualizace ze zdrojáku
+
+  cd /home/michael/work/ai/MOLTBOT/moltbot
+  git pull --rebase
+  pnpm install
+  pnpm build
+  # Restart gateway pokud běží
+
+  ---
+  Chceš spustit build teď? Můžu ti s tím pomoct krok za krokem.
+
+❯ zapis mi postup do ORGOJ-INSTALL.md a udelej 1.
+  ⎿  UserPromptSubmit hook succeeded: Success
+
+∴ Thinking…
+
+  Uživatel chce:
+  1. Zapsat postup do ORGOJ-INSTALL.md
+  2. Udělat krok 1 (instalace závislostí a build)
+
+  Udělám obojí paralelně.
+
+● Updated plan
+  ⎿  PreToolUse:Write hook succeeded: Success
+  ⎿  Wrote 93 lines to /home/michael/work/ai/MOLTBOT/moltbot/ORGOJ-INSTALL.md
+       1 # Moltbot - Instalace z tohoto zdrojáku
+       2
+       3 Telefon: +420608860800
+       4
+       5 ## 1. Instalace závislostí a build
+       6
+       7 ```bash
+       8 cd /home/michael/work/ai/MOLTBOT/moltbot
+       9 pnpm install
+      10 pnpm ui:build
+      11 pnpm build
+      12 ```
+      13
+      14 ## 2. Onboarding wizard
+      15
+      16 ```bash
+      17 pnpm moltbot onboard
+      18 ```
+      19
+      20 Provede tě:
+      21 - Auth (Anthropic API key nebo OpenAI OAuth)
+      22 - Gateway nastavení
+      23 - WhatsApp login (QR kód)
+      24
+      25 ## 3. Konfigurace WhatsApp (allowlist)
+      26
+      27 ```bash
+      28 pnpm moltbot config set channels.whatsapp.dmPolicy allowlist
+      29 pnpm moltbot config set channels.whatsapp.allowFrom '["+420608860800"]'
+      30 pnpm moltbot config set channels.whatsapp.configWrites false
+      31 ```
+      32
+      33 Nebo ručně v `~/.clawdbot/moltbot.json`:
+      34 ```json
+      35 {
+      36   "channels": {
+      37     "whatsapp": {
+      38       "dmPolicy": "allowlist",
+      39       "allowFrom": ["+420608860800"],
+      40       "configWrites": false
+      41     }
+      42   }
+      43 }
+      44 ```
+      45
+      46 ## 4. WhatsApp login (QR kód)
+      47
+      48 ```bash
+      49 pnpm moltbot channels login
+      50 ```
+      51
+      52 Naskenuj QR: WhatsApp → Nastavení → Propojená zařízení
+      53
+      54 ## 5. Spuštění gateway
+      55
+      56 Foreground (pro debug):
+      57 ```bash
+      58 node moltbot.mjs gateway --port 18789 --verbose
+      59 ```
+      60
+      61 Jako služba:
+      62 ```bash
+      63 pnpm moltbot onboard --install-daemon
+      64 ```
+      65
+      66 ## 6. Ověření
+      67
+      68 ```bash
+      69 pnpm moltbot status --all
+      70 pnpm moltbot channels status --probe
+      71 pnpm moltbot health
+      72 ```
+      73
+      74 ---
+      75
+      76 ## Aktualizace
+      77
+      78 ```bash
+      79 cd /home/michael/work/ai/MOLTBOT/moltbot
+      80 git pull --rebase
+      81 pnpm install
+      82 pnpm build
+      83 # Restart gateway
+      84 ```
+      85
+      86 ## Troubleshooting
+      87
+      88 ```bash
+      89 pnpm moltbot doctor
+      90 pnpm moltbot security audit --deep
+      91 tail -f /tmp/moltbot/moltbot-*.log
+      92 ```
+  ⎿  PostToolUse:Write hook succeeded: Success
+
+  Bash(pnpm install 2>&1 | head -50)
+  ⎿  Running PreToolUse hook…
+       · PreToolUse:Bash: /home/michael/work/ai/CLAUDE/TOOLS/dippy/bin/dippy-hook
+  ⎿  Running… (16s · timeout 2m)
+     ctrl+b ctrl+b (twice) to run in background
+
+✻ Coalescing… (30s · ↓ 586 tokens)
+
+─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+❯ 
+─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+  5 files +0 -0 · esc to interrupt                                                                                                                                                                     64580 tokens
+                                                                                                                                                                                   current: 2.1.23 · latest: 2.1.23
+
+
+
+
+
+
+
+

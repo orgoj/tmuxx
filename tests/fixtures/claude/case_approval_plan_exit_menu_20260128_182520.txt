@@ -1,0 +1,170 @@
+
+ Better: Use unicode-segmentation crate for grapheme-aware editing.
+
+ 4.2 Regex Compilation in Hot Path (src/monitor/task.rs:173-186)
+
+ Problem: Process indicator regexes compiled on every poll:
+ for indicator in parser.process_indicators() {
+     match Regex::new(&indicator.ancestor_pattern) {  // Compiled each time!
+         Ok(re) => { ... }
+     }
+ }
+
+ Fix: Pre-compile in UniversalParser::new().
+
+ 4.3 Missing Error Context (src/app/config.rs:927-931)
+
+ Problem: Generic error messages:
+ pub fn load_from(path: &PathBuf) -> Result<Self> {
+     let content = std::fs::read_to_string(path)?;
+     let config: Config = toml::from_str(&content)?;  // Loses path context
+     Ok(config)
+ }
+
+ Better: Use .context() or .map_err() to preserve file path in errors.
+
+ 4.4 Magic Numbers (src/ui/app.rs:139-143)
+
+ Problem: Hardcoded layout constraints:
+ constraints([
+     ratatui::layout::Constraint::Length(15),  // What is 15?
+     ratatui::layout::Constraint::Min(5),      // What is 5?
+     ratatui::layout::Constraint::Length(input_height + 2),
+ ])
+
+ Better: Named constants or config-driven values.
+
+ ---
+ 5. TESTING & MAINTAINABILITY
+
+ 5.1 Large Test Functions (src/app/state.rs:1073-1209)
+
+ Problem: Test functions are 100+ lines with complex setup.
+
+ Recommendation: Extract test fixtures and helpers:
+ mod test_fixtures {
+     pub fn create_multi_agent_state() -> AppState { ... }
+ }
+
+ 5.2 Missing Integration Tests
+
+ Problem: Only unit tests exist. No integration tests for:
+ - Full parsing pipeline
+ - Monitor update flow
+ - Config merging
+
+ Recommendation: Add fixture-based integration tests (already have tests/fixtures/ directory structure).
+
+ 5.3 Tracing Without Structure (Multiple files)
+
+ Problem: Inconsistent tracing:
+ - Some use debug!, warn!
+ - Others use eprintln! for errors (main.rs:134)
+
+ Recommendation: Standardize on tracing with structured fields.
+
+ ---
+ 6. PERFORMANCE CONCERNS
+
+ 6.1 Unnecessary Cloning (Multiple locations)
+
+ Problem: Agent tree cloned every 500ms:
+ state.agents = update.agents;  // Full clone
+
+ Impact: Vec<MonitoredAgent> with Vec<Subagent> each = significant allocation.
+
+ Recommendation: Profile and consider Arc for immutable data.
+
+ 6.2 Linear Searches in Hot Paths (src/app/state.rs:785-792)
+
+ Problem: O(N) search in matches_filter:
+ let index = self.agents.root_agents
+     .iter()
+     .position(|a| std::ptr::eq(a, agent));
+
+ Better: Store index in MonitoredAgent or use indexed access.
+
+ ---
+ 7. SECURITY & ROBUSTNESS
+
+ 7.1 Unvalidated User Input (src/app/config.rs:952-956)
+
+ Problem: apply_override accepts arbitrary key/value:
+ pub fn apply_override(&mut self, key: &str, value: &str) -> Result<()> {
+     let override_val = ConfigOverride::parse(key, value)?;
+     override_val.apply(self);  // No validation!
+     Ok(())
+ }
+
+ Issue: No bounds checking, type validation is late.
+
+ 7.2 Regex ReDoS Potential (src/parsers/universal.rs)
+
+ Problem: User-defined regexes in config without complexity limits:
+ match Regex::new(&rule.pattern) {
+     Ok(r) => { ... }  // Could be catastrophic backtracking
+ }
+
+ Recommendation: Add regex timeout or complexity limits.
+
+ ---
+ 8. POSITIVE ASPECTS
+
+ What's Working Well:
+
+ 1. Three-layer architecture - Clean separation between tmux, parser, and app
+ 2. Config-driven agent definitions - UniversalParser allows custom agents
+ 3. Async monitoring - Non-blocking background polling
+ 4. Comprehensive configuration - Most aspects are user-customizable
+ 5. Good use of Rust patterns - Traits, enums, error handling
+
+ ---
+ 9. PRIORITIZED RECOMMENDATIONS
+
+ High Priority (Design Impact):
+
+ 1. Refactor AppState - Split into focused modules (SelectionState, FilterState, UIState)
+ 2. Reduce Action enum - Group related actions into sub-enums
+ 3. Pre-compile regexes - Move regex compilation to parser initialization
+
+ Medium Priority (Maintainability):
+
+ 4. Consolidate defaults - Create Defaults struct
+ 5. Extract test fixtures - Reduce test duplication
+ 6. Add structured error context - Use .context() consistently
+
+ Low Priority (Polish):
+
+ 7. Named constants for layout - Replace magic numbers
+ 8. Template system - Use proper templating for UI strings
+ 9. Add integration tests - Full pipeline testing
+
+ ---
+ 10. CONFIG-DRIVEN DESIGN ASSESSMENT
+
+ Score: 7/10
+
+ Strengths:
+ - Most behaviors are configurable
+ - Agent definitions fully data-driven
+ - Key bindings configurable
+ - Colors and indicators customizable
+
+ Weaknesses:
+ - Some defaults hardcoded in Rust
+ - Template strings not properly templated
+ - Splitter logic not extensible
+ - No plugin system for custom behaviors
+
+ Recommendation: Move remaining hardcoded values to defaults.toml and consider a plugin architecture for extensibility.
+╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌
+
+ Would you like to proceed?
+
+ ❯ 1. Yes, clear context and auto-accept edits (shift+tab)
+   2. Yes, auto-accept edits
+   3. Yes, manually approve edits
+   4. Type here to tell Claude what to change
+
+ ctrl-g to edit in Zede · unified-frolicking-manatee.md
+

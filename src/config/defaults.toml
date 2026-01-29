@@ -98,29 +98,31 @@ priority = 100
   last_lines = 40
   splitter = "separator_line"
 
-  # --- Refinement 1: WORKING (Checks first line of last block in response body) ---
+  # --- WORKING (Checks first line of last block in response body) ---
+  # Matches spinner chars followed by any text ending in ellipsis (…)
+  # Examples: "✻ Coalescing…", "* Mulling…", "✢ Processing simple-backup skill…"
   [[agents.state_rules.refinements]]
   group = "body"
   location = "first_line_of_last_block"
-  pattern = '''[✽✻✢*∴⏺●·✶]\s*\w+…'''
+  pattern = '''[✽✻✢*∴⏺●·✶].*…'''
   status = "working"
   type = "working"
 
-  # --- Refinement 2: ACTION REQUIRED (TUI menu in prompt area) ---
+  # --- ACTION REQUIRED (TUI menu in prompt area) ---
   [[agents.state_rules.refinements]]
   group = "prompt"
   pattern = '''(?:Enter to select|Esc to cancel|❯\s*1\.\s*Yes|approve edits)'''
   status = "menu"
   type = "approval"
 
-  # --- Refinement 3: ACTION REQUIRED (TUI menu in body area) ---
+  # --- ACTION REQUIRED (TUI menu in body area) ---
   [[agents.state_rules.refinements]]
   group = "body"
   pattern = '''(?:Enter to select|Esc to cancel|❯\s*1\.\s*Yes|approve edits)'''
   status = "menu"
   type = "approval"
 
-  # --- Refinement 4: UNFINISHED TASKS (in last block only) ---
+  # --- UNFINISHED TASKS (in last block only) ---
   [[agents.state_rules.refinements]]
   group = "body"
   location = "last_block"
@@ -128,14 +130,21 @@ priority = 100
   status = "unfinished tasks"
   type = "approval"
 
-  # --- Refinement 5: ACTIVE PROMPT (Force Idle if prompt is empty) ---
+  # --- INTERRUPTED (User pressed Esc, Claude awaits instructions) ---
+  [[agents.state_rules.refinements]]
+  group = "body"
+  pattern = '''Interrupted.*What should Claude do'''
+  status = "interrupted"
+  type = "approval"
+
+  # --- ACTIVE PROMPT (Force Idle if prompt is empty) ---
   [[agents.state_rules.refinements]]
   group = "prompt"
   pattern = '''(?m)^❯\s*$'''
   status = "idle"
   type = "idle"
 
-  # --- Refinement 6: PENDING EDITS (System msg in footer) ---
+  # --- PENDING EDITS (System msg in footer) ---
   [[agents.state_rules.refinements]]
   group = "prompt"
   pattern = '''(?m)^[^❯]*⏵⏵ accept edits'''
@@ -206,7 +215,7 @@ priority = 96
   last_lines = 40
   splitter = "powerline_box"
 
-  # --- Refinement 1: Question ---
+  # --- Question ---
   [[agents.state_rules.refinements]]
   group = "body"
   location = "last_line"
@@ -214,7 +223,7 @@ priority = 96
   status = "Question"
   type = "approval"
 
-  # --- Refinement 2: WORKING (High Priority) ---
+  # --- WORKING (High Priority) ---
   [[agents.state_rules.refinements]]
   group = "body"
   location = "last_line"
@@ -222,7 +231,7 @@ priority = 96
   status = "Working..."
   type = "working"
 
-  # --- Refinement 3: Error ---
+  # --- Error ---
   [[agents.state_rules.refinements]]
   group = "body"
   location = "last_line"
@@ -263,7 +272,7 @@ priority = 95
   last_lines = 40
   splitter = "separator_line"
 
-  # --- Refinement 1: WORKING (Highest Priority in body) ---
+  # --- WORKING (Highest Priority in body) ---
   [[agents.state_rules.refinements]]
   group = "body"
   location = "last_line"
@@ -271,7 +280,7 @@ priority = 95
   status = "Working..."
   type = "working"
 
-  # --- Refinement 2: Question ---
+  # --- Question ---
   [[agents.state_rules.refinements]]
   group = "body"
   location = "last_line"
@@ -279,7 +288,7 @@ priority = 95
   status = "Question"
   type = "approval"
 
-  # --- Refinement 3: Error ---
+  # --- Error ---
   [[agents.state_rules.refinements]]
   group = "body"
   location = "last_line"

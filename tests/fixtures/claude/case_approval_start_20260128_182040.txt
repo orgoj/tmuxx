@@ -1,0 +1,170 @@
+ ### Global Highlight Rules
+ ... (271 more lines, ctrl+o to expand)
+
+
+
+
+ edit TODO.md:3
+
+    1 # TODO - Tmuxx
+    2
+ -  3 - [x] spatna detekce u claude opravit working/approve je nekdy spatny mamm failing screenshot
+ -  4 - [x] posilani kaves do claude nefunguje nekdy vubec (123yn) enter S-m asi funguje to je jedina jistota, kontrola oprava
+ -  5 - [x] definice pro gemini ( a nejaka zalozni detekce, to mam pre ssh) ( a nevidim ssh oznaceni to jeste neni implementovane?)
+ -  6   - [x] mam ktomu i screen ale spatne zarazene protoze jeste neni agent gemini (a proc neni v puvodnim kodu tmuxcc asi byl, mrkni na to do commitu)
+ -  7
+    8 ## 🚀 Větší funkce (Features)
+    9
+   10 ### Global Highlight Rules
+   11 **Účel:** Globální pravidla pro zvýraznění error/fail/exception ve všech agentech
+      ...
+
+
+
+
+ $ cargo run -- --version
+
+ Compiling tmuxx v0.3.0 (/home/michael/work/ai/TOOLS/tmuxx)
+     Finished `dev` profile [unoptimized + debuginfo] target(s) in 7.11s
+      Running `target/debug/tmuxx --version`
+ tmuxx 0.3.0
+
+
+
+
+ $ git add Cargo.toml Cargo.lock CHANGELOG.md TODO.md
+ git commit -m "chore: Bump version to 0.3.0
+
+ Changes:
+ - Bumped version in Cargo.toml to 0.3.0
+ - Updated CHANGELOG.md with release notes for 0.3.0
+ - Cleaned up completed tasks from TODO.md"
+
+ [main 51fe37b] chore: Bump version to 0.3.0
+  4 files changed, 4 insertions(+), 7 deletions(-)
+
+
+ I have successfully bumped the project version to 0.3.0.
+
+ ### Summary of Actions:
+
+ 1. Version Update: Incremented version from 0.2.3 to 0.3.0 in Cargo.toml.
+ 2. Manifest Sync: Updated Cargo.lock by running cargo check.
+ 3. Changelog Finalization:
+     - Moved all recent improvements (Gemini support, atomic key sending, config-driven Enter key, improved tracking) from [Unreleased] to a new [0.3.0] section dated 2026-01-28.
+     - Added a fresh [Unreleased] section for future work.
+ 4. Roadmap Cleanup: Removed completed tasks from TODO.md to keep the project focus sharp.
+ 5. Verification: Confirmed that tmuxx --version correctly reports 0.3.0.
+ 6. Commit: Finalized changes with a clean chore: Bump version to 0.3.0 commit.
+
+
+ [skill] selflearn-diary (ctrl+o to expand)
+
+
+ Analyzing the Context
+
+ I'm examining the conversation history to understand the user's current task and its context. My focus is on the user's underlying goals. I've noted a need to fix issues around
+ sending keys to Claude and other agents.
+
+ Implementing Key Bindings
+
+ I've just implemented atomic key sending with send_keys_many in the TmuxClient, which is a big step. I refactored the action classes to use the atomic method, ensuring atomic
+ sends. I've successfully made the Enter key configurable in the sidebar. I've updated the config file with the default. There was also a fix needed for navigation keys, which I
+ also addressed. Also, the version bumped.
+
+ Addressing Navigation Essentials
+
+ I've learned to retain essential navigation keys as hardcoded fallbacks to ensure core functionality, even with custom keybindings. End is one of those, which is an important
+ consideration. I combined send-keys into a single call for reliability. I extended map_key_to_action for special keys, like Enter. I must avoid hardcoding and remember default
+ behaviors. I corrected a syntax error in src/ui/app.rs.
+
+ Generating the Filepath
+
+ I'm generating the diary filename, and decided on a date-time format. I had to choose a random session ID initially because it wasn't immediately apparent in the context, but I
+ then discovered it's available. The process is almost complete, I just need to use the right session ID.
+
+
+
+
+ write .pi/diary/2026-01-28-17-45-8A2F.md
+
+ # Session Diary
+
+ **Date**: 2026-01-28 17:45
+ **Session ID**: 2026-01-28-17-45-8A2F
+ **Project**: /home/michael/work/ai/TOOLS/tmuxx
+
+ ## Task Summary
+ The user wanted to improve the reliability of sending keys (approval 'y'/'n', numbers, etc.) to agents by atomizing the tmux commands. Additionally, the user requested that the
+ `Enter` key behavior in the sidebar be made configurable (config-driven) rather than hardcoded, while ensuring core navigation keys like `Home` and `End` remain functional.
+ Finally, we performed a version bump to 0.3.0.
+
+ ## Work Done
+ ... (66 more lines, 76 total, ctrl+o to expand)
+
+
+ I have created the session diary entry documenting our work on the atomic key sending, the config-driven Enter key, and the version bump to 0.3.0.
+
+ Diary File: .pi/diary/2026-01-28-17-45-8A2F.md
+
+ I've noted the importance of the config-driven architecture and the lessons learned regarding core navigation keys. All changes are committed and the project state is healthy.
+
+╭─ π  | ◈ Gemini 3 Flash (Antigravity) | thinking:min | 📁 tmuxx | ⎇ main *1 ?1 | ◫ 8.5%/1.0M ⚡ | ⊛ 4.2M | (sub) ────────────────────────────────────────────────────────────────╮
+╰─                                                                                                                                                                               ─╯
+
+
+michael@ai/TOOLS/tmuxx git:main [!?>] is pkg:v0.3.0 via rs:v1.95.0-nightly 18GiB/31GiB on gcp: took 1h6m7s
+> W
+
+--- Config Cascade Debug ---
+Loaded configs:
+  ✓ /home/michael/.claude/mopc/config.json
+
+Checked but not found:
+  ✗ /home/michael/work/ai/TOOLS/tmuxx/.claude/mopc/.config.json
+
+┌  🚀 Claude Diary Wrapper
+   Session ID: 36ff14bc-8ef2-4b95-8910-ed07b828d799
+
+📚 Found 2 unprocessed diary file(s) (below min: 3, skipping reflect)
+      10.8 KB 2026-01-25 06:24:47  2026-01-25-07-23-f53e5af8-9d0b-440b-88d8-416ea45bc140.md
+       7.7 KB 2026-01-25 09:03:41  2026-01-25-10-03-6e280dd8.md
+
+============================================================
+>>> MAIN SESSION START (36ff14bc-8ef2-4b95-8910-ed07b828d799)
+============================================================
+
+
+───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+ Accessing workspace:
+
+ /home/michael/work/ai/TOOLS/tmuxx
+
+ Quick safety check: Is this a project you created or one you trust? (Like your own code, a well-known open source project, or work from your team). If not, take a moment to
+ review what's in this folder first.
+
+ Claude Code'll be able to read, edit, and execute files here.
+
+ Security guide
+
+ ❯ 1. Yes, I trust this folder
+   2. No, exit
+
+ Enter to confirm · Esc to cancel
+
+ ▐▛███▜▌   Claude Code v2.1.22
+▝▜█████▛▘  Sonnet 4.5 · API Usage Billing
+  ▘▘ ▝▝    ~/work/ai/TOOLS/tmuxx
+
+  /model to try Opus 4.5
+  ⎿  SessionStart:startup hook succeeded
+  ⎿  SessionStart:startup hook succeeded: Success
+  ⎿  SessionStart:startup hook succeeded: Success
+
+───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+❯ 
+───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+  ? for shortcuts                                                                                                                                                        0 tokens
+                                                                                                                                                 current: 2.1.22 · latest: 2.1.22
+
+

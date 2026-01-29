@@ -1,0 +1,170 @@
+      272 +            NotificationMode::First => {
+      273 +                if !self.global_notification_sent {
+      274 +                    for agent in &awaiting {
+      275 +                        if let Some(since) = self.approval_since.get(&agent.target) {
+      276 +                            if since.elapsed().as_millis() >= self.config.notification_delay_ms as u128
+      277 +                            {
+      278 +                                self.send_notification(agent, awaiting.len());
+      279 +                                self.global_notification_sent = true;
+      280 +                                break;
+      281 +                            }
+      282 +                        }
+      283 +                    }
+      284 +                }
+      285 +            }
+      286 +            NotificationMode::Each => {
+      287 +                for agent in &awaiting {
+      288 +                    if !self.notified_agents.contains(&agent.target) {
+      289 +                        if let Some(since) = self.approval_since.get(&agent.target) {
+      290 +                            if since.elapsed().as_millis() >= self.config.notification_delay_ms as u128
+      291 +                            {
+      292 +                                self.send_notification(agent, awaiting.len());
+      293 +                                self.notified_agents.insert(agent.target.clone());
+      294 +                            }
+      295 +                        }
+      296 +                    }
+      297 +                }
+      298 +                // Clear notified status for agents no longer awaiting
+      299 +                self.notified_agents
+      300 +                    .retain(|t| awaiting.iter().any(|a| &a.target == t));
+      301 +            }
+      302 +        }
+      303 +    }
+      304 +
+      305 +    /// Escape a string for safe use in shell commands (single-quote escaping)
+      306 +    fn shell_escape(s: &str) -> String {
+      307 +        // Replace single quotes with '\'' (end quote, escaped quote, start quote)
+      308 +        format!("'{}'", s.replace('\'', "'\\''"))
+      309 +    }
+      310 +
+      311 +    /// Send a desktop notification for an agent
+      312 +    fn send_notification(&self, agent: &MonitoredAgent, count: usize) {
+      313 +        let cmd_template = match &self.config.notification_command {
+      314 +            Some(cmd) => cmd,
+      315 +            None => return,
+      316 +        };
+      317 +
+      318 +        let approval_type = match &agent.status {
+      319 +            AgentStatus::AwaitingApproval { approval_type, .. } => approval_type.short_desc(),
+      320 +            AgentStatus::Error { .. } => "error",
+      321 +            _ => "attention",
+      322 +        };
+      323 +
+      324 +        // Shell-escape all dynamic placeholder values to prevent injection
+      325 +        let cmd = cmd_template
+      326 +            .replace("{title}", "tmuxx") // Hardcoded, safe
+      327 +            .replace(
+      328 +                "{message}",
+      329 +                &Self::shell_escape(&format!("{} needs approval", agent.name)),
+      330 +            )
+      331 +            .replace("{agent}", &Self::shell_escape(&agent.name))
+      332 +            .replace("{session}", &Self::shell_escape(&agent.session))
+      333 +            .replace("{target}", &Self::shell_escape(&agent.target))
+      334 +            .replace("{path}", &Self::shell_escape(&agent.path))
+      335 +            .replace("{approval_type}", approval_type) // Internal enum, safe
+      336 +            .replace("{count}", &count.to_string()); // Number, safe
+      337 +
+      338 +        debug!("Sending notification: {}", cmd);
+      339 +
+      340 +        match std::process::Command::new("bash")
+      341 +            .args(["-c", &cmd])
+      342 +            .spawn()
+      343 +        {
+      344 +            Ok(_) => info!("Notification sent for agent: {}", agent.name),
+      345 +            Err(e) => warn!("Failed to spawn notification command: {}", e),
+      346 +        }
+      347 +    }
+      348  }
+  ⎿  PostToolUse:Edit hook succeeded: Success
+
+● Let me check if the build passes:
+
+● Bash(cargo build 2>&1 | head -60)
+  ⎿  PreToolUse:Bash hook succeeded: Success
+  ⎿     Compiling tmuxx v0.3.1 (/home/michael/work/ai/TOOLS/tmuxx)
+     error[E0061]: this function takes 6 arguments but 5 arguments were supplied
+       --> src/ui/app.rs:60:19
+        |
+     60 |       let monitor = MonitorTask::new(
+        |  ___________________^^^^^^^^^^^^^^^^-
+     61 | |         tmux_client.clone(),
+     62 | |         parser_registry.clone(),
+     63 | |         tx,
+     64 | |         Duration::from_millis(config.poll_interval_ms),
+     65 | |         config.clone(),
+     66 | |     );
+        | |_____- argument #6 of type `Arc<AtomicBool>` is missing
+        |
+     note: associated function defined here
+       --> src/monitor/task.rs:46:12
+        |
+     46 |     pub fn new(
+        |            ^^^
+     ...
+     52 |         user_interacted: Arc<AtomicBool>,
+        |         --------------------------------
+     help: provide the argument
+        |
+     60 |     let monitor = MonitorTask::new(
+     ...
+     65 |         config.clone(),
+     66 ~         /* Arc<AtomicBool> */,
+     67 ~     );
+        |
+
+     For more information about this error, try `rustc --explain E0061`.
+     error: could not compile `tmuxx` (lib) due to 1 previous error
+  ⎿  PostToolUse:Bash hook succeeded
+
+● Expected - we need to update app.rs. Let me move to Task 4:
+
+● Now let me update app.rs to pass the shared flag:
+
+● Updated plan
+  ⎿  PreToolUse:Edit hook succeeded: Success
+  ⎿  Added 1 line
+      1  use std::io;
+      2 +use std::sync::atomic::{AtomicBool, Ordering};
+      3  use std::sync::Arc;
+      4  use std::time::Duration;
+      5
+  ⎿  PostToolUse:Edit hook succeeded: Success
+
+● Now update the run_app function to create and pass the flag:
+
+● Updated plan
+  ⎿  PreToolUse:Edit hook succeeded: Success
+  ⎿  Added 5 lines
+      57      // Create channel for monitor updates
+      58      let (tx, mut rx) = mpsc::channel(32);
+      59
+      60 +    // Create shared flag for user interaction (notification reset)
+      61 +    let user_interacted = Arc::new(AtomicBool::new(false));
+      62 +    let user_interacted_clone = user_interacted.clone();
+      63 +
+      64      // Start monitor task
+      65      let monitor = MonitorTask::new(
+      66          tmux_client.clone(),
+     ...
+      68          tx,
+      69          Duration::from_millis(config.poll_interval_ms),
+      70          config.clone(),
+      71 +        user_interacted_clone,
+      72      );
+      73      let monitor_handle = tokio::spawn(async move {
+      74          monitor.run().await;
+  ⎿  PostToolUse:Edit hook succeeded: Success
+
+✻ Integrating notification flag in UI… (esc to interrupt · ctrl+t to hide tasks · 3m 44s · ↑ 5.8k tokens)
+  ⎿  ✔ Implement notification logic in MonitorTask
+     ◼ Integrate notification flag in UI app.rs
+     ◻ Update defaults.toml and documentation
+     ✔ Add NotificationMode enum and config fields to config.rs
+     ✔ Add CLI override support for notification config
+
+───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+❯ 
+───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+  ⏵⏵ accept edits on (shift+Tab to cycle) · 17 files +252 -44                                                                                                       108514 tokens
+                                                                                                                                                 current: 2.1.22 · latest: 2.1.22
+
