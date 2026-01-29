@@ -43,6 +43,12 @@ pub struct MonitorTask {
     user_interacted: Arc<AtomicBool>,
     /// Last time the external TODO command was run
     last_todo_refresh: Option<Instant>,
+    /// Cached external TODO content
+    cached_external_todo: Option<String>,
+    /// Whether the external TODO command is currently running
+    todo_command_running: bool,
+    /// Whether the cached TODO was updated since last send
+    todo_updated: bool,
 }
 
 impl MonitorTask {
@@ -70,14 +76,17 @@ impl MonitorTask {
             global_notification_sent: false,
             user_interacted,
             last_todo_refresh: None,
+            cached_external_todo: None,
+            todo_command_running: false,
+            todo_updated: false,
         }
     }
 
     /// Runs the monitoring loop
     pub async fn run(mut self) {
-        loop {
-            let mut external_todo = None;
+        let (todo_tx, mut todo_rx) = mpsc::channel(1);
 
+        loop {
             // Check if we need to refresh external TODO
             if let Some(cmd_str) = &self.config.todo_command {
                 let now = Instant::now();
@@ -89,28 +98,51 @@ impl MonitorTask {
                     }
                 };
 
-                if should_refresh {
+                if should_refresh && !self.todo_command_running {
+                    self.todo_command_running = true;
                     self.last_todo_refresh = Some(now);
-                    match tokio::process::Command::new("bash")
-                        .args(["-c", cmd_str])
-                        .output()
-                        .await
-                    {
-                        Ok(output) => {
-                            if output.status.success() {
-                                external_todo =
-                                    Some(String::from_utf8_lossy(&output.stdout).to_string());
-                            } else {
-                                warn!(
-                                    "External TODO command failed: {}",
-                                    String::from_utf8_lossy(&output.stderr)
-                                );
+                    let cmd_str_clone = cmd_str.clone();
+                    let todo_tx_clone = todo_tx.clone();
+
+                    tokio::spawn(async move {
+                        let res = match tokio::process::Command::new("bash")
+                            .args(["-c", &cmd_str_clone])
+                            .output()
+                            .await
+                        {
+                            Ok(output) => {
+                                if output.status.success() {
+                                    Some(String::from_utf8_lossy(&output.stdout).to_string())
+                                } else {
+                                    warn!(
+                                        "External TODO command failed: {}",
+                                        String::from_utf8_lossy(&output.stderr)
+                                    );
+                                    None
+                                }
                             }
-                        }
-                        Err(e) => {
-                            warn!("Failed to run external TODO command: {}", e);
-                        }
+                            Err(e) => {
+                                warn!("Failed to run external TODO command: {}", e);
+                                None
+                            }
+                        };
+                        let _ = todo_tx_clone.send(res).await;
+                    });
+                }
+            }
+
+            // Non-blocking check for TODO result
+            match todo_rx.try_recv() {
+                Ok(res) => {
+                    self.todo_command_running = false;
+                    if let Some(todo) = res {
+                        self.cached_external_todo = Some(todo);
+                        self.todo_updated = true;
                     }
+                }
+                Err(mpsc::error::TryRecvError::Empty) => {}
+                Err(mpsc::error::TryRecvError::Disconnected) => {
+                    // This shouldn't happen as we hold todo_tx
                 }
             }
 
@@ -118,7 +150,12 @@ impl MonitorTask {
                 Ok(tree) => {
                     let update = MonitorUpdate {
                         agents: tree,
-                        external_todo,
+                        external_todo: if self.todo_updated {
+                            self.todo_updated = false;
+                            self.cached_external_todo.clone()
+                        } else {
+                            None
+                        },
                     };
                     if self.tx.send(update).await.is_err() {
                         debug!("Monitor channel closed, stopping");
