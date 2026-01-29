@@ -1,0 +1,99 @@
+BASHRC.D: homebrew init
+BASHRC.D: brew completions
+BASHRC.D: mise
+BASHRC.D: GO init
+BASHRC.D: bun
+BASHRC.D: cargo
+BASHRC.D: chezmoi
+BASHRC.D: cass completions
+BASHRC.D: ntm shell integration
+BASHRC.D: direnv init
+BASHRC.D: fzf init
+BASHRC.D: MOP
+BASHRC.D: pipx
+BASHRC.D: pnpm
+BASHRC.D: z+zi command
+BASHRC.D: starship
+p
+michael@ai/TOOLS/tmuxx git:main [!?>] is pkg:v0.4.0 via rs:v1.95.0-nightly 14GiB/31GiB on gcp:
+> pi
+[dippy] Extension loaded (Bash + File Access)
+Model scope: claude-opus-4-5-thinking, claude-sonnet-4-5, claude-sonnet-4-5-thinking, gemini-3-flash, gemini-3-pro-high, gemini-3-pro-low, gpt-oss-120b-medium, glm-4.5, glm-4.5-ai
+r, glm-4.5-flash, glm-4.5v, glm-4.6, glm-4.6v, glm-4.7, glm-4.7-flash (Ctrl+P to cycle)
+
+ pi v0.50.3
+ escape to interrupt
+ ctrl+c to clear
+ ctrl+c twice to exit
+ ctrl+d to exit (empty)
+ ctrl+z to suspend
+ ctrl+k to delete to end
+ shift+tab to cycle thinking level
+ ctrl+p/shift+ctrl+p to cycle models
+ ctrl+l to select model
+ ctrl+o to expand tools
+ ctrl+t to expand thinking
+ ctrl+g for external editor
+ / for commands
+ ! to run bash
+ !! to run bash (no context)
+ alt+enter to queue follow-up
+ alt+up to edit all queued messages
+ ctrl+v to paste image
+ drop files to attach
+
+[Context]
+  ~/work/ai/CLAUDE.md
+  ~/work/ai/TOOLS/tmuxx/AGENTS.md
+
+[Skills]
+  user
+    ~/.claude/skills/cass-history-search/SKILL.md
+    ~/.claude/skills/claude-pipe-processing/SKILL.md
+    ~/.claude/skills/dot-init/SKILL.md
+    ~/.claude/skills/dot-manager/SKILL.md
+    ~/.claude/skills/dot-ralph-loop/SKILL.md
+    ~/.claude/skills/dot-worker/SKILL.md
+    ~/.claude/skills/fork-update/SKILL.md
+    ~/.claude/skills/gemini-review/SKILL.md
+    ~/.claude/skills/git-commit/SKILL.md
+    ~/.claude/skills/git-create-pr/SKILL.md
+    ~/.claude/skills/git-fix-pr-comments/SKILL.md
+    ~/.claude/skills/git-merge/SKILL.md
+    ~/.claude/skills/llm-docs-optimizer/skills/llm-docs-optimizer/SKILL.md
+    ~/.claude/skills/meta-claude-memory/SKILL.md
+    ~/.claude/skills/meta-skill-creator/SKILL.md
+    ~/.claude/skills/ralph-loop/SKILL.md
+    ~/.claude/skills/utils-fix-errors/SKILL.md
+    ~/.claude/skills/utils-fix-grammar/SKILL.md
+    ~/.claude/skills/utils-oneshot/SKILL.md
+    ~/.claude/skills/workflow-apex-free/SKILL.md
+    ~/.claude/skills/workflow-apex/SKILL.md
+    ~/.claude/skills/zai-cli/SKILL.md
+    ~/.claude/skills/zig-cli-development/SKILL.md
+    ~/.pi/agent/skills/claude-plugins-official/claude-md-improver/SKILL.md
+    ~/.pi/agent/skills/creating-skills/SKILL.md
+    ~/.pi/agent/skills/selflearn-diary/SKILL.md
+    ~/.pi/agent/skills/selflearn-reflect/SKILL.md
+  project
+    ~/work/ai/TOOLS/tmuxx/.pi/skills/tmuxx-adding-config-options/SKILL.md
+    ~/work/ai/TOOLS/tmuxx/.pi/skills/tmuxx-adding-new-features/SKILL.md
+    ~/work/ai/TOOLS/tmuxx/.pi/skills/tmuxx-bumping-versions/SKILL.md
+    ~/work/ai/TOOLS/tmuxx/.pi/skills/tmuxx-committing-changes/SKILL.md
+    ~/work/ai/TOOLS/tmuxx/.pi/skills/tmuxx-creating-agent-definition/SKILL.md
+    ~/work/ai/TOOLS/tmuxx/.pi/skills/tmuxx-managing-changelogs/SKILL.md
+    ~/work/ai/TOOLS/tmuxx/.pi/skills/tmuxx-planning/SKILL.md
+    ~/work/ai/TOOLS/tmuxx/.pi/skills/tmuxx-researching-libraries/SKILL.md
+    ~/work/ai/TOOLS/tmuxx/.pi/skills/tmuxx-testing/SKILL.md
+    ~/work/ai/TOOLS/tmuxx/.pi/skills/tmuxx-working-on-todos/SKILL.md
+
+[Extensions]
+  user
+    ~/.pi/agent/extensions/dippy-extension.ts
+
+
+───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+
+───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+~/work/ai/TOOLS/tmuxx (main)
+$0.000 (sub) 0.0%/1.0M (auto)                                                                                                    (google-antigravity) gemini-3-flash • thinking off

@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.4.1] - 2026-01-29
+
+### Fixed
+- **Pi Agent Detection**: Improved distinction between standard `pi` and `pi-powerline` variants. `pi-powerline` now requires content-based detection of rounded corners (`╭`, `╰`, ``, ``), preventing false positives for standard `pi` sessions.
+- **Test Suite Cleanup**: Renamed several regression test cases with "unknown" or "spatna" status to valid status types (`idle`, `working`) and moved non-powerline `pi` tests to their correct suite.
+
 ## [0.4.0] - 2026-01-29
 
 ### Added

@@ -1,0 +1,159 @@
+BASHRC.D: homebrew init
+BASHRC.D: brew completions
+BASHRC.D: mise
+BASHRC.D: GO init
+BASHRC.D: bun
+BASHRC.D: cargo
+BASHRC.D: chezmoi
+BASHRC.D: cass completions
+BASHRC.D: ntm shell integration
+BASHRC.D: direnv init
+BASHRC.D: fzf init
+BASHRC.D: MOP
+BASHRC.D: pipx
+BASHRC.D: pnpm
+BASHRC.D: z+zi command
+BASHRC.D: starship
+
+michael@ai/PI/pi-mono git:orgoj [!] via nodejs:v24.13.0 15GiB/31GiB on gcp:
+> pi -r
+[dippy] Extension loaded (Bash + File Access)
+
+─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+
+Resume Session (Current Folder)                                                                                                                                                 ◉ Current Folder | ○ All  Sort: Fuzzy
+tab scope · re:<pattern> regex · "phrase" exact
+ctrl+s sort · ctrl+d delete · ctrl+p path (off)
+
+>
+
+› SYSTEM UPDATE REQUEST: I am part of the pi-upgrade process.     1. Check changes between HEAD and origin/main (git log ..origin/main or git diff HEAD..origin/main).     2. Summarize the important changes for ...
+  15 minutes ago · 2 messages
+
+  test
+  15 minutes ago · 44 messages
+
+  SYSTEM UPDATE REQUEST: I am part of the pi-upgrade process. 1. Check changes between HEAD and origin/main (git log ..origin/main or git diff HEAD..origin/main). 2. Summarize the important changes for the user...
+  32 minutes ago · 18 messages
+
+  PR
+  8 hours ago · 180 messages
+
+  SYSTEM UPDATE REQUEST: I am part of the pi-upgrade process. 1. Check changes between HEAD and origin/main (git log ..origin/main or git diff HEAD..origin/main). 2. Summarize the important changes for the user...
+  9 hours ago · 8 messages
+
+  (1/11)
+
+─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+
+Model scope: claude-opus-4-5-thinking, claude-sonnet-4-5, claude-sonnet-4-5-thinking, gemini-3-flash, gemini-3-pro-high, gemini-3-pro-low, gpt-oss-120b-medium, glm-4.5, glm-4.5-air, glm-4.5-flash, glm-4.5v, glm-4.
+6, glm-4.6v, glm-4.7, glm-4.7-flash (Ctrl+P to cycle)
+
+ pi v0.50.3
+ escape to interrupt
+ ctrl+c to clear
+ ctrl+c twice to exit
+ ctrl+d to exit (empty)
+ ctrl+z to suspend
+ ctrl+k to delete to end
+ shift+tab to cycle thinking level
+ ctrl+p/shift+ctrl+p to cycle models
+ ctrl+l to select model
+ ctrl+o to expand tools
+ ctrl+t to expand thinking
+ ctrl+g for external editor
+ / for commands
+ ! to run bash
+ !! to run bash (no context)
+ alt+enter to queue follow-up
+ alt+up to edit all queued messages
+ ctrl+v to paste image
+ drop files to attach
+
+[Context]
+  ~/work/ai/CLAUDE.md
+  ~/work/ai/PI/pi-mono/AGENTS.md
+
+[Skills]
+  user
+    ~/.claude/skills/cass-history-search/SKILL.md
+    ~/.claude/skills/claude-pipe-processing/SKILL.md
+    ~/.claude/skills/dot-init/SKILL.md
+    ~/.claude/skills/dot-manager/SKILL.md
+    ~/.claude/skills/dot-ralph-loop/SKILL.md
+    ~/.claude/skills/dot-worker/SKILL.md
+    ~/.claude/skills/fork-update/SKILL.md
+    ~/.claude/skills/gemini-review/SKILL.md
+    ~/.claude/skills/git-commit/SKILL.md
+    ~/.claude/skills/git-create-pr/SKILL.md
+    ~/.claude/skills/git-fix-pr-comments/SKILL.md
+    ~/.claude/skills/git-merge/SKILL.md
+    ~/.claude/skills/llm-docs-optimizer/skills/llm-docs-optimizer/SKILL.md
+    ~/.claude/skills/meta-claude-memory/SKILL.md
+    ~/.claude/skills/meta-skill-creator/SKILL.md
+    ~/.claude/skills/ralph-loop/SKILL.md
+    ~/.claude/skills/utils-fix-errors/SKILL.md
+    ~/.claude/skills/utils-fix-grammar/SKILL.md
+    ~/.claude/skills/utils-oneshot/SKILL.md
+    ~/.claude/skills/workflow-apex-free/SKILL.md
+    ~/.claude/skills/workflow-apex/SKILL.md
+    ~/.claude/skills/zai-cli/SKILL.md
+    ~/.claude/skills/zig-cli-development/SKILL.md
+    ~/.pi/agent/skills/claude-plugins-official/claude-md-improver/SKILL.md
+    ~/.pi/agent/skills/creating-skills/SKILL.md
+    ~/.pi/agent/skills/selflearn-diary/SKILL.md
+    ~/.pi/agent/skills/selflearn-reflect/SKILL.md
+
+[Prompts]
+  project
+    /cl
+    /is
+    /pr
+
+[Extensions]
+  user
+    ~/.pi/agent/extensions/dippy-extension.ts
+  project
+    ~/work/ai/PI/pi-mono/.pi/extensions/diff.ts
+    ~/work/ai/PI/pi-mono/.pi/extensions/files.ts
+    ~/work/ai/PI/pi-mono/.pi/extensions/prompt-url-widget.ts
+    ~/work/ai/PI/pi-mono/.pi/extensions/redraws.ts
+
+
+
+ SYSTEM UPDATE REQUEST: I am part of the pi-upgrade process.
+     1. Check changes between HEAD and origin/main (git log ..origin/main or git diff HEAD..origin/main).
+     2. Summarize the important changes for the user.
+     3. ASK THE USER for confirmation to proceed.
+     4. If confirmed, perform 'git merge origin/main'.
+     5. If the user declines, do not merge.
+
+
+ I'll help you with the pi-upgrade process. Let me check the changes between HEAD and origin/main first.
+
+
+ $ git log --oneline HEAD..origin/main
+
+
+ Model: glm-4.6v
+
+─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+aktualizuj
+─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+~/work/ai/PI/pi-mono (orgoj)
+↑124 ↓45 R6.1k $0.001 4.9%/128k (auto)                                                                                                                                                  (zai) glm-4.6v • thinking off
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

@@ -195,12 +195,8 @@ priority = 96
   default_type = "working"
 
   [[agents.matchers]]
-  type = "command"
-  pattern = "(?i)^pi$"
-
-  [[agents.matchers]]
   type = "content"
-  pattern = "╭"
+  pattern = "[╭╰]"
 
   # Rule 0: Dippy Approval (highest priority)
   [[agents.state_rules]]
