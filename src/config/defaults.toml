@@ -55,6 +55,39 @@ label_agents = "agents"
 todo_from_file = true
 todo_files = ["TODO.md", "NOTES.md", "TASKS.md", "README.md"]
 
+[[global_highlight_rules]]
+pattern = "(?i)error|fail|exception|panic|⚠"
+color = "red"
+modifiers = ["bold"]
+
+[[global_highlight_rules]]
+pattern = "(?i)warning|warn"
+color = "yellow"
+
+[[global_highlight_rules]]
+pattern = "(?i)success|ok|passed"
+color = "green"
+
+[[global_highlight_rules]]
+pattern = '''^\+.*'''
+color = "green"
+
+[[global_highlight_rules]]
+pattern = '''^-.*'''
+color = "red"
+
+[[global_highlight_rules]]
+pattern = '''^@@.*'''
+color = "cyan"
+
+[[global_highlight_rules]]
+pattern = '''(?i)\[y/n\]'''
+color = "yellow"
+
+[[global_highlight_rules]]
+pattern = '''^[❯>].*'''
+color = "cyan"
+
 [[agents]]
 id = "claude"
 name = "Claude"

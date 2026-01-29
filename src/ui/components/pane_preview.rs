@@ -326,36 +326,10 @@ impl PanePreviewWidget {
                 // Apply syntax highlighting based on config rules
                 let style = parser.and_then(|p| p.highlight_line(&display_line));
 
-                // If no rule matched, use default behavior (some fallback highlighting)
                 if let Some(s) = style {
                     styled_lines.push(Line::from(vec![Span::styled(display_line, s)]));
                 } else {
-                    let spans = if display_line.starts_with('+') && !display_line.starts_with("+++")
-                    {
-                        vec![Span::styled(
-                            display_line,
-                            Style::default().fg(Color::Green),
-                        )]
-                    } else if display_line.starts_with('-') && !display_line.starts_with("---") {
-                        vec![Span::styled(display_line, Style::default().fg(Color::Red))]
-                    } else if display_line.starts_with("@@") {
-                        vec![Span::styled(display_line, Style::default().fg(Color::Cyan))]
-                    } else if display_line.contains("[y/n]") || display_line.contains("[Y/n]") {
-                        vec![Span::styled(
-                            display_line,
-                            Style::default().fg(Color::Yellow),
-                        )]
-                    } else if display_line.contains("⚠")
-                        || display_line.contains("Error")
-                        || display_line.contains("error")
-                    {
-                        vec![Span::styled(display_line, Style::default().fg(Color::Red))]
-                    } else if display_line.starts_with("❯") || display_line.starts_with(">") {
-                        vec![Span::styled(display_line, Style::default().fg(Color::Cyan))]
-                    } else {
-                        vec![Span::raw(display_line)]
-                    };
-                    styled_lines.push(Line::from(spans));
+                    styled_lines.push(Line::from(vec![Span::raw(display_line)]));
                 }
             }
 

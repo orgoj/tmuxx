@@ -140,6 +140,10 @@ pub struct Config {
     #[serde(default)]
     pub messages: MessageConfig,
 
+    /// Global highlight rules (fallback for all agents)
+    #[serde(default)]
+    pub global_highlight_rules: Vec<HighlightRule>,
+
     /// Command template for notifications.
     /// Placeholders: {title}, {message}, {agent}, {session}, {target}, {path}, {approval_type}, {count}
     #[serde(default)]
@@ -366,6 +370,7 @@ struct PartialConfig {
     indicators: Option<StatusIndicators>,
     timing: Option<TimingConfig>,
     messages: Option<MessageConfig>,
+    global_highlight_rules: Option<Vec<HighlightRule>>,
 
     notification_command: Option<String>,
     notification_delay_ms: Option<u64>,
@@ -459,6 +464,9 @@ impl PartialConfig {
         }
         if let Some(v) = self.messages {
             config.messages = v;
+        }
+        if let Some(v) = self.global_highlight_rules {
+            config.global_highlight_rules = v;
         }
         if let Some(v) = self.notification_command {
             config.notification_command = Some(v);

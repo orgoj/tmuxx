@@ -2,7 +2,7 @@ use regex::Regex;
 use tracing::warn;
 
 use crate::agents::{AgentStatus, AgentType, ApprovalType, Subagent};
-use crate::app::config::{AgentConfig, MatcherConfig};
+use crate::app::config::{AgentConfig, HighlightRule, MatcherConfig};
 use crate::parsers::{safe_tail, AgentParser, AgentSummary, MatchStrength};
 
 /// Split content on structural separator area (the Claude/Pi prompt sandwich)
@@ -133,7 +133,7 @@ struct CompiledLayoutRules {
 }
 
 impl UniversalParser {
-    pub fn new(config: AgentConfig, capture_buffer_size: usize) -> Self {
+    pub fn new(config: AgentConfig, capture_buffer_size: usize, global_rules: &[HighlightRule]) -> Self {
         let mut matchers = Vec::new();
         for m in &config.matchers {
             match m {
@@ -264,7 +264,7 @@ impl UniversalParser {
             }
         });
 
-        let highlight_rules = config
+        let mut highlight_rules: Vec<CompiledHighlightRule> = config
             .highlight_rules
             .iter()
             .filter_map(|r| {
@@ -275,6 +275,17 @@ impl UniversalParser {
                 })
             })
             .collect();
+
+        // Add global rules as fallback
+        for r in global_rules {
+            if let Ok(re) = Regex::new(&r.pattern) {
+                highlight_rules.push(CompiledHighlightRule {
+                    re,
+                    color: r.color.clone(),
+                    modifiers: r.modifiers.clone(),
+                });
+            }
+        }
 
         let layout_rules = config.layout.as_ref().map(|l| CompiledLayoutRules {
             footer_separator: l.footer_separator.as_ref().and_then(|p| Regex::new(p).ok()),

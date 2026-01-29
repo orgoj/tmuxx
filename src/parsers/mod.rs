@@ -143,6 +143,7 @@ impl ParserRegistry {
             parsers.push(Box::new(UniversalParser::new(
                 agent_config.clone(),
                 config.capture_buffer_size,
+                &config.global_highlight_rules,
             )));
         }
 

@@ -83,7 +83,7 @@ fn run_suite_for_dir(
     };
 
     // Initialize Parser
-    let parser = UniversalParser::new(agent_config, config.capture_buffer_size);
+    let parser = UniversalParser::new(agent_config, config.capture_buffer_size, &config.global_highlight_rules);
 
     // Iterate over fixtures
     let mut files: Vec<PathBuf> = fs::read_dir(dir)?
