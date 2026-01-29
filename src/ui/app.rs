@@ -101,6 +101,44 @@ pub async fn run_app(config: Config) -> Result<()> {
     result
 }
 
+/// Create next variable popup for menu item variable collection
+fn create_next_variable_popup(
+    menu_item_path: Vec<String>,
+    collected_vars: std::collections::HashMap<String, String>,
+    remaining_vars: Vec<(String, String)>,
+) -> crate::app::PopupInputState {
+    let (next_var, next_prompt) = &remaining_vars[0];
+    let new_remaining: Vec<(String, String)> = remaining_vars.iter().skip(1).cloned().collect();
+    
+    crate::app::PopupInputState {
+        title: format!("Variable: {}", next_var),
+        prompt: next_prompt.clone(),
+        buffer: String::new(),
+        cursor: 0,
+        popup_type: crate::app::PopupType::MenuVariableInput {
+            menu_item_path,
+            variable_name: next_var.clone(),
+            collected_vars,
+            remaining_vars: new_remaining,
+        },
+    }
+}
+
+/// Expand menu variables in command string
+fn expand_menu_variables(
+    command: String,
+    collected_vars: &std::collections::HashMap<String, String>,
+) -> String {
+    let mut expanded = command;
+    
+    for (var_name, var_value) in collected_vars {
+        let placeholder = format!("${{{}}}", var_name);
+        expanded = expanded.replace(&placeholder, var_value);
+    }
+    
+    expanded
+}
+
 /// Execute a menu command with variable substitution
 async fn execute_menu_command(
     state: &mut AppState,
@@ -1492,52 +1530,35 @@ async fn run_loop(
                                                 remaining_vars,
                                             } => {
                                                 // Store current variable value
-                                                collected_vars.insert(variable_name.clone(), popup.buffer.clone());
+                                                collected_vars.insert(variable_name, popup.buffer);
 
                                                 if !remaining_vars.is_empty() {
                                                     // More variables to collect - show next popup
-                                                    let (next_var, next_prompt) = &remaining_vars[0];
-                                                    let new_remaining: Vec<(String, String)> = remaining_vars.iter().skip(1).cloned().collect();
-                                                    
-                                                    state.popup_input = Some(crate::app::PopupInputState {
-                                                        title: format!("Variable: {}", next_var),
-                                                        prompt: next_prompt.clone(),
-                                                        buffer: String::new(),
-                                                        cursor: 0,
-                                                        popup_type: crate::app::PopupType::MenuVariableInput {
-                                                            menu_item_path: menu_item_path.clone(),
-                                                            variable_name: next_var.clone(),
-                                                            collected_vars: collected_vars.clone(),
-                                                            remaining_vars: new_remaining,
-                                                        },
-                                                    });
+                                                    state.popup_input = Some(create_next_variable_popup(
+                                                        menu_item_path,
+                                                        collected_vars,
+                                                        remaining_vars,
+                                                    ));
                                                 } else {
                                                     // All variables collected - execute command
                                                     use crate::ui::components::menu_tree::find_menu_item_by_path;
-                                                    
-                                                    // Clone the execute_command to avoid borrow issues
+
                                                     let execute_command_opt = find_menu_item_by_path(&state.config.menu, &menu_item_path)
                                                         .and_then(|item| item.execute_command.clone());
-                                                    
-                                                    if let Some(execute_command) = execute_command_opt {
-                                                        let mut expanded = execute_command.command.clone();
-                                                        
-                                                        // Expand collected variables
-                                                        for (var_name, var_value) in &collected_vars {
-                                                            let placeholder = format!("${{{}}}", var_name);
-                                                            expanded = expanded.replace(&placeholder, var_value);
-                                                        }
-                                                        
-                                                        // Expand agent variables
-                                                        if let Some(agent) = state.selected_agent() {
-                                                            expanded = expand_command_variables(&expanded, agent);
-                                                        }
 
-                                                        let path = if let Some(agent) = state.selected_agent() {
-                                                            agent.path.clone()
+                                                    if let Some(execute_command) = execute_command_opt {
+                                                        let expanded = expand_menu_variables(execute_command.command.clone(), &collected_vars);
+
+                                                        // Expand agent variables
+                                                        let expanded = if let Some(agent) = state.selected_agent() {
+                                                            expand_command_variables(&expanded, agent)
                                                         } else {
-                                                            String::new()
+                                                            expanded
                                                         };
+
+                                                        let path = state.selected_agent()
+                                                            .map(|a| a.path.clone())
+                                                            .unwrap_or_default();
 
                                                         let action = Action::ExecuteCommand {
                                                             command: expanded.clone(),
