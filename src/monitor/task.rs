@@ -240,6 +240,8 @@ impl MonitorTask {
     fn handle_notifications(&mut self, tree: &AgentTree) {
         // Only if notification_command is configured
         if self.config.notification_command.is_none() {
+            self.global_notification_sent = false;
+            self.notified_agents.clear();
             return;
         }
 
@@ -251,6 +253,24 @@ impl MonitorTask {
 
         let now = Instant::now();
 
+        // Check if UI cleared the flag (user interacted)
+        if self.user_interacted.swap(false, Ordering::Relaxed) {
+            self.global_notification_sent = false;
+            self.notified_agents.clear();
+            // Reset timers so delay starts again from now after interaction
+            for since in self.approval_since.values_mut() {
+                *since = now;
+            }
+        }
+
+        if awaiting.is_empty() {
+            self.approval_since.clear();
+            // Reset state so that new approvals trigger notification again after delay
+            self.global_notification_sent = false;
+            self.notified_agents.clear();
+            return;
+        }
+
         // Track when approval started for each agent
         for agent in &awaiting {
             self.approval_since
@@ -260,12 +280,6 @@ impl MonitorTask {
         // Remove tracking for cleared agents
         self.approval_since
             .retain(|t, _| awaiting.iter().any(|a| &a.target == t));
-
-        // Check if UI cleared the flag (user interacted)
-        if self.user_interacted.swap(false, Ordering::Relaxed) {
-            self.global_notification_sent = false;
-            self.notified_agents.clear();
-        }
 
         // Notification logic per mode
         match self.config.notification_mode {

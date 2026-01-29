@@ -1,5 +1,14 @@
 allow-edit ./**
 
+# task manager dots
+deny rm .dots/* "For dot task use only dot cli!"
+deny-read .dots/* "For dot task use only dot cli!"
+deny-write .dots/* "For dot task use only dot cli!"
+deny-redirect .dots/* "For dot task use only dot cli!"
+deny cat .dots/** * "For dot task use only dot cli!"
+allow dot *
+
+
 deny scripts/cp-bin.sh * "User does this when application works!"
 allow ./scripts/reload-test.sh
 

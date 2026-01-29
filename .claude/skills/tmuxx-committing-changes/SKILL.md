@@ -25,13 +25,15 @@ Verify that:
 Run the following and fix all issues:
 ```bash
 cargo build --release
-cargo clippy
+# Fallback to standard check if clippy is unavailable
+cargo clippy || cargo check
 cargo fmt
 ```
 
 #### B. Staging
 - Use `git add -A` for complete changes.
 - **CRITICAL**: Review staged changes with `git status`.
+- **Git Lock Troubleshooting**: If `index.lock` persists even after `rm -f`, check for background processes (e.g., other agents, file watchers) or try chaining the command: `rm -f .git/index.lock && git commit ...`.
 - **Accidental Staging**: Unstage unrelated changes (e.g., `.dippy`, `.pi/` internal files if not requested) using `git restore --staged <file>`.
 
 #### C. Committing

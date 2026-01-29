@@ -5,7 +5,15 @@ All notable changes to **Tmuxx** (formerly tmuxcc) will be documented in this fi
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [0.4.4] - 2026-01-29
+
+### Fixed
+- **Notification Spam (User Interaction)**: Fixed an issue where notifications would fire repeatedly if the user interacted with the app (mouse/keyboard) while an agent was už past the notification delay. Interaction now resets the delay timer.
+
+## [0.4.3] - 2026-01-29
+
+### Fixed
+- **Notification Spam**: Fixed an issue where multiple notifications were sent repeatedly when agents were awaiting approval. The notification state is now correctly reset only after all approvals are cleared or user interaction occurs.
 
 ## [0.4.2] - 2026-01-29
 
