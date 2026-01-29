@@ -1,4 +1,5 @@
 use serde::{Deserialize, Serialize};
+use std::collections::HashMap;
 
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -25,4 +26,10 @@ pub struct MenuItem {
 
     #[serde(default)]
     pub items: Vec<MenuItem>,
+
+    /// Variables to prompt for before executing command
+    /// Key: variable name (will be used in command as ${VAR_NAME})
+    /// Value: prompt text to display to user
+    #[serde(default)]
+    pub variables: HashMap<String, String>,
 }

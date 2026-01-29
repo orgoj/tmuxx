@@ -960,6 +960,7 @@ impl Config {
                             execute_command: None,
                             text: None,
                             items: subdir_config.items,
+                            variables: Default::default(),
                         });
                     }
                 }
@@ -974,6 +975,7 @@ impl Config {
                         execute_command: None,
                         text: Some(content),
                         items: Vec::new(),
+                        variables: Default::default(),
                     });
                 }
             }

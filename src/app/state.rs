@@ -45,6 +45,17 @@ pub enum PopupType {
         /// The session name to kill
         session: String,
     },
+    /// Variable input for menu items
+    MenuVariableInput {
+        /// Path to the menu item in the tree (menu item names)
+        menu_item_path: Vec<String>,
+        /// Current variable being collected
+        variable_name: String,
+        /// Variables already collected
+        collected_vars: std::collections::HashMap<String, String>,
+        /// Remaining variables to collect (name, prompt)
+        remaining_vars: Vec<(String, String)>,
+    },
 }
 
 /// State for popup input dialog

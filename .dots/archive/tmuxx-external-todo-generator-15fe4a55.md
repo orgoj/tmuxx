@@ -1,9 +1,11 @@
 ---
 title: External TODO Generator
-status: open
+status: closed
 priority: 2
 issue-type: task
-created-at: "2026-01-29T21:24:44.450499+01:00"
+created-at: "\"\\\"\\\\\\\"2026-01-29T21:24:44.450499+01:00\\\\\\\"\\\"\""
+closed-at: "2026-01-29T22:04:01.679957+01:00"
+close-reason: Improved external TODO generator to be truly asynchronous in MonitorTask, preventing UI lag when the command is slow.
 ---
 
 Účel: TODO panel plněný externím příkazem (beads, taskwarrior, atd.) běžícím asynchronně v pozadí.

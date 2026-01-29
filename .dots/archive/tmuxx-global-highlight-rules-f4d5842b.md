@@ -3,9 +3,9 @@ title: Global Highlight Rules
 status: closed
 priority: 1
 issue-type: task
-created-at: "\"\\\"\\\\\\\"2026-01-29T21:24:21.586589+01:00\\\\\\\"\\\"\""
-closed-at: "2026-01-29T21:43:34.885879+01:00"
-close-reason: Verified Global Highlight Rules implementation, cleaned up redundant rules in defaults.toml, and confirmed all tests pass.
+created-at: "\"\\\"\\\\\\\"\\\\\\\\\\\\\\\"2026-01-29T21:24:21.586589+01:00\\\\\\\\\\\\\\\"\\\\\\\"\\\"\""
+closed-at: "2026-01-29T21:51:24.591683+01:00"
+close-reason: Verified Global Highlight Rules implementation with a new test case and confirmed all tests pass.
 ---
 
 Účel: Globální pravidla pro zvýraznění error/fail/exception ve všech agentech.

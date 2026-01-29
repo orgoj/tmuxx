@@ -346,3 +346,24 @@ pub fn find_flat_menu_item_by_index<'a>(
 ) -> Option<FlatMenuItem<'a>> {
     flatten_tree(config, state).get(index).cloned()
 }
+
+pub fn find_menu_item_by_path<'a>(
+    config: &'a MenuConfig,
+    path: &[String],
+) -> Option<&'a MenuItem> {
+    let mut current_items = &config.items;
+    let mut result = None;
+
+    for (i, name) in path.iter().enumerate() {
+        if let Some(item) = current_items.iter().find(|item| &item.name == name) {
+            result = Some(item);
+            if i < path.len() - 1 {
+                current_items = &item.items;
+            }
+        } else {
+            return None;
+        }
+    }
+
+    result
+}

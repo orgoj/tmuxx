@@ -101,6 +101,115 @@ pub async fn run_app(config: Config) -> Result<()> {
     result
 }
 
+/// Execute a menu command with variable substitution
+async fn execute_menu_command(
+    state: &mut AppState,
+    terminal: &mut Terminal<CrosstermBackend<io::Stdout>>,
+    expanded: &str,
+    execute_command: &CommandConfig,
+    path: &str,
+) {
+    if execute_command.external_terminal {
+        if let Some(wrapper) = &state.config.terminal_wrapper {
+            let wrapped = wrapper.replace("{cmd}", expanded);
+            let mut cmd = tokio::process::Command::new("bash");
+            cmd.args(["-c", &wrapped])
+               .stdin(std::process::Stdio::null())
+               .stdout(std::process::Stdio::null())
+               .stderr(std::process::Stdio::null());
+
+            if !path.is_empty() {
+                cmd.current_dir(path);
+            }
+
+            match cmd.spawn() {
+                Ok(_) => state.set_status(format!("External: {}", expanded)),
+                Err(e) => state.set_error(format!("Failed to spawn external terminal: {}", e)),
+            }
+        } else {
+            state.set_error("terminal_wrapper not configured".to_string());
+        }
+    } else if execute_command.terminal {
+        // Suspend TUI
+        if let Err(e) = crossterm::terminal::disable_raw_mode() {
+            state.set_error(format!("Failed to disable raw mode: {}", e));
+        }
+        if let Err(e) = crossterm::execute!(
+            terminal.backend_mut(),
+            crossterm::terminal::LeaveAlternateScreen,
+            crossterm::event::DisableMouseCapture
+        ) {
+            state.set_error(format!("Failed to leave alternate screen: {}", e));
+        }
+        if let Err(e) = terminal.show_cursor() {
+            state.set_error(format!("Failed to show cursor: {}", e));
+        }
+
+        // Run command synchronously
+        let mut command = std::process::Command::new("bash");
+        command.args(["-c", expanded])
+            .stdin(std::process::Stdio::inherit())
+            .stdout(std::process::Stdio::inherit())
+            .stderr(std::process::Stdio::inherit());
+
+        if !path.is_empty() {
+            command.current_dir(path);
+        }
+
+        let _ = command.status();
+
+        // Restore TUI
+        if let Err(e) = crossterm::terminal::enable_raw_mode() {
+            state.set_error(format!("Failed to enable raw mode: {}", e));
+        }
+        if let Err(e) = crossterm::execute!(
+            terminal.backend_mut(),
+            crossterm::terminal::EnterAlternateScreen,
+            crossterm::event::EnableMouseCapture
+        ) {
+            state.set_error(format!("Failed to enter alternate screen: {}", e));
+        }
+        if let Err(e) = terminal.hide_cursor() {
+            state.set_error(format!("Failed to hide cursor: {}", e));
+        }
+        if let Err(e) = terminal.clear() {
+            state.set_error(format!("Failed to clear terminal: {}", e));
+        }
+    } else if execute_command.blocking {
+        let mut cmd = tokio::process::Command::new("bash");
+        cmd.args(["-c", expanded]);
+        if !path.is_empty() {
+            cmd.current_dir(path);
+        }
+        match cmd.output().await {
+            Ok(output) => {
+                if output.status.success() {
+                    state.set_status(format!("Executed: {}", expanded));
+                } else {
+                    state.set_error(format!("Failed: {}", expanded));
+                }
+            }
+            Err(e) => state.set_error(format!("Failed to execute: {}", e)),
+        }
+    } else {
+        // Background spawn
+        let mut cmd = tokio::process::Command::new("bash");
+        cmd.args(["-c", expanded])
+           .stdin(std::process::Stdio::null())
+           .stdout(std::process::Stdio::null())
+           .stderr(std::process::Stdio::null());
+
+        if !path.is_empty() {
+            cmd.current_dir(path);
+        }
+
+        match cmd.spawn() {
+            Ok(_) => state.set_status(format!("Spawned: {}", expanded)),
+            Err(e) => state.set_error(format!("Failed to spawn: {}", e)),
+        }
+    }
+}
+
 async fn run_loop(
     terminal: &mut Terminal<CrosstermBackend<io::Stdout>>,
     state: &mut AppState,
@@ -481,13 +590,41 @@ async fn run_loop(
 
                                  KeyCode::Enter => {
                                      if let Some(index) = state.menu_tree.list_state.selected() {
-                                         let (cmd, is_submenu, p) = if let Some(flat) = find_flat_menu_item_by_index(&state.config.menu, &state.menu_tree, index) {
-                                              (flat.item.execute_command.clone(), !flat.item.items.is_empty(), flat.path)
+                                         let (cmd, variables, is_submenu, p) = if let Some(flat) = find_flat_menu_item_by_index(&state.config.menu, &state.menu_tree, index) {
+                                              (flat.item.execute_command.clone(), flat.item.variables.clone(), !flat.item.items.is_empty(), flat.path)
                                          } else {
-                                              (None, false, Vec::new())
+                                              (None, Default::default(), false, Vec::new())
                                          };
 
                                          if let Some(execute_command) = cmd {
+                                              // Check if we need to collect variables first
+                                              if !variables.is_empty() {
+                                                  // Start variable collection sequence
+                                                  state.toggle_menu();
+                                                  
+                                                  // Convert HashMap to Vec for ordering
+                                                  let mut vars_vec: Vec<(String, String)> = variables.into_iter().collect();
+                                                  vars_vec.sort_by(|a, b| a.0.cmp(&b.0)); // Sort by variable name for consistent order
+                                                  
+                                                  if let Some((first_var, first_prompt)) = vars_vec.first() {
+                                                      let remaining: Vec<(String, String)> = vars_vec.iter().skip(1).cloned().collect();
+                                                      
+                                                      state.popup_input = Some(crate::app::PopupInputState {
+                                                          title: format!("Variable: {}", first_var),
+                                                          prompt: first_prompt.clone(),
+                                                          buffer: String::new(),
+                                                          cursor: 0,
+                                                          popup_type: crate::app::PopupType::MenuVariableInput {
+                                                              menu_item_path: p.clone(),
+                                                              variable_name: first_var.clone(),
+                                                              collected_vars: std::collections::HashMap::new(),
+                                                              remaining_vars: remaining,
+                                                          },
+                                                      });
+                                                  }
+                                                  continue;
+                                              }
+                                              
                                               state.toggle_menu();
 
                                               // Expand variables
@@ -1346,6 +1483,74 @@ async fn run_loop(
                                                     }
                                                 } else {
                                                     state.set_error("No agent selected".to_string());
+                                                }
+                                            }
+                                            PopupType::MenuVariableInput {
+                                                menu_item_path,
+                                                variable_name,
+                                                mut collected_vars,
+                                                remaining_vars,
+                                            } => {
+                                                // Store current variable value
+                                                collected_vars.insert(variable_name.clone(), popup.buffer.clone());
+
+                                                if !remaining_vars.is_empty() {
+                                                    // More variables to collect - show next popup
+                                                    let (next_var, next_prompt) = &remaining_vars[0];
+                                                    let new_remaining: Vec<(String, String)> = remaining_vars.iter().skip(1).cloned().collect();
+                                                    
+                                                    state.popup_input = Some(crate::app::PopupInputState {
+                                                        title: format!("Variable: {}", next_var),
+                                                        prompt: next_prompt.clone(),
+                                                        buffer: String::new(),
+                                                        cursor: 0,
+                                                        popup_type: crate::app::PopupType::MenuVariableInput {
+                                                            menu_item_path: menu_item_path.clone(),
+                                                            variable_name: next_var.clone(),
+                                                            collected_vars: collected_vars.clone(),
+                                                            remaining_vars: new_remaining,
+                                                        },
+                                                    });
+                                                } else {
+                                                    // All variables collected - execute command
+                                                    use crate::ui::components::menu_tree::find_menu_item_by_path;
+                                                    
+                                                    // Clone the execute_command to avoid borrow issues
+                                                    let execute_command_opt = find_menu_item_by_path(&state.config.menu, &menu_item_path)
+                                                        .and_then(|item| item.execute_command.clone());
+                                                    
+                                                    if let Some(execute_command) = execute_command_opt {
+                                                        let mut expanded = execute_command.command.clone();
+                                                        
+                                                        // Expand collected variables
+                                                        for (var_name, var_value) in &collected_vars {
+                                                            let placeholder = format!("${{{}}}", var_name);
+                                                            expanded = expanded.replace(&placeholder, var_value);
+                                                        }
+                                                        
+                                                        // Expand agent variables
+                                                        if let Some(agent) = state.selected_agent() {
+                                                            expanded = expand_command_variables(&expanded, agent);
+                                                        }
+
+                                                        let path = if let Some(agent) = state.selected_agent() {
+                                                            agent.path.clone()
+                                                        } else {
+                                                            String::new()
+                                                        };
+
+                                                        let action = Action::ExecuteCommand {
+                                                            command: expanded.clone(),
+                                                            blocking: execute_command.blocking,
+                                                            terminal: execute_command.terminal,
+                                                            external_terminal: execute_command.external_terminal,
+                                                        };
+                                                        state.log_action(&action);
+
+                                                        execute_menu_command(state, terminal, &expanded, &execute_command, &path).await;
+                                                    } else {
+                                                        state.set_error("Menu item command not found".to_string());
+                                                    }
                                                 }
                                             }
                                         }
