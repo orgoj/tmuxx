@@ -1,72 +1,6 @@
 # TODO - Tmuxx
 
-- [ ] claude porad nefunguji klavesy, posila 1 2 3 skutecne jen cisla do claude?
-
 ## 🚀 Větší funkce (Features)
-
-### Notification System
-**Účel:** Desktop notifikace když agent čeká na approval příliš dlouho
-
-**Změny:**
-1. `src/app/config.rs` - přidat do `Config`:
-   ```rust
-   /// Command to run for notifications (placeholders: {title}, {message}, {agent})
-   /// Example: "notify-send '{title}' '{message}'"
-   #[serde(default)]
-   pub notification_command: Option<String>,
-   
-   /// Delay before sending notification (ms)
-   #[serde(default = "default_notification_delay")]
-   pub notification_delay_ms: u64,
-   
-   fn default_notification_delay() -> u64 { 60000 }  // 1 minute
-   ```
-
-2. `src/agents/types.rs` - přidat do `MonitoredAgent`:
-   ```rust
-   /// When approval was first detected (for notification timing)
-   pub approval_since: Option<std::time::Instant>,
-   /// Whether notification was already sent for current approval
-   pub notification_sent: bool,
-   ```
-
-3. `src/monitor/task.rs` - v update loop přidat:
-   ```rust
-   // Check notification timeout
-   if agent.status.needs_attention() {
-       if agent.approval_since.is_none() {
-           agent.approval_since = Some(Instant::now());
-       }
-       if !agent.notification_sent {
-           if let Some(since) = agent.approval_since {
-               if since.elapsed().as_millis() > config.notification_delay_ms as u128 {
-                   send_notification(&config, &agent);
-                   agent.notification_sent = true;
-               }
-           }
-       }
-   } else {
-       agent.approval_since = None;
-       agent.notification_sent = false;
-   }
-   ```
-
-4. `src/monitor/task.rs` - nová funkce:
-   ```rust
-   fn send_notification(config: &Config, agent: &MonitoredAgent) {
-       if let Some(cmd) = &config.notification_command {
-           let expanded = cmd
-               .replace("{title}", "tmuxx")
-               .replace("{agent}", &agent.name)
-               .replace("{message}", &format!("{} needs attention", agent.name));
-           let _ = std::process::Command::new("bash")
-               .args(["-c", &expanded])
-               .spawn();
-       }
-   }
-   ```
-
----
 
 ### Global Highlight Rules
 **Účel:** Globální pravidla pro zvýraznění error/fail/exception ve všech agentech
@@ -259,9 +193,6 @@ KeyAction::Focus => {
 
 ## 🔮 Nápady a Roadmap (Ideas)
 
-- stav start
-- detekce zmeny stavu s agent na shell? asi drzet nejaky priznak a mozna je to na error alert, urcite kdyz tam je exit code
-
 ### AI Integrace
 - **AI-Powered Workflows**: Analýza obrazovky pomocí AI a navrhování akcí
 - **Context-aware Suggestions**: Návrhy příkazů na základě stavu agenta
@@ -272,7 +203,7 @@ KeyAction::Focus => {
 - **Plugin System**: Externí parsery agentů jako dynamické knihovny nebo skripty
 - **Profiles**: Přepínání mezi sadami nastavení (`--profile work`)
 
-### Pokročilá Detekce
-- **Process Tree Analysis**: Detekce agentů přes kompletní strom procesů
-- **SSH Remote Agents**: Detekce AI agentů běžících v SSH session
-  - Vyžaduje: parsing SSH connection info, remote process detection
+### Ostatní
+- stav start
+- detekce zmeny stavu s agent na shell? asi drzet nejaky priznak a mozna je to na error alert, urcite kdyz tam je exit code
+- nejaku box s tlacitky definovatelnymi (promty/commandy do aktivniho okna) - pro ovladani jen klikanim mysi
