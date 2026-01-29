@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.4.2] - 2026-01-29
+
+### Fixed
+- **Gemini Agent Detection**: Added `ancestor` process matching for "gemini". This ensures correct detection when the tmux pane command is reported as `node` but is running the Gemini CLI.
+- **Gemini State Detection**: Increased `last_lines` buffer from 40 to 100 for Gemini state rules to reliably detect the `/model` prompt in sparse outputs.
+- **Test Suite Improvements**: Moved Gemini-specific test fixtures to their own directory and standardized naming conventions for automatic regression testing.
+
 ## [0.4.1] - 2026-01-29
 
 ### Fixed

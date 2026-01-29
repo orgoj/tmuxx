@@ -149,8 +149,9 @@ Parsers check ALL detection strings to handle various detection scenarios.
 ### Testing Discipline
 
 - **INVOKE tmuxx-testing skill**: MANDATORY before ANY testing - contains session structure, send-keys rules, tmux safety
-- **100% Pass Rate**: 100% regression test pass rate (`tmuxx test`) is mandatory before any commit.
-- **Debug Mode**: Use `tmuxx test -d` to debug splitter/refinement matching issues.
+- **100% Pass Rate**: 100% regression test pass rate (`cargo run -- test`) is mandatory before any commit.
+- **Regression Verification**: ALWAYS run `cargo run -- test` after modifying source code, `defaults.toml`, or test fixtures (MANDATORY).
+- **Debug Mode**: Use `cargo run -- test -d` to debug splitter/refinement matching issues.
 - See tmuxx-testing skill for complete testing workflow and safety rules
 
 ## Common Pitfalls
@@ -242,6 +243,9 @@ All skills are in `.claude/skills/`:
 
 ### Key Principles
 
+- **Strict Config-First**: Never hardcode interactive behaviors, keys, or regex rules; use `defaults.toml` and ensure everything is user-configurable.
+- **Atomic Tmux**: Use single multi-argument `send-keys` calls to send key sequences (e.g., `y` + `Enter`) to avoid race conditions.
+- **Tool Usage**: Strictly use CLI interfaces (like `dot` for tasks) instead of manual file/metadata edits in hidden directories.
 - **Paths**: ALWAYS use relative paths (no absolute paths).
 - **Tools**: Use `rg` (ripgrep) for searching, never `grep`.
 - **Data Safety**: Never delete test fixtures/data; move or rename them if needed.

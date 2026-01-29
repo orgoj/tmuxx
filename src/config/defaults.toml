@@ -304,6 +304,10 @@ priority = 90
   pattern = "(?i)gemini|google"
 
   [[agents.matchers]]
+  type = "ancestor"
+  pattern = "(?i)gemini"
+
+  [[agents.matchers]]
   type = "content"
   pattern = '''(?i)no sandbox \(see /docs\)|[\w.-]+ /model'''
 
@@ -314,7 +318,7 @@ priority = 90
   [[agents.state_rules]]
   status = "idle"
   type = "idle"
-  last_lines = 40
+  last_lines = 100
   pattern = '''(?s).*[>]\s*(?:Type your message or @path/to/file)?.* /model\s*\z'''
   splitter = "none"
 
