@@ -41,3 +41,4 @@ tmp/
 .claude/settings.mop-reflect.json
 .claude/plans/.claude/
 .mopc
+.planning/
