@@ -8,6 +8,8 @@ While designed with first-class support for AI coding agents (Claude Code, Pi, G
 
 > **Note**: This is a complete rewrite of `tmuxcc`, evolved into a standalone project with a focus on configurability, performance, and native AI agent integration.
 
+![tmuxx Dashboard](docs/images/tmuxx-dashboard.png)
+
 ---
 
 ## 🚀 Features
