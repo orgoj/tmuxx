@@ -46,15 +46,17 @@ cargo install --path .
    - Process detection uses cmdline, window title, and child processes
 
 2. **Parser Layer** (`src/parsers/`):
-   - Each AI agent has a dedicated parser (ClaudeCodeParser, OpenCodeParser, etc.)
+   - `UniversalParser`: Single configurable parser that matches all agent types
+   - Patterns organized by agent in `defaults.toml`, not separate parser implementations
    - `AgentParser` trait: `matches()`, `parse_status()`, `parse_subagents()`, `parse_context_remaining()`
-   - Parsers use regex patterns to detect approval prompts, subagents, and status
-   - `ParserRegistry` matches panes to appropriate parsers
+   - `ParserRegistry` matches panes to appropriate parser patterns
 
 3. **Application Layer** (`src/app/`):
    - `AppState`: Main application state (agent tree, selection, input buffer)
    - `AgentTree`: Hierarchical structure of root agents and their subagents
-   - `Config`: TOML-based configuration (poll interval, capture lines, custom patterns)
+   - `Config`: Configuration struct (`src/app/config.rs`) with TOML defaults from `src/config/defaults.toml`
+   - `config_override.rs`: CLI argument handling and overrides
+   - `menu_config.rs`: Menu configuration
    - Actions flow: User input → `Action` enum → state mutations → UI update
 
 ### Key Data Flow
@@ -99,12 +101,18 @@ Claude Code's Task tool spawns subagents (e.g., Explore, Plan agents). Detection
 - `styles.rs`: Color schemes and styling constants
 - `app.rs`: Main event loop (keyboard input → actions → state updates → rendering)
 
-### Async Monitoring (`src/monitor/task.rs`)
+### CLI Command Layer (`src/cmd/`)
 
-- Background tokio task polls tmux at configured intervals (default: 500ms)
+- **`test.rs`**: Regression test runner (`cargo run -- test [-d]` for debug mode)
+- **`learn.rs`**: Auto-generates agent definitions from active tmux sessions
+- These are invoked via CLI subcommands, not the TUI
+
+### Async Monitoring (`src/monitor/`)
+
+- **`task.rs`**: Background tokio task polls tmux at configured intervals (default: 500ms)
+- **`system_stats.rs`**: Tracks CPU/memory usage for header display
 - Captures pane content, parses status, updates shared AppState
 - Uses `Arc<Mutex<AppState>>` for thread-safe state updates
-- SystemStats module tracks CPU/memory for header display
 
 ## Important Implementation Details
 
@@ -134,9 +142,13 @@ Parsers check ALL detection strings to handle various detection scenarios.
 
 ### Configuration System
 
-- Uses TOML format (`~/.config/tmuxx/config.toml` on Linux)
-- `Config::load()` merges CLI args > config file > defaults
-- Custom agent patterns can be added via `[[agent_patterns]]` sections
+- Main config struct: `src/app/config.rs` (merged from CLI args, user config file, and defaults)
+- Default patterns: `src/config/defaults.toml`
+- CLI overrides: `src/app/config_override.rs`
+- Menu config: `src/app/menu_config.rs`
+- User config location: `~/.config/tmuxx/config.toml` on Linux
+- Merge order: CLI args > config file > defaults
+- Custom agent patterns can be added via `[[agent_patterns]]` sections in defaults.toml
 - `--init-config` creates default config, `--show-config-path` shows location
 
 ## Testing Guidelines
@@ -179,7 +191,7 @@ Parsers check ALL detection strings to handle various detection scenarios.
 ### Skill-First Development
 
 - **Check skills BEFORE starting**: Search `.claude/skills/` for relevant skills before implementing
-- **INVOKE skills matching task type**: Testing? → tmuxx-testing. Commit? → tmuxx-commit. Config? → tmuxx-adding-config-option
+- **INVOKE skills matching task type**: Testing? → tmuxx-testing. Commit? → tmuxx-committing-changes. Config? → tmuxx-adding-config-options
 - **Create skills for repetitive workflows**: If explaining same process twice → create skill
 - **Documentation extraction**: Keep CLAUDE.md under 300 lines - extract repetitive workflows into skills
 
@@ -187,13 +199,13 @@ Parsers check ALL detection strings to handle various detection scenarios.
 
 **CRITICAL: Project-specific skills have PRIORITY over generic skills!**
 
-- **Project skills FIRST**: tmuxx-testing, tmuxx-commit, etc. take precedence
+- **Project skills FIRST**: tmuxx-testing, tmuxx-committing-changes, etc. take precedence
 - **Generic skills (tmux-automation, etc.)**: Only if no project skill exists for the task
 - **Skill obligation applies to PROJECT skills**: The "must use skills" rule refers to these project skills
 
 All skills are in `.claude/skills/`:
 
-1. **`tmuxx-adding-config-option`** - Pattern for adding new config options with CLI override support
+1. **`tmuxx-adding-config-options`** - Pattern for adding new config options with CLI override support
    - Use when adding bool, string, or number config options
    - Files: config.rs, config_override.rs, README.md, CHANGELOG.md
 
@@ -202,19 +214,19 @@ All skills are in `.claude/skills/`:
    - Test session structure, send-keys rules, tmux safety
    - Scripts: reload-test.sh, start-test-session.sh, setup-multi-test.sh
 
-3. **`tmuxx-commit`** - Pre-commit checklist and git workflow
+3. **`tmuxx-committing-changes`** - Pre-commit checklist and git workflow
    - **INVOKE before every commit!**
    - **Commit Format**: `<type>: description`, followed by Problem/Solution/Changes blocks.
    - CHANGELOG.md updates, README.md updates, cargo build/clippy/fmt
    - Git remotes and lock management
 
-4. **`tmuxx-library-research`** - Library research workflow
+4. **`tmuxx-researching-libraries`** - Library research workflow
    - **INVOKE before implementing features!**
    - WebSearch for libraries, rtfmbro MCP for docs
    - Ratatui 0.29 documentation via MCP
    - Check trait implementations, verify method existence
 
-5. **`tmuxx-changelog`** - TODO.md and CHANGELOG.md management
+5. **`tmuxx-managing-changelogs`** - TODO.md and CHANGELOG.md management
    - **INVOKE when completing tasks!**
    - Move completed work from TODO.md to CHANGELOG.md
    - Keep TODO.md clean and focused
@@ -224,9 +236,6 @@ All skills are in `.claude/skills/`:
    - Ask clarifying questions, explore codebase
    - Expect 5-7 corrections in review
    - Integration philosophy: coexistence over replacement
-
-7. **`tmuxx-gemini-review`** - Gemini CLI code review
-   - Use for AI-powered code review before commits
 
 ### Problem Diagnosis
 
@@ -258,7 +267,7 @@ All skills are in `.claude/skills/`:
 - **Clean up warnings**: Run `cargo clippy` and fix all warnings
 - **Ratatui dynamic UI**: Prefer dynamic generation from config over hardcoded text - enables runtime customization
 - **User feedback validation**: Runtime testing reveals UX issues code review misses - visual verification is CRITICAL
-- **Implementation from memory**: Research current docs, don't guess (use `tmuxx-library-research` skill!)
+- **Implementation from memory**: Research current docs, don't guess (use `tmuxx-researching-libraries` skill!)
 - **Testing environment**: Use ct-multi (5 windows) for multi-window features
 - **Branch workflow for risky changes**: Use backup → feature → merge pattern for safe rollback path
 
