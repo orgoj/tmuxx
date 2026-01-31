@@ -17,6 +17,7 @@ Verify that:
 - `CHANGELOG.md` is updated with the changes.
 - `README.md` is updated if new config options or keybindings were added.
 - The code builds and tests pass.
+- **Rustfmt**: Ensure `rustfmt` is installed (`rustup component add rustfmt`).
 - **Git Lock**: Check if `.git/index.lock` exists. If so, remove it (`rm -f .git/index.lock`) before proceeding.
 
 ### 2. Execution
@@ -27,7 +28,7 @@ Run the following and fix all issues:
 cargo build --release
 # Fallback to standard check if clippy is unavailable
 cargo clippy || cargo check
-cargo fmt
+cargo fmt || (rustup component add rustfmt && cargo fmt)
 ```
 
 #### B. Staging

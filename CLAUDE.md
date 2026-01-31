@@ -173,6 +173,9 @@ Parsers check ALL detection strings to handle various detection scenarios.
 15. **Designing Before Understanding Use Case**: Ask "what will this be used for?" before architecture design - specific use cases beat generic abstractions
 16. **TODO.md Unauthorized Modification**: NEVER modify TODO.md without explicit user approval - when asked to "check" or "verify", report findings and ASK what to do next
 17. **Planning without checking git status**: Always run `git status` and `git diff` before writing plans - implementation may already exist
+18. **Interactive runs**: NEVER run interactive TUI apps (like cargo run) in the bash tool; use build, syntax, and unit tests for verification.
+19. **Tool maintenance**: proactively install missing toolchain components (e.g., rustfmt) instead of reporting failure.
+20. **Async design**: prefer tokio::spawn for I/O and external commands to ensure TUI responsiveness.
 
 ## Development Workflow
 
@@ -247,6 +250,7 @@ All skills are in `.claude/skills/`:
 - **Atomic Tmux**: Use single multi-argument `send-keys` calls to send key sequences (e.g., `y` + `Enter`) to avoid race conditions.
 - **Tool Usage**: Strictly use CLI interfaces (like `dot` for tasks) instead of manual file/metadata edits in hidden directories.
 - **Paths**: ALWAYS use relative paths (no absolute paths).
+- **Versioning**: Synchronize version strings across `Cargo.toml`, `Cargo.lock`, and `CHANGELOG.md` in a single commit.
 - **Tools**: Use `rg` (ripgrep) for searching, never `grep`.
 - **Data Safety**: Never delete test fixtures/data; move or rename them if needed.
 - **TUI Performance**: Use conditional redrawing (`needs_redraw`) and lazy data fetching to minimize CPU.
@@ -307,9 +311,9 @@ All skills are in `.claude/skills/`:
 - ✅ `TODO_cs.md` → Czech OK (markdown with `_cs` suffix)
 
 **Special exceptions (don't need `.cs`):**
-- TODO.md (internal working notes - Czech OK)
-- `.claude/diary/` (user's existing entries - don't translate old ones, new ones in English)
-- `.claude/plans/` (user's existing entries - don't translate old ones, new ones in English)
+- TODO.md (internal working notes - Czech OK - but translate to English on modification)
+- `.*/diary/` (user's existing entries - don't translate old ones, new ones in English)
+- `.*/plans/` (user's existing entries - don't translate old ones, new ones in English)
 
 **CRITICAL: Auto-correct Czech to English:**
 - User writes in Czech in conversation → OK
