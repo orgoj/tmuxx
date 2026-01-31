@@ -1,6 +1,5 @@
 use ratatui::{
     layout::{Constraint, Direction, Flex, Layout, Rect},
-    style::{Color, Modifier, Style},
     text::{Line, Span},
     widgets::{Block, BorderType, Borders, Clear, Paragraph},
     Frame,
@@ -14,7 +13,12 @@ pub struct PopupInputWidget;
 
 impl PopupInputWidget {
     /// Render the popup dialog
-    pub fn render(frame: &mut Frame, area: Rect, state: &PopupInputState) {
+    pub fn render(
+        frame: &mut Frame,
+        area: Rect,
+        state: &PopupInputState,
+        styles: &crate::ui::Styles,
+    ) {
         // Check minimum terminal size (80x24)
         if area.width < 80 || area.height < 24 {
             // Terminal too small - don't render popup
@@ -33,12 +37,8 @@ impl PopupInputWidget {
             .borders(Borders::ALL)
             .border_type(BorderType::Rounded)
             .title(state.title.clone())
-            .title_style(
-                Style::default()
-                    .fg(Color::Cyan)
-                    .add_modifier(Modifier::BOLD),
-            )
-            .style(Style::default().fg(Color::Cyan));
+            .title_style(styles.header)
+            .style(styles.header);
         let inner = block.inner(popup_area);
         frame.render_widget(block, popup_area);
 
@@ -56,14 +56,14 @@ impl PopupInputWidget {
             .split(inner);
 
         // Render prompt (chunks[0])
-        let prompt = Paragraph::new(state.prompt.as_str()).style(Style::default().fg(Color::White));
+        let prompt = Paragraph::new(state.prompt.as_str()).style(styles.normal);
         frame.render_widget(prompt, chunks[0]);
 
         // Render input field with border (chunks[2])
         let input_block = Block::default()
             .borders(Borders::ALL)
             .border_type(BorderType::Rounded)
-            .style(Style::default().fg(Color::Green));
+            .style(styles.idle);
         let input_inner = input_block.inner(chunks[2]);
         frame.render_widget(input_block, chunks[2]);
 
@@ -72,7 +72,7 @@ impl PopupInputWidget {
             Self::calculate_scroll(&state.buffer, state.cursor, input_inner.width as usize);
 
         // Render visible text inside the input border
-        let input_text = Paragraph::new(visible_text).style(Style::default().fg(Color::White));
+        let input_text = Paragraph::new(visible_text).style(styles.normal);
         frame.render_widget(input_text, input_inner);
 
         // Render cursor (green block)
@@ -83,46 +83,26 @@ impl PopupInputWidget {
                 width: 1,
                 height: 1,
             };
-            let cursor = Block::default().style(Style::default().bg(Color::Green).fg(Color::Black));
+            let cursor = Block::default().style(styles.selected);
             frame.render_widget(cursor, cursor_area);
         }
 
         // Render button hints (chunks[4])
         let hints = vec![
             Line::from(vec![
-                Span::styled(
-                    "[Enter]",
-                    Style::default()
-                        .fg(Color::Yellow)
-                        .add_modifier(Modifier::BOLD),
-                ),
+                Span::styled("[Enter]", styles.footer_key),
                 Span::raw(" Submit  "),
-                Span::styled(
-                    "[Esc]",
-                    Style::default()
-                        .fg(Color::Yellow)
-                        .add_modifier(Modifier::BOLD),
-                ),
+                Span::styled("[Esc]", styles.footer_key),
                 Span::raw(" Cancel"),
             ]),
             Line::from(vec![
-                Span::styled(
-                    "[Ctrl+U]",
-                    Style::default()
-                        .fg(Color::Yellow)
-                        .add_modifier(Modifier::BOLD),
-                ),
+                Span::styled("[Ctrl+U]", styles.footer_key),
                 Span::raw(" Clear  "),
-                Span::styled(
-                    "[Ctrl+A]",
-                    Style::default()
-                        .fg(Color::Yellow)
-                        .add_modifier(Modifier::BOLD),
-                ),
+                Span::styled("[Ctrl+A]", styles.footer_key),
                 Span::raw(" Select All"),
             ]),
         ];
-        let hints_paragraph = Paragraph::new(hints).style(Style::default().fg(Color::White));
+        let hints_paragraph = Paragraph::new(hints).style(styles.normal);
         frame.render_widget(hints_paragraph, chunks[4]);
     }
 

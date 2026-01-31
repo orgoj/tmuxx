@@ -100,6 +100,9 @@ impl HelpWidget {
                 KeyAction::ReloadConfig => {
                     add_line("General", format!("  {:14} Reload configuration", keys_str))
                 }
+                KeyAction::NextTheme => {
+                    add_line("View", format!("  {:14} Cycle color themes", keys_str))
+                }
 
                 // Commands / Custom
                 KeyAction::RenameSession => {

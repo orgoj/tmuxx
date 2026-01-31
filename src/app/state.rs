@@ -1,6 +1,7 @@
 use crate::agents::MonitoredAgent;
 use crate::monitor::SystemStats;
 use crate::ui::components::{MenuTreeState, ModalTextareaState};
+use crate::ui::Styles;
 // use ratatui::style::{Color, Style};
 use std::collections::HashSet;
 use std::sync::OnceLock;
@@ -155,6 +156,8 @@ pub struct StatusMessage {
 pub struct AppState {
     /// Application configuration
     pub config: Config,
+    /// Pre-calculated styles based on theme
+    pub styles: Styles,
     /// Tree of monitored agents
     pub agents: AgentTree,
     /// Currently selected agent index (cursor position)
@@ -241,8 +244,16 @@ impl AppState {
             .replace("{version}", version)
             .replace("{color_mode}", color_mode);
 
+        let active_theme = config
+            .themes
+            .get(&config.theme)
+            .cloned()
+            .unwrap_or_default();
+        let styles = Styles::new(&active_theme);
+
         Self {
             config,
+            styles,
             agents: AgentTree::new(),
             selected_index: 0,
             selected_agent_id: None,
@@ -691,6 +702,7 @@ impl AppState {
                 crate::ui::components::HelpWidget::generate_help_text(&self.config),
                 false, // not single_line
                 true,  // readonly!
+                &self.styles,
             );
             self.modal_textarea = Some(help_text);
         }
@@ -968,9 +980,44 @@ impl AppState {
         self.ensure_visible_selection();
     }
 
+    /// Switch to the next available theme
+    pub fn next_theme(&mut self) {
+        if self.config.themes.is_empty() {
+            return;
+        }
+
+        let mut names: Vec<String> = self.config.themes.keys().cloned().collect();
+        names.sort();
+
+        let current_index = names
+            .iter()
+            .position(|n| n == &self.config.theme)
+            .unwrap_or(0);
+        let next_index = (current_index + 1) % names.len();
+        let next_name = names[next_index].clone();
+
+        self.set_theme(&next_name);
+        self.set_status(format!("Theme: {}", next_name));
+    }
+
+    /// Set a specific theme by name
+    pub fn set_theme(&mut self, name: &str) {
+        if let Some(theme_config) = self.config.themes.get(name) {
+            self.config.theme = name.to_string();
+            self.styles = Styles::new(theme_config);
+        }
+    }
+
     /// Reload application configuration
     pub fn reload_config(&mut self, config: Config) {
         self.config = config;
+        let active_theme = self
+            .config
+            .themes
+            .get(&self.config.theme)
+            .cloned()
+            .unwrap_or_default();
+        self.styles = Styles::new(&active_theme);
         // Some state depends on config, refresh it
         self.sidebar_width = self.config.sidebar_width.clone();
         // Clear cached menus so they are rebuilt from new config

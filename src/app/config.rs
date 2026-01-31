@@ -174,6 +174,138 @@ pub struct Config {
     /// Notification mode: First (one notification until interaction) or Each (per-agent)
     #[serde(default)]
     pub notification_mode: NotificationMode,
+
+    /// Name of the active theme
+    #[serde(default = "default_theme_name")]
+    pub theme: String,
+
+    /// Available color themes
+    #[serde(default)]
+    pub themes: std::collections::HashMap<String, ThemeConfig>,
+}
+
+fn default_theme_name() -> String {
+    "default".to_string()
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ThemeConfig {
+    #[serde(default = "default_idle_color")]
+    pub idle: String,
+    #[serde(default = "default_processing_color")]
+    pub processing: String,
+    #[serde(default = "default_approval_color")]
+    pub approval: String,
+    #[serde(default = "default_error_color")]
+    pub error: String,
+    #[serde(default = "default_unknown_color")]
+    pub unknown: String,
+    #[serde(default = "default_header_color")]
+    pub header: String,
+    #[serde(default = "default_selected_fg")]
+    pub selected_fg: String,
+    #[serde(default = "default_selected_bg")]
+    pub selected_bg: String,
+    #[serde(default = "default_normal_color")]
+    pub normal: String,
+    #[serde(default = "default_dimmed_color")]
+    pub dimmed: String,
+    #[serde(default = "default_highlight_color")]
+    pub highlight: String,
+    #[serde(default = "default_border_color")]
+    pub border: String,
+    #[serde(default = "default_border_focused_color")]
+    pub border_focused: String,
+    #[serde(default = "default_subagent_running_color")]
+    pub subagent_running: String,
+    #[serde(default = "default_subagent_completed_color")]
+    pub subagent_completed: String,
+    #[serde(default = "default_subagent_failed_color")]
+    pub subagent_failed: String,
+    #[serde(default = "default_footer_key_color")]
+    pub footer_key: String,
+    #[serde(default = "default_footer_text_color")]
+    pub footer_text: String,
+}
+
+fn default_idle_color() -> String {
+    "green".to_string()
+}
+fn default_processing_color() -> String {
+    "yellow".to_string()
+}
+fn default_approval_color() -> String {
+    "red".to_string()
+}
+fn default_error_color() -> String {
+    "red".to_string()
+}
+fn default_unknown_color() -> String {
+    "darkgray".to_string()
+}
+fn default_header_color() -> String {
+    "cyan".to_string()
+}
+fn default_selected_fg() -> String {
+    "black".to_string()
+}
+fn default_selected_bg() -> String {
+    "cyan".to_string()
+}
+fn default_normal_color() -> String {
+    "white".to_string()
+}
+fn default_dimmed_color() -> String {
+    "darkgray".to_string()
+}
+fn default_highlight_color() -> String {
+    "yellow".to_string()
+}
+fn default_border_color() -> String {
+    "gray".to_string()
+}
+fn default_border_focused_color() -> String {
+    "cyan".to_string()
+}
+fn default_subagent_running_color() -> String {
+    "cyan".to_string()
+}
+fn default_subagent_completed_color() -> String {
+    "green".to_string()
+}
+fn default_subagent_failed_color() -> String {
+    "red".to_string()
+}
+fn default_footer_key_color() -> String {
+    "yellow".to_string()
+}
+fn default_footer_text_color() -> String {
+    "white".to_string()
+}
+
+impl Default for ThemeConfig {
+    fn default() -> Self {
+        Self {
+            idle: default_idle_color(),
+            processing: default_processing_color(),
+            approval: default_approval_color(),
+            error: default_error_color(),
+            unknown: default_unknown_color(),
+            header: default_header_color(),
+            selected_fg: default_selected_fg(),
+            selected_bg: default_selected_bg(),
+            normal: default_normal_color(),
+            dimmed: default_dimmed_color(),
+            highlight: default_highlight_color(),
+            border: default_border_color(),
+            border_focused: default_border_focused_color(),
+            subagent_running: default_subagent_running_color(),
+            subagent_completed: default_subagent_completed_color(),
+            subagent_failed: default_subagent_failed_color(),
+            footer_key: default_footer_key_color(),
+            footer_text: default_footer_text_color(),
+        }
+    }
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -410,6 +542,92 @@ struct PartialConfig {
     notification_command: Option<String>,
     notification_delay_ms: Option<u64>,
     notification_mode: Option<NotificationMode>,
+    theme: Option<String>,
+    #[serde(rename = "theme_override")]
+    theme_overrides: Option<PartialThemeConfig>,
+    themes: Option<std::collections::HashMap<String, PartialThemeConfig>>,
+}
+
+#[derive(Deserialize, Default, Clone)]
+#[serde(default)]
+struct PartialThemeConfig {
+    idle: Option<String>,
+    processing: Option<String>,
+    approval: Option<String>,
+    error: Option<String>,
+    unknown: Option<String>,
+    header: Option<String>,
+    selected_fg: Option<String>,
+    selected_bg: Option<String>,
+    normal: Option<String>,
+    dimmed: Option<String>,
+    highlight: Option<String>,
+    border: Option<String>,
+    border_focused: Option<String>,
+    subagent_running: Option<String>,
+    subagent_completed: Option<String>,
+    subagent_failed: Option<String>,
+    footer_key: Option<String>,
+    footer_text: Option<String>,
+}
+
+impl PartialThemeConfig {
+    fn apply(self, theme: &mut ThemeConfig) {
+        if let Some(v) = self.idle {
+            theme.idle = v;
+        }
+        if let Some(v) = self.processing {
+            theme.processing = v;
+        }
+        if let Some(v) = self.approval {
+            theme.approval = v;
+        }
+        if let Some(v) = self.error {
+            theme.error = v;
+        }
+        if let Some(v) = self.unknown {
+            theme.unknown = v;
+        }
+        if let Some(v) = self.header {
+            theme.header = v;
+        }
+        if let Some(v) = self.selected_fg {
+            theme.selected_fg = v;
+        }
+        if let Some(v) = self.selected_bg {
+            theme.selected_bg = v;
+        }
+        if let Some(v) = self.normal {
+            theme.normal = v;
+        }
+        if let Some(v) = self.dimmed {
+            theme.dimmed = v;
+        }
+        if let Some(v) = self.highlight {
+            theme.highlight = v;
+        }
+        if let Some(v) = self.border {
+            theme.border = v;
+        }
+        if let Some(v) = self.border_focused {
+            theme.border_focused = v;
+        }
+        if let Some(v) = self.subagent_running {
+            theme.subagent_running = v;
+        }
+        if let Some(v) = self.subagent_completed {
+            theme.subagent_completed = v;
+        }
+        if let Some(v) = self.subagent_failed {
+            theme.subagent_failed = v;
+        }
+        if let Some(v) = self.footer_key {
+            theme.footer_key = v;
+        }
+        if let Some(v) = self.footer_text {
+            theme.footer_text = v;
+        }
+    }
 }
 
 impl PartialConfig {
@@ -526,6 +744,26 @@ impl PartialConfig {
         }
         if let Some(v) = self.notification_mode {
             config.notification_mode = v;
+        }
+        if let Some(v) = self.theme {
+            config.theme = v;
+        }
+
+        // Apply theme overrides from [theme_override] section in config.toml
+        if let Some(v) = self.theme_overrides {
+            for theme in config.themes.values_mut() {
+                v.clone().apply(theme);
+            }
+        }
+
+        if let Some(v) = self.themes {
+            for (name, partial_theme) in v {
+                let theme = config
+                    .themes
+                    .entry(name)
+                    .or_insert_with(ThemeConfig::default);
+                partial_theme.apply(theme);
+            }
         }
 
         if !self.agents.is_empty() {

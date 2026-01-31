@@ -2,7 +2,6 @@ use fuzzy_matcher::skim::SkimMatcherV2;
 use fuzzy_matcher::FuzzyMatcher;
 use ratatui::{
     layout::{Constraint, Direction, Layout, Rect},
-    style::{Color, Modifier, Style},
     text::{Line, Span},
     widgets::{Block, Borders, Clear, List, ListItem, ListState, Paragraph},
     Frame,
@@ -88,9 +87,9 @@ impl MenuTreeWidget {
     pub fn render(
         frame: &mut Frame,
         area: Rect,
-        state: &mut MenuTreeState,
+        menu_state: &mut MenuTreeState,
         config: &MenuConfig,
-        app_config: &crate::app::Config,
+        styles: &crate::ui::Styles,
         title: &str,
     ) {
         let area = centered_rect(area, 60, 60);
@@ -99,23 +98,18 @@ impl MenuTreeWidget {
 
         let mut block = Block::default()
             .title(Line::from(vec![
-                Span::styled(
-                    format!(" {} ", title),
-                    Style::default()
-                        .fg(Color::Cyan)
-                        .add_modifier(Modifier::BOLD),
-                ),
+                Span::styled(format!(" {} ", title), styles.header),
                 Span::raw(" (Right:Expand, *:All, Esc:Close) "),
             ]))
             .borders(Borders::ALL)
-            .border_style(Style::default().fg(Color::Cyan));
+            .border_style(styles.header);
 
         if title.contains("Prompts") {
             block = block.title_bottom(
                 Line::from(vec![
-                    Span::styled("[Enter]", Style::default().fg(Color::Yellow)),
+                    Span::styled("[Enter]", styles.footer_key),
                     Span::raw(" Send  "),
-                    Span::styled("[Alt+Enter]", Style::default().fg(Color::Yellow)),
+                    Span::styled("[Alt+Enter]", styles.footer_key),
                     Span::raw(" Edit & Send"),
                 ])
                 .alignment(ratatui::layout::Alignment::Center),
@@ -123,7 +117,7 @@ impl MenuTreeWidget {
         } else {
             block = block.title_bottom(
                 Line::from(vec![
-                    Span::styled("[Enter]", Style::default().fg(Color::Yellow)),
+                    Span::styled("[Enter]", styles.footer_key),
                     Span::raw(" Execute/Expand"),
                 ])
                 .alignment(ratatui::layout::Alignment::Center),
@@ -134,10 +128,10 @@ impl MenuTreeWidget {
         frame.render_widget(block, area);
 
         // Flatten the tree
-        let items_to_render = flatten_tree(config, state);
+        let items_to_render = flatten_tree(config, menu_state);
 
         // Get selected item content for preview
-        let preview_text = if let Some(index) = state.list_state.selected() {
+        let preview_text = if let Some(index) = menu_state.list_state.selected() {
             if let Some(flat) = items_to_render.get(index) {
                 if let Some(cmd) = &flat.item.execute_command {
                     Some(format!("Command: {}", cmd.command))
@@ -154,15 +148,15 @@ impl MenuTreeWidget {
         let chunks = Layout::default()
             .direction(Direction::Vertical)
             .constraints([
-                Constraint::Length(if !state.filter.is_empty() { 2 } else { 0 }),
+                Constraint::Length(if !menu_state.filter.is_empty() { 2 } else { 0 }),
                 Constraint::Min(0),
                 Constraint::Length(if preview_text.is_some() { 3 } else { 0 }),
             ])
             .split(inner_area);
 
-        if !state.filter.is_empty() {
-            let filter_text = Paragraph::new(format!(" Filter: {}", state.filter))
-                .style(Style::default().fg(Color::Yellow));
+        if !menu_state.filter.is_empty() {
+            let filter_text =
+                Paragraph::new(format!(" Filter: {}", menu_state.filter)).style(styles.highlight);
             frame.render_widget(filter_text, chunks[0]);
         }
 
@@ -171,10 +165,10 @@ impl MenuTreeWidget {
         if let Some(text) = preview_text {
             let preview_block = Block::default()
                 .borders(Borders::TOP)
-                .border_style(Style::default().fg(Color::DarkGray));
+                .border_style(styles.dimmed);
             let preview_paragraph = Paragraph::new(text)
                 .block(preview_block)
-                .style(Style::default().fg(Color::Gray));
+                .style(styles.dimmed);
             frame.render_widget(preview_paragraph, chunks[2]);
         }
 
@@ -183,9 +177,9 @@ impl MenuTreeWidget {
             .map(|flat| {
                 let depth_indent = "  ".repeat(flat.level);
                 let has_children = !flat.item.items.is_empty();
-                let is_expanded = state.expand_all
-                    || state.expanded_paths.contains(&flat.path)
-                    || !state.filter.is_empty();
+                let is_expanded = menu_state.expand_all
+                    || menu_state.expanded_paths.contains(&flat.path)
+                    || !menu_state.filter.is_empty();
 
                 let prefix = if has_children {
                     if is_expanded {
@@ -199,29 +193,18 @@ impl MenuTreeWidget {
 
                 let content = Line::from(vec![
                     Span::raw(depth_indent),
-                    Span::styled(prefix, Style::default().fg(Color::DarkGray)),
+                    Span::styled(prefix, styles.dimmed),
                     Span::raw(&flat.item.name),
                 ]);
                 ListItem::new(content)
             })
             .collect();
 
-        let highlight_bg = if app_config.current_item_bg_color.to_lowercase() == "none" {
-            Color::Cyan
-        } else {
-            parse_color(&app_config.current_item_bg_color)
-        };
-
         let list = List::new(list_items)
-            .highlight_style(
-                Style::default()
-                    .bg(highlight_bg)
-                    .fg(Color::Black)
-                    .add_modifier(Modifier::BOLD),
-            )
+            .highlight_style(styles.selected)
             .highlight_symbol("▶ ");
 
-        frame.render_stateful_widget(list, list_area, &mut state.list_state);
+        frame.render_stateful_widget(list, list_area, &mut menu_state.list_state);
     }
 }
 
@@ -284,41 +267,6 @@ fn has_matching_descendant(item: &MenuItem, filter: &str, matcher: &SkimMatcherV
         }
     }
     false
-}
-
-/// Helper to parse color string to Ratatui Color
-fn parse_color(color_str: &str) -> Color {
-    match color_str.to_lowercase().as_str() {
-        "black" => Color::Black,
-        "red" => Color::Red,
-        "green" => Color::Green,
-        "yellow" => Color::Yellow,
-        "blue" => Color::Blue,
-        "magenta" => Color::Magenta,
-        "cyan" => Color::Cyan,
-        "gray" | "grey" => Color::Gray,
-        "darkgray" | "darkgrey" => Color::DarkGray,
-        s if s.starts_with('#') => {
-            if let Ok(c) = color_from_hex(s) {
-                c
-            } else {
-                Color::Reset
-            }
-        }
-        _ => Color::Reset,
-    }
-}
-
-fn color_from_hex(hex: &str) -> Result<Color, ()> {
-    let hex = hex.trim_start_matches('#');
-    if hex.len() == 6 {
-        let r = u8::from_str_radix(&hex[0..2], 16).map_err(|_| ())?;
-        let g = u8::from_str_radix(&hex[2..4], 16).map_err(|_| ())?;
-        let b = u8::from_str_radix(&hex[4..6], 16).map_err(|_| ())?;
-        Ok(Color::Rgb(r, g, b))
-    } else {
-        Err(())
-    }
 }
 
 fn centered_rect(r: Rect, percent_x: u16, percent_y: u16) -> Rect {

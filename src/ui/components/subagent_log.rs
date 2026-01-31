@@ -1,6 +1,5 @@
 use ratatui::{
     layout::Rect,
-    style::{Color, Style},
     text::{Line, Span},
     widgets::{Block, BorderType, Borders, List, ListItem},
     Frame,
@@ -26,13 +25,13 @@ impl SubagentLogWidget {
             .title(title)
             .borders(Borders::ALL)
             .border_type(BorderType::Rounded)
-            .border_style(Style::default().fg(Color::Gray));
+            .border_style(state.styles.border);
 
         let items: Vec<ListItem> = if let Some(agent) = agent {
             if agent.subagents.is_empty() {
                 vec![ListItem::new(Line::from(vec![Span::styled(
                     "  No subagent activity detected",
-                    Style::default().fg(Color::DarkGray),
+                    state.styles.dimmed,
                 )]))]
             } else {
                 agent
@@ -40,10 +39,22 @@ impl SubagentLogWidget {
                     .iter()
                     .map(|subagent| {
                         let (indicator, style) = match subagent.status {
-                            SubagentStatus::Running => ("▶", Style::default().fg(Color::Cyan)),
-                            SubagentStatus::Completed => ("✓", Style::default().fg(Color::Green)),
-                            SubagentStatus::Failed => ("✗", Style::default().fg(Color::Red)),
-                            SubagentStatus::Unknown => ("?", Style::default().fg(Color::DarkGray)),
+                            SubagentStatus::Running => (
+                                state.config.indicators.subagent_running.as_str(),
+                                state.styles.subagent_running,
+                            ),
+                            SubagentStatus::Completed => (
+                                state.config.indicators.subagent_completed.as_str(),
+                                state.styles.subagent_completed,
+                            ),
+                            SubagentStatus::Failed => (
+                                state.config.indicators.subagent_failed.as_str(),
+                                state.styles.subagent_failed,
+                            ),
+                            SubagentStatus::Unknown => (
+                                state.config.indicators.unknown.as_str(),
+                                state.styles.unknown,
+                            ),
                         };
 
                         let duration = subagent.duration_str();
@@ -54,15 +65,12 @@ impl SubagentLogWidget {
                             Span::raw(" "),
                             Span::styled(
                                 subagent.subagent_type.display_name(),
-                                Style::default().fg(Color::White),
+                                state.styles.normal,
                             ),
                             Span::raw("  "),
-                            Span::styled(&subagent.description, Style::default().fg(Color::Gray)),
+                            Span::styled(&subagent.description, state.styles.normal),
                             Span::raw("  "),
-                            Span::styled(
-                                format!("[{}]", duration),
-                                Style::default().fg(Color::DarkGray),
-                            ),
+                            Span::styled(format!("[{}]", duration), state.styles.dimmed),
                         ]);
 
                         ListItem::new(line)
@@ -72,7 +80,7 @@ impl SubagentLogWidget {
         } else {
             vec![ListItem::new(Line::from(vec![Span::styled(
                 "  No agent selected",
-                Style::default().fg(Color::DarkGray),
+                state.styles.dimmed,
             )]))]
         };
 

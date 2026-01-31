@@ -209,12 +209,12 @@ async fn run_loop(
 
                 // Popup input (before help)
                 if let Some(popup_state) = &state.popup_input {
-                    PopupInputWidget::render(frame, size, popup_state);
+                    PopupInputWidget::render(frame, size, popup_state, &state.styles);
                 }
 
                 // Modal textarea (before help)
                 if let Some(modal_state) = &state.modal_textarea {
-                    ModalTextareaWidget::render(frame, size, modal_state);
+                    ModalTextareaWidget::render(frame, size, modal_state, &state.styles);
                 }
 
                 // Menu Tree (before help)
@@ -224,7 +224,7 @@ async fn run_loop(
                         size,
                         &mut state.menu_tree,
                         &state.config.menu,
-                        &state.config,
+                        &state.styles,
                         "Command Menu",
                     );
                 }
@@ -236,7 +236,7 @@ async fn run_loop(
                         size,
                         &mut state.prompts_tree,
                         &state.config.prompts,
-                        &state.config,
+                        &state.styles,
                         "Prompts Menu",
                     );
                 }
@@ -244,7 +244,7 @@ async fn run_loop(
                 // Help overlay (highest priority - render last)
                 if state.show_help {
                     if let Some(modal_state) = &state.modal_textarea {
-                        ModalTextareaWidget::render(frame, size, modal_state);
+                        ModalTextareaWidget::render(frame, size, modal_state, &state.styles);
                     }
                 }
             })?;
@@ -722,6 +722,7 @@ async fn run_loop(
                                                         text.clone(),
                                                         false, // multiline
                                                         false, // editable
+                                                        &state.styles,
                                                     ));
                                                 } else {
                                                     // Send directly
@@ -1241,7 +1242,12 @@ async fn run_loop(
                                 } => {
                                     use crate::ui::components::ModalTextareaState;
                                     state.modal_textarea = Some(ModalTextareaState::new(
-                                        title, prompt, initial, single_line, false, // not readonly
+                                        title,
+                                        prompt,
+                                        initial,
+                                        single_line,
+                                        false, // not readonly
+                                        &state.styles,
                                     ));
                                 }
                                 Action::TogglePaneTreeMode => {
@@ -1446,6 +1452,9 @@ async fn run_loop(
                                         }
                                     }
                                 }
+                                Action::NextTheme => {
+                                    state.next_theme();
+                                }
                                 Action::None => {}
                             }
                         }
@@ -1633,6 +1642,7 @@ fn map_key_to_action(
                 KeyAction::ToggleFilterActive => Action::ToggleFilterActive,
                 KeyAction::ToggleFilterSelected => Action::ToggleFilterSelected,
                 KeyAction::ReloadConfig => Action::ReloadConfig,
+                KeyAction::NextTheme => Action::NextTheme,
             };
         }
     }

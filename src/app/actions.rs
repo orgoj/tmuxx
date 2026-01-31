@@ -142,6 +142,8 @@ pub enum Action {
     ToggleFilterSelected,
     /// Reload application configuration
     ReloadConfig,
+    /// Switch to next color theme
+    NextTheme,
 }
 
 impl Action {
@@ -208,6 +210,7 @@ impl Action {
             Action::ToggleFilterActive => "Toggle active agents filter",
             Action::ToggleFilterSelected => "Toggle selected agents filter",
             Action::ReloadConfig => "Reload configuration",
+            Action::NextTheme => "Switch to next color theme",
             Action::None => "",
         }
     }

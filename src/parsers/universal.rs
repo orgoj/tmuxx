@@ -753,8 +753,10 @@ impl AgentParser for UniversalParser {
     fn highlight_line(&self, line: &str) -> Option<ratatui::style::Style> {
         for rule in &self.highlight_rules {
             if rule.re.is_match(line) {
-                let color = crate::ui::Styles::parse_color(&rule.color);
-                let mut style = ratatui::style::Style::default().fg(color);
+                let mut style = ratatui::style::Style::default();
+                if let Some(color) = crate::ui::Styles::parse_color(&rule.color) {
+                    style = style.fg(color);
+                }
                 for modifier in &rule.modifiers {
                     match modifier.to_lowercase().as_str() {
                         "bold" => style = style.add_modifier(ratatui::style::Modifier::BOLD),

@@ -103,9 +103,9 @@ impl AgentTreeWidget {
         };
 
         let border_color = if !state.is_input_focused() {
-            Color::Cyan
+            state.styles.border_focused.fg.unwrap_or(Color::Cyan)
         } else {
-            Color::Gray
+            state.styles.border.fg.unwrap_or(Color::Gray)
         };
 
         let block = Block::default()
@@ -144,13 +144,10 @@ impl AgentTreeWidget {
 
         let header_template = &state.config.pane_tree.header_template;
 
-        let selected_bg_raw = &state.config.current_item_bg_color;
-        let selected_bg = if selected_bg_raw.to_lowercase() == "none" {
-            None
-        } else {
-            Some(Styles::parse_color(selected_bg_raw))
-        };
+        let header_fg = state.styles.header.fg.unwrap_or(Color::Cyan);
+        let header_bg = state.styles.header.bg;
 
+        let selected_bg = state.styles.selected.bg;
         let multi_select_bg = state
             .config
             .multi_selection_bg_color
@@ -159,16 +156,9 @@ impl AgentTreeWidget {
                 if c.to_lowercase() == "none" {
                     None
                 } else {
-                    Some(Styles::parse_color(c))
+                    Styles::parse_color(c)
                 }
             });
-        let header_fg = Styles::parse_color(&state.config.pane_tree.session_header_fg_color);
-        let header_bg = state
-            .config
-            .pane_tree
-            .session_header_bg_color
-            .as_ref()
-            .map(|c| Styles::parse_color(c));
 
         let mut color_cache: HashMap<String, Color> = HashMap::new();
         let _selection_mode = state.config.selection_mode.as_str();
@@ -222,17 +212,19 @@ impl AgentTreeWidget {
 
                     // 1. Base background from agent config
                     if let Some(bg_color) = &agent.background_color {
-                        item_style = item_style.bg(Styles::parse_color(bg_color));
+                        if let Some(c) = Styles::parse_color(bg_color) {
+                            item_style = item_style.bg(c);
+                        }
                     }
 
                     // 2. Apply selection background if configured
                     if is_cursor {
-                        if let Some(bg) = selected_bg {
-                            item_style = item_style.bg(bg);
+                        if let Some(bg_color) = selected_bg {
+                            item_style = item_style.bg(bg_color);
                         }
                     } else if is_selected {
-                        if let Some(bg) = multi_select_bg {
-                            item_style = item_style.bg(bg);
+                        if let Some(bg_color) = multi_select_bg {
+                            item_style = item_style.bg(bg_color);
                         }
                     }
 
@@ -384,28 +376,15 @@ fn render_parsed_template<'a, 'b>(
         .config
         .selection_bar_fg_color
         .as_ref()
-        .map(|c| Styles::parse_color(c))
-        .unwrap_or_else(|| {
-            let bg = &ctx.state.config.current_item_bg_color;
-            if bg.to_lowercase() == "none" {
-                Color::Yellow // Fallback if bg is none
-            } else {
-                Styles::parse_color(bg)
-            }
-        });
+        .and_then(|c| Styles::parse_color(c))
+        .unwrap_or_else(|| ctx.state.styles.selected.bg.unwrap_or(Color::Yellow));
 
     let bar_bg = ctx
         .state
         .config
         .selection_bar_bg_color
         .as_ref()
-        .and_then(|c| {
-            if c.to_lowercase() == "none" {
-                None
-            } else {
-                Some(Styles::parse_color(c))
-            }
-        });
+        .and_then(|c| Styles::parse_color(c));
 
     let mut bar_style = Style::default().fg(bar_fg);
     if let Some(bg) = bar_bg {
@@ -496,7 +475,7 @@ fn render_parsed_template<'a, 'b>(
 
     // Auto-append status details (approval/questions) if not explicitly handled
     if agent.status.needs_attention() {
-        let mut detail_lines = render_status_details(agent, ctx.available_width);
+        let mut detail_lines = render_status_details(agent, ctx);
         // Apply selection bar to detail lines too
         if ctx.is_cursor && selection_mode == "bar" {
             for line in &mut detail_lines {
@@ -535,15 +514,9 @@ fn render_placeholder<'a, 'b>(
     ctx: &mut AgentRenderCtx<'a, 'b>,
 ) -> Span<'a> {
     match name {
-        "session" => Span::styled(ctx.session.to_string(), Style::default().fg(Color::Cyan)),
-        "window_id" => Span::styled(
-            ctx.window_id.to_string(),
-            Style::default().fg(Color::DarkGray),
-        ),
-        "window_name" => Span::styled(
-            ctx.window_name.to_string(),
-            Style::default().fg(Color::White),
-        ),
+        "session" => Span::styled(ctx.session.to_string(), ctx.state.styles.header),
+        "window_id" => Span::styled(ctx.window_id.to_string(), ctx.state.styles.dimmed),
+        "window_name" => Span::styled(ctx.window_name.to_string(), ctx.state.styles.normal),
         "selection" => {
             let selection_mode = ctx.state.config.selection_mode.as_str();
             let selection_char = &ctx.state.config.selection_char;
@@ -562,42 +535,34 @@ fn render_placeholder<'a, 'b>(
             // (it's now rendered for every line), so we just show status icons/padding
             if selection_mode == "bar" {
                 let bar_text = if ctx.is_selected { "☑" } else { " " };
-                return Span::styled(bar_text, Style::default().fg(Color::Cyan));
+                return Span::styled(bar_text, ctx.state.styles.header);
             }
 
             if ctx.is_cursor {
-                Span::styled(
-                    text,
-                    Style::default()
-                        .fg(Color::Rgb(0, 100, 200))
-                        .add_modifier(Modifier::BOLD),
-                )
+                Span::styled(text, ctx.state.styles.highlight)
             } else if ctx.is_selected {
-                Span::styled(text, Style::default().fg(Color::Cyan))
+                Span::styled(text, ctx.state.styles.header)
             } else {
-                Span::styled(text, Style::default().fg(Color::White))
+                Span::styled(text, ctx.state.styles.normal)
             }
         }
         "status_char" => match &agent.status {
-            AgentStatus::Idle { .. } => Span::styled(
-                &ctx.state.config.indicators.idle,
-                Style::default().fg(Color::Green),
-            ),
-            AgentStatus::Processing { .. } => Span::styled(
-                ctx.state.spinner_frame(),
-                Style::default().fg(Color::Yellow),
-            ),
+            AgentStatus::Idle { .. } => {
+                Span::styled(&ctx.state.config.indicators.idle, ctx.state.styles.idle)
+            }
+            AgentStatus::Processing { .. } => {
+                Span::styled(ctx.state.spinner_frame(), ctx.state.styles.processing)
+            }
             AgentStatus::AwaitingApproval { .. } => Span::styled(
                 &ctx.state.config.indicators.approval,
-                Style::default().fg(Color::Red).add_modifier(Modifier::BOLD),
+                ctx.state.styles.awaiting_approval,
             ),
-            AgentStatus::Error { .. } => Span::styled(
-                &ctx.state.config.indicators.error,
-                Style::default().fg(Color::Red),
-            ),
+            AgentStatus::Error { .. } => {
+                Span::styled(&ctx.state.config.indicators.error, ctx.state.styles.error)
+            }
             AgentStatus::Unknown => Span::styled(
                 &ctx.state.config.indicators.unknown,
-                Style::default().fg(Color::DarkGray),
+                ctx.state.styles.unknown,
             ),
         },
         "name" => {
@@ -607,43 +572,48 @@ fn render_placeholder<'a, 'b>(
                 .unwrap_or(&ctx.state.config.agent_name_color);
 
             let color = if let Some(c) = ctx.color_cache.get(color_name) {
-                *c
+                Some(*c)
             } else {
                 let c = Styles::parse_color(color_name);
-                ctx.color_cache.insert(color_name.to_string(), c);
+                if let Some(c_val) = c {
+                    ctx.color_cache.insert(color_name.to_string(), c_val);
+                }
                 c
             };
 
-            Span::styled(&agent.name, Style::default().fg(color))
+            if let Some(c) = color {
+                Span::styled(&agent.name, Style::default().fg(c))
+            } else {
+                Span::raw(&agent.name)
+            }
         }
-        "pid" => Span::styled(agent.pid.to_string(), Style::default().fg(Color::DarkGray)),
-        "uptime" => Span::styled(agent.uptime_str(), Style::default().fg(Color::DarkGray)),
-        "path" => Span::styled(agent.abbreviated_path(), Style::default().fg(Color::Cyan)),
+        "pid" => Span::styled(agent.pid.to_string(), ctx.state.styles.dimmed),
+        "uptime" => Span::styled(agent.uptime_str(), ctx.state.styles.dimmed),
+        "path" => Span::styled(agent.abbreviated_path(), ctx.state.styles.header),
         "status_text" => {
             let (text, style) = match &agent.status {
-                AgentStatus::Idle { label } => (
-                    label.as_deref().unwrap_or("Idle"),
-                    Style::default().fg(Color::Green),
-                ),
-                AgentStatus::Processing { .. } => ("Working", Style::default().fg(Color::Yellow)),
-                AgentStatus::AwaitingApproval { .. } => {
-                    ("Waiting", Style::default().fg(Color::Red))
+                AgentStatus::Idle { label } => {
+                    (label.as_deref().unwrap_or("Idle"), ctx.state.styles.idle)
                 }
-                AgentStatus::Error { .. } => ("Error", Style::default().fg(Color::Red)),
-                AgentStatus::Unknown => ("Unknown", Style::default().fg(Color::DarkGray)),
+                AgentStatus::Processing { .. } => ("Working", ctx.state.styles.processing),
+                AgentStatus::AwaitingApproval { .. } => {
+                    ("Waiting", ctx.state.styles.awaiting_approval)
+                }
+                AgentStatus::Error { .. } => ("Error", ctx.state.styles.error),
+                AgentStatus::Unknown => ("Unknown", ctx.state.styles.unknown),
             };
             Span::styled(text, style)
         }
         "context" => {
-            if let Some(ctx) = agent.context_remaining {
-                let bar_color = if ctx > 50 {
-                    Color::Green
-                } else if ctx > 20 {
-                    Color::Yellow
+            if let Some(percent) = agent.context_remaining {
+                let bar_color = if percent > 50 {
+                    ctx.state.styles.idle.fg.unwrap_or(Color::Green)
+                } else if percent > 20 {
+                    ctx.state.styles.processing.fg.unwrap_or(Color::Yellow)
                 } else {
-                    Color::Red
+                    ctx.state.styles.error.fg.unwrap_or(Color::Red)
                 };
-                Span::styled(context_bar(ctx), Style::default().fg(bar_color))
+                Span::styled(context_bar(percent), Style::default().fg(bar_color))
             } else {
                 Span::raw("")
             }
@@ -661,18 +631,18 @@ fn render_subagents<'a>(
     let mut lines = Vec::new();
     for subagent in &agent.subagents {
         let (sub_char, sub_style) = match subagent.status {
-            SubagentStatus::Running => (state.spinner_frame(), Style::default().fg(Color::Cyan)),
+            SubagentStatus::Running => (state.spinner_frame(), state.styles.subagent_running),
             SubagentStatus::Completed => (
                 state.config.indicators.subagent_completed.as_str(),
-                Style::default().fg(Color::Green),
+                state.styles.subagent_completed,
             ),
             SubagentStatus::Failed => (
                 state.config.indicators.subagent_failed.as_str(),
-                Style::default().fg(Color::Red),
+                state.styles.subagent_failed,
             ),
             SubagentStatus::Unknown => (
                 state.config.indicators.unknown.as_str(),
-                Style::default().fg(Color::DarkGray),
+                state.styles.unknown,
             ),
         };
 
@@ -688,11 +658,9 @@ fn render_subagents<'a>(
             Span::raw(" "),
             Span::styled(
                 subagent.subagent_type.display_name(),
-                Style::default()
-                    .fg(Color::White)
-                    .add_modifier(Modifier::BOLD),
+                state.styles.normal.add_modifier(Modifier::BOLD),
             ),
-            Span::styled(duration, Style::default().fg(Color::Yellow)),
+            Span::styled(duration, state.styles.highlight),
         ]);
         lines.push(line);
 
@@ -702,7 +670,7 @@ fn render_subagents<'a>(
                 Span::raw("     "), // Indent
                 Span::styled(
                     truncate_str(&subagent.description, width.saturating_sub(10)),
-                    Style::default().fg(Color::DarkGray),
+                    state.styles.dimmed,
                 ),
             ]));
         }
@@ -710,7 +678,11 @@ fn render_subagents<'a>(
     lines
 }
 
-fn render_status_details<'a>(agent: &'a MonitoredAgent, width: usize) -> Vec<Line<'a>> {
+fn render_status_details<'a>(
+    agent: &'a MonitoredAgent,
+    ctx: &mut AgentRenderCtx<'a, '_>,
+) -> Vec<Line<'a>> {
+    let width = ctx.available_width;
     let mut lines = Vec::new();
     match &agent.status {
         AgentStatus::AwaitingApproval {
@@ -719,10 +691,10 @@ fn render_status_details<'a>(agent: &'a MonitoredAgent, width: usize) -> Vec<Lin
         } => {
             lines.push(Line::from(vec![
                 Span::raw("   "),
-                Span::styled("⚠ ", Style::default().fg(Color::Red)),
+                Span::styled("⚠ ", ctx.state.styles.awaiting_approval),
                 Span::styled(
                     format!("{}", approval_type),
-                    Style::default().fg(Color::Red).add_modifier(Modifier::BOLD),
+                    ctx.state.styles.awaiting_approval,
                 ),
             ]));
 
@@ -731,7 +703,7 @@ fn render_status_details<'a>(agent: &'a MonitoredAgent, width: usize) -> Vec<Lin
                     Span::raw("      "),
                     Span::styled(
                         truncate_str(details, width.saturating_sub(10)),
-                        Style::default().fg(Color::White),
+                        ctx.state.styles.normal,
                     ),
                 ]));
             }
@@ -740,10 +712,10 @@ fn render_status_details<'a>(agent: &'a MonitoredAgent, width: usize) -> Vec<Lin
                 for (i, choice) in choices.iter().take(4).enumerate() {
                     lines.push(Line::from(vec![
                         Span::raw("      "),
-                        Span::styled(format!("{}. ", i + 1), Style::default().fg(Color::Yellow)),
+                        Span::styled(format!("{}. ", i + 1), ctx.state.styles.highlight),
                         Span::styled(
                             truncate_str(choice, width.saturating_sub(14)),
-                            Style::default().fg(Color::White),
+                            ctx.state.styles.normal,
                         ),
                     ]));
                 }
@@ -752,7 +724,7 @@ fn render_status_details<'a>(agent: &'a MonitoredAgent, width: usize) -> Vec<Lin
                         Span::raw("      "),
                         Span::styled(
                             format!("...+{} more", choices.len() - 4),
-                            Style::default().fg(Color::DarkGray),
+                            ctx.state.styles.dimmed,
                         ),
                     ]));
                 }
@@ -761,7 +733,7 @@ fn render_status_details<'a>(agent: &'a MonitoredAgent, width: usize) -> Vec<Lin
         AgentStatus::Processing { activity } if !activity.is_empty() => {
             lines.push(Line::from(vec![
                 Span::raw("   "),
-                Span::styled(activity, Style::default().fg(Color::Yellow)),
+                Span::styled(activity, ctx.state.styles.processing),
             ]));
         }
         AgentStatus::Error { message } => {
@@ -769,9 +741,9 @@ fn render_status_details<'a>(agent: &'a MonitoredAgent, width: usize) -> Vec<Lin
                 Span::raw("   "),
                 Span::styled(
                     "Error: ",
-                    Style::default().fg(Color::Red).add_modifier(Modifier::BOLD),
+                    ctx.state.styles.error.add_modifier(Modifier::BOLD),
                 ),
-                Span::styled(message, Style::default().fg(Color::Red)),
+                Span::styled(message, ctx.state.styles.error),
             ]));
         }
         _ => {}

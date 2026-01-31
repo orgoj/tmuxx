@@ -24,6 +24,15 @@ todo_files = ["TODO.md", "NOTES.md", "README.md", "TASKS.md"]
 # Placeholders: {title}, {message}, {agent}, {session}, {target}, {path}, {approval_type}, {count}
 notification_command = "notify-send \"{title}\" \"{message}\" -u normal -i terminal"
 
+# Theme configuration
+[theme]
+# Colors can be names (red, green, blue, etc.), hex (#RRGGBB) or "none"
+# idle = "green"
+# processing = "yellow"
+# approval = "red"
+# header = "cyan"
+# selected_bg = "blue"
+
 # Key bindings configuration
 [key_bindings]
 

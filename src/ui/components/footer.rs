@@ -1,6 +1,5 @@
 use ratatui::{
     layout::Rect,
-    style::{Color, Style},
     text::{Line, Span},
     widgets::Paragraph,
     Frame,
@@ -13,28 +12,28 @@ pub struct FooterWidget;
 
 impl FooterWidget {
     pub fn render(frame: &mut Frame, area: Rect, state: &AppState, _config: &Config) {
-        let sep = Style::default().fg(Color::DarkGray);
+        let sep = state.styles.dimmed;
         let mut spans = Vec::new();
 
         if !state.selected_agents.is_empty() {
             spans.push(Span::styled(
                 format!("({} selected)", state.selected_agents.len()),
-                Style::default().fg(Color::Cyan),
+                state.styles.header,
             ));
             spans.push(Span::styled(" ", sep));
         }
 
         if let Some(msg) = &state.last_message {
-            let color = match msg.kind {
-                crate::app::MessageKind::Info => Color::Green,
-                crate::app::MessageKind::Success => Color::Green,
-                crate::app::MessageKind::Error => Color::Red,
-                crate::app::MessageKind::Welcome => Color::Gray,
+            let style = match msg.kind {
+                crate::app::MessageKind::Info => state.styles.idle,
+                crate::app::MessageKind::Success => state.styles.idle,
+                crate::app::MessageKind::Error => state.styles.error,
+                crate::app::MessageKind::Welcome => state.styles.normal,
             };
 
             spans.push(Span::styled(
                 truncate_error(&msg.text, area.width as usize - 2),
-                Style::default().fg(color),
+                style,
             ));
         }
 

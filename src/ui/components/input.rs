@@ -27,9 +27,9 @@ impl InputWidget {
         let title = format!(" Input → {} ", target_name);
 
         let border_color = if is_focused {
-            Color::Green
+            state.styles.idle.fg.unwrap_or(Color::Green)
         } else {
-            Color::DarkGray
+            state.styles.dimmed.fg.unwrap_or(Color::DarkGray)
         };
 
         let block = Block::default()
@@ -39,7 +39,7 @@ impl InputWidget {
             .border_style(Style::default().fg(border_color));
 
         // Build content with cursor (only show cursor when focused)
-        let lines: Vec<Line> = Self::build_lines_with_cursor(buffer, cursor_pos, is_focused);
+        let lines: Vec<Line> = Self::build_lines_with_cursor(buffer, cursor_pos, is_focused, state);
 
         let paragraph = Paragraph::new(lines)
             .block(block)
@@ -58,10 +58,11 @@ impl InputWidget {
         buffer: &str,
         cursor_pos: usize,
         is_focused: bool,
+        state: &AppState,
     ) -> Vec<Line<'static>> {
-        let cursor_style = Style::default().fg(Color::Black).bg(Color::Green);
-        let text_style = Style::default().fg(Color::White);
-        let hint_style = Style::default().fg(Color::DarkGray);
+        let cursor_style = state.styles.selected;
+        let text_style = state.styles.normal;
+        let hint_style = state.styles.dimmed;
 
         if buffer.is_empty() {
             if is_focused {

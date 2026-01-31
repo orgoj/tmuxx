@@ -64,7 +64,7 @@ impl PanePreviewWidget {
                 .title(format!(" {} ", agent.name))
                 .borders(Borders::ALL)
                 .border_type(BorderType::Rounded)
-                .border_style(Style::default().fg(Color::Gray));
+                .border_style(state.styles.border);
 
             let inner_area = outer_block.inner(area);
             frame.render_widget(outer_block, area);
@@ -95,37 +95,30 @@ impl PanePreviewWidget {
                 if let Some(todo) = &state.current_todo {
                     todo_lines.push(Line::from(vec![Span::styled(
                         &state.config.messages.label_todo,
-                        Style::default()
-                            .fg(Color::Gray)
-                            .add_modifier(Modifier::BOLD),
+                        state.styles.dimmed.add_modifier(Modifier::BOLD),
                     )]));
                     for line in todo.lines() {
-                        todo_lines.push(Line::from(vec![Span::styled(
-                            line,
-                            Style::default().fg(Color::White),
-                        )]));
+                        todo_lines.push(Line::from(vec![Span::styled(line, state.styles.normal)]));
                     }
                 } else {
                     todo_lines.push(Line::from(vec![Span::styled(
                         "No Project TODO",
-                        Style::default().fg(Color::DarkGray),
+                        state.styles.dimmed,
                     )]));
                 }
             } else if !summary.tasks.is_empty() {
                 todo_lines.push(Line::from(vec![Span::styled(
                     &state.config.messages.label_tasks,
-                    Style::default()
-                        .fg(Color::Gray)
-                        .add_modifier(Modifier::BOLD),
+                    state.styles.dimmed.add_modifier(Modifier::BOLD),
                 )]));
                 for (completed, text) in &summary.tasks {
                     let (icon, style) = if *completed {
                         (
                             state.config.indicators.subagent_completed.as_str(),
-                            Style::default().fg(Color::DarkGray),
+                            state.styles.dimmed,
                         )
                     } else {
-                        ("☐ ", Style::default().fg(Color::White))
+                        ("☐ ", state.styles.normal)
                     };
                     todo_lines.push(Line::from(vec![
                         Span::styled(format!(" {}", icon), style),
@@ -135,7 +128,7 @@ impl PanePreviewWidget {
             } else {
                 todo_lines.push(Line::from(vec![Span::styled(
                     "No Tasks",
-                    Style::default().fg(Color::DarkGray),
+                    state.styles.dimmed,
                 )]));
             }
 
@@ -150,12 +143,10 @@ impl PanePreviewWidget {
                 // Current activity
                 if let Some(activity) = &summary.current_activity {
                     activity_lines.push(Line::from(vec![
-                        Span::styled("▶ ", Style::default().fg(Color::Yellow)),
+                        Span::styled("▶ ", state.styles.processing),
                         Span::styled(
                             activity.clone(),
-                            Style::default()
-                                .fg(Color::Yellow)
-                                .add_modifier(Modifier::BOLD),
+                            state.styles.processing.add_modifier(Modifier::BOLD),
                         ),
                     ]));
                     activity_lines.push(Line::from(""));
@@ -165,43 +156,42 @@ impl PanePreviewWidget {
                 if !summary.tools.is_empty() {
                     activity_lines.push(Line::from(vec![Span::styled(
                         &state.config.messages.label_tools,
-                        Style::default()
-                            .fg(Color::Gray)
-                            .add_modifier(Modifier::BOLD),
+                        state.styles.dimmed.add_modifier(Modifier::BOLD),
                     )]));
                     for tool in &summary.tools {
                         activity_lines.push(Line::from(vec![
-                            Span::styled(" ⏺ ", Style::default().fg(Color::Cyan)),
-                            Span::styled(tool.clone(), Style::default().fg(Color::White)),
+                            Span::styled(" ⏺ ", state.styles.header),
+                            Span::styled(tool.clone(), state.styles.normal),
                         ]));
                     }
                 }
 
                 // If no activity info, show status
                 if activity_lines.is_empty() {
-                    let status_text = match &agent.status {
-                        AgentStatus::Idle { label } => {
-                            label.as_deref().unwrap_or("Ready for input")
+                    let (status_text, status_style) = match &agent.status {
+                        AgentStatus::Idle { label } => (
+                            label.as_deref().unwrap_or("Ready for input"),
+                            state.styles.idle,
+                        ),
+                        AgentStatus::Processing { activity } => {
+                            (activity.as_str(), state.styles.processing)
                         }
-                        AgentStatus::Processing { activity } => activity.as_str(),
                         AgentStatus::AwaitingApproval { approval_type, .. } => {
                             activity_lines.push(Line::from(vec![
-                                Span::styled("⚠ ", Style::default().fg(Color::Red)),
+                                Span::styled("⚠ ", state.styles.awaiting_approval),
                                 Span::styled(
                                     format!("Waiting: {}", approval_type),
-                                    Style::default().fg(Color::Red).add_modifier(Modifier::BOLD),
+                                    state.styles.awaiting_approval,
                                 ),
                             ]));
-                            ""
+                            ("", state.styles.normal)
                         }
-                        AgentStatus::Error { message } => message.as_str(),
-                        AgentStatus::Unknown => "...",
+                        AgentStatus::Error { message } => (message.as_str(), state.styles.error),
+                        AgentStatus::Unknown => ("...", state.styles.unknown),
                     };
                     if !status_text.is_empty() && activity_lines.is_empty() {
-                        activity_lines.push(Line::from(vec![Span::styled(
-                            status_text,
-                            Style::default().fg(Color::Gray),
-                        )]));
+                        activity_lines
+                            .push(Line::from(vec![Span::styled(status_text, status_style)]));
                     }
                 }
 
@@ -218,7 +208,7 @@ impl PanePreviewWidget {
 
             let paragraph = Paragraph::new(vec![Line::from(vec![Span::styled(
                 "No agent selected",
-                Style::default().fg(Color::DarkGray),
+                state.styles.dimmed,
             )])])
             .block(block);
 
@@ -278,11 +268,11 @@ impl PanePreviewWidget {
             .title(title)
             .borders(Borders::ALL)
             .border_type(BorderType::Rounded)
-            .border_style(Style::default().fg(Color::Gray));
+            .border_style(state.styles.border);
 
         let paragraph = Paragraph::new(content)
             .block(block)
-            .style(Style::default().fg(Color::White));
+            .style(state.styles.normal);
 
         frame.render_widget(paragraph, area);
     }
@@ -332,28 +322,22 @@ impl PanePreviewWidget {
                 } else {
                     let spans = if display_line.starts_with('+') && !display_line.starts_with("+++")
                     {
-                        vec![Span::styled(
-                            display_line,
-                            Style::default().fg(Color::Green),
-                        )]
+                        vec![Span::styled(display_line, state.styles.idle)]
                     } else if display_line.starts_with('-') && !display_line.starts_with("---") {
-                        vec![Span::styled(display_line, Style::default().fg(Color::Red))]
+                        vec![Span::styled(display_line, state.styles.error)]
                     } else if display_line.starts_with("@@") {
-                        vec![Span::styled(display_line, Style::default().fg(Color::Cyan))]
+                        vec![Span::styled(display_line, state.styles.header)]
                     } else if display_line.contains("[y/n]") || display_line.contains("[Y/n]") {
-                        vec![Span::styled(
-                            display_line,
-                            Style::default().fg(Color::Yellow),
-                        )]
+                        vec![Span::styled(display_line, state.styles.processing)]
                     } else if display_line.contains("⚠")
                         || display_line.contains("Error")
                         || display_line.contains("error")
                     {
-                        vec![Span::styled(display_line, Style::default().fg(Color::Red))]
+                        vec![Span::styled(display_line, state.styles.error)]
                     } else if display_line.starts_with("❯") || display_line.starts_with(">") {
-                        vec![Span::styled(display_line, Style::default().fg(Color::Cyan))]
+                        vec![Span::styled(display_line, state.styles.header)]
                     } else {
-                        vec![Span::raw(display_line)]
+                        vec![Span::styled(display_line, state.styles.normal)]
                     };
                     styled_lines.push(Line::from(spans));
                 }
@@ -365,7 +349,7 @@ impl PanePreviewWidget {
                 " Preview ".to_string(),
                 vec![Line::from(vec![Span::styled(
                     "No agent selected",
-                    Style::default().fg(Color::DarkGray),
+                    state.styles.dimmed,
                 )])],
             )
         };
@@ -374,7 +358,7 @@ impl PanePreviewWidget {
             .title(title)
             .borders(Borders::ALL)
             .border_type(BorderType::Rounded)
-            .border_style(Style::default().fg(Color::Gray));
+            .border_style(state.styles.border);
 
         // Never wrap - lines are truncated, each source line = 1 visual line
         // This ensures "last N lines" shows exactly the last N visual lines

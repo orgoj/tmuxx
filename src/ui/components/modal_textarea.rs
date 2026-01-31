@@ -1,6 +1,6 @@
 use ratatui::{
     layout::{Constraint, Direction, Layout, Rect},
-    style::{Color, Modifier, Style},
+    style::{Color, Style},
     text::{Line, Span},
     widgets::{
         Block, BorderType, Borders, Clear, Paragraph, Scrollbar, ScrollbarOrientation,
@@ -9,6 +9,8 @@ use ratatui::{
     Frame,
 };
 use tui_textarea::{Input, Key, TextArea};
+
+use crate::ui::Styles;
 
 /// State for modal textarea dialog
 #[derive(Debug, Clone)]
@@ -26,6 +28,7 @@ impl ModalTextareaState {
         initial: String,
         single_line: bool,
         readonly: bool,
+        styles: &Styles,
     ) -> Self {
         let mut textarea = if initial.is_empty() {
             TextArea::default()
@@ -33,14 +36,15 @@ impl ModalTextareaState {
             TextArea::new(initial.lines().map(|s| s.to_string()).collect::<Vec<_>>())
         };
 
-        // Background color - light gray for both readonly and editable (200 on 0-255 scale)
-        let bg_color = Color::Rgb(200, 200, 200);
+        // Background color
+        let bg_color = styles.selected.bg.unwrap_or(Color::Rgb(200, 200, 200));
+        let fg_color = styles.selected.fg.unwrap_or(Color::Black);
 
         // Configure styling with background
-        textarea.set_style(Style::default().fg(Color::White).bg(bg_color));
-        textarea.set_cursor_style(Style::default().bg(Color::Black).fg(Color::White));
+        textarea.set_style(Style::default().fg(fg_color).bg(bg_color));
+        textarea.set_cursor_style(styles.normal.bg(fg_color).fg(bg_color));
         textarea.set_cursor_line_style(Style::default()); // Disable underline on cursor line
-        textarea.set_placeholder_style(Style::default().fg(Color::DarkGray).bg(bg_color));
+        textarea.set_placeholder_style(styles.dimmed.bg(bg_color));
         textarea.set_placeholder_text(&prompt);
 
         Self {
@@ -112,7 +116,7 @@ impl ModalTextareaState {
 pub struct ModalTextareaWidget;
 
 impl ModalTextareaWidget {
-    pub fn render(frame: &mut Frame, area: Rect, state: &ModalTextareaState) {
+    pub fn render(frame: &mut Frame, area: Rect, state: &ModalTextareaState, styles: &Styles) {
         // Check minimum terminal size
         if area.width < 40 || area.height < 10 {
             return;
@@ -129,11 +133,7 @@ impl ModalTextareaWidget {
             .borders(Borders::ALL)
             .border_type(BorderType::Rounded)
             .title(state.title.as_str())
-            .title_style(
-                Style::default()
-                    .fg(Color::Cyan)
-                    .add_modifier(Modifier::BOLD),
-            );
+            .title_style(styles.header);
         let inner = block.inner(popup_area);
         frame.render_widget(block, popup_area);
 
@@ -168,14 +168,14 @@ impl ModalTextareaWidget {
         // Render hints on ONE LINE
         let hints = if state.readonly {
             Line::from(vec![
-                Span::styled("[Esc]", Style::default().fg(Color::Yellow)),
+                Span::styled("[Esc]", styles.footer_key),
                 Span::raw(" Close  "),
-                Span::styled("[↑/↓]", Style::default().fg(Color::Yellow)),
+                Span::styled("[↑/↓]", styles.footer_key),
                 Span::raw(" Scroll"),
             ])
         } else {
             Line::from(vec![
-                Span::styled("[Enter]", Style::default().fg(Color::Yellow)),
+                Span::styled("[Enter]", styles.footer_key),
                 Span::raw(if state.is_single_line {
                     " Submit  "
                 } else {
@@ -188,16 +188,16 @@ impl ModalTextareaWidget {
                     } else {
                         ""
                     },
-                    Style::default().fg(Color::Yellow),
+                    styles.footer_key,
                 ),
                 Span::raw(if !state.is_single_line {
                     " Submit  "
                 } else {
                     ""
                 }),
-                Span::styled("[Esc]", Style::default().fg(Color::Yellow)),
+                Span::styled("[Esc]", styles.footer_key),
                 Span::raw(" Cancel  "),
-                Span::styled("[Ctrl+U/R]", Style::default().fg(Color::Yellow)),
+                Span::styled("[Ctrl+U/R]", styles.footer_key),
                 Span::raw(" Undo/Redo"),
             ])
         };

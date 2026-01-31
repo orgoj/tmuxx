@@ -66,6 +66,8 @@ pub enum KeyAction {
     ToggleFilterSelected,
     /// Reload application configuration
     ReloadConfig,
+    /// Switch to next color theme
+    NextTheme,
 }
 
 /// Configuration for command execution

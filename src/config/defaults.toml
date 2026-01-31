@@ -26,10 +26,71 @@ sidebar_width = 60
 capture_buffer_size = 16384
 
 # Notification settings (disabled by default - no command configured)
-# Uncomment and set your notification command to enable:
 # notification_command = "notify-send -u critical 'tmuxx' '{message}'"
 notification_delay_ms = 60000
 notification_mode = "first"
+
+theme = "default"
+
+[themes.default]
+idle = "green"
+processing = "yellow"
+approval = "red"
+error = "red"
+unknown = "darkgray"
+header = "cyan"
+selected_fg = "black"
+selected_bg = "cyan"
+normal = "white"
+dimmed = "darkgray"
+highlight = "yellow"
+border = "gray"
+border_focused = "cyan"
+subagent_running = "cyan"
+subagent_completed = "green"
+subagent_failed = "red"
+footer_key = "yellow"
+footer_text = "white"
+
+[themes.nord]
+idle = "#A3BE8C"
+processing = "#EBCB8B"
+approval = "#BF616A"
+error = "#BF616A"
+unknown = "#4C566A"
+header = "#88C0D0"
+selected_fg = "#2E3440"
+selected_bg = "#88C0D0"
+normal = "#D8DEE9"
+dimmed = "#4C566A"
+highlight = "#EBCB8B"
+border = "#4C566A"
+border_focused = "#88C0D0"
+subagent_running = "#81A1C1"
+subagent_completed = "#A3BE8C"
+subagent_failed = "#BF616A"
+footer_key = "#EBCB8B"
+footer_text = "#D8DEE9"
+
+[themes.monochrome]
+idle = "white"
+processing = "white"
+approval = "white"
+error = "white"
+unknown = "gray"
+header = "white"
+selected_fg = "black"
+selected_bg = "white"
+normal = "white"
+dimmed = "gray"
+highlight = "white"
+border = "gray"
+border_focused = "white"
+subagent_running = "white"
+subagent_completed = "white"
+subagent_failed = "white"
+footer_key = "white"
+footer_text = "white"
 
 [indicators]
 idle = "●"
@@ -500,4 +561,5 @@ full_template = '''  {selection}{status_char} {name}
 "x" = "toggle_filter_active"
 "S" = "toggle_subagent_log"
 "X" = "kill_session"
+"C-t" = "next_theme"
 "C-r" = "reload_config"

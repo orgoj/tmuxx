@@ -115,6 +115,7 @@ All bindings are configurable in `config.toml`. Defaults:
 | **Filters** | | |
 | `s` | Filter Selected | Show only selected agents |
 | `x` | Filter Active | Show only active (non-idle) agents |
+| `C-t` | Next Theme | Cycle through available color themes |
 | `S` | Subagents | Toggle subagent log view |
 
 ---
@@ -162,6 +163,30 @@ background_color = "#e0e0e0"
 | `selection_bar_bg_color` | `"yellow"` | Background color of the selection bar |
 | `current_item_bg_color` | `"none"` | Background color of the selected row (set to `"none"` for transparency) |
 | `agent_name_color` | `"#000000"` | Default color for agent names in the tree |
+
+### Color Themes
+
+`tmuxx` supports named color themes and global overrides. Toggle themes at runtime with `Ctrl+t`.
+
+| Option | Default | Description |
+|--------|---------|-------------|
+| `theme` | `"default"` | Name of the active theme |
+| `[themes.<name>]` | - | Define a new named theme with specific colors |
+| `[theme_override]` | - | Global overrides applied to all themes |
+
+**Example custom theme and override:**
+
+```toml
+theme = "my-blue"
+
+[themes.my-blue]
+header = "blue"
+idle = "cyan"
+selected_bg = "none"
+
+[theme_override]
+border_focused = "magenta" # Applied regardless of selected theme
+```
 
 ### Process Indicators
 
