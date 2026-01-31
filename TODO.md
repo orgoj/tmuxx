@@ -1,5 +1,7 @@
 # TODO - Tmuxx
 
+- definice agent ssh a musi ukazovat jmeno serveru na ktery je pripojen
+
 ## 🔮 Nápady a Roadmap (Ideas)
 
 ### AI Integrace
