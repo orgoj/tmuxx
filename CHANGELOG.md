@@ -5,6 +5,15 @@ All notable changes to **Tmuxx** (formerly tmuxcc) will be documented in this fi
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.4.7] - 2026-01-31
+
+### Added
+- **Configurable Selection Indicator**: Replaced full-row background selection with a highly configurable sidebar-style indicator.
+- **Bar Selection Mode**: New `selection_mode = "bar"` allows using a vertical bar/character instead of background highlighting, preserving agent-specific colors.
+- **Custom Selection Symbol**: Added `selection_char` (default ">") and `selection_char_repeat` (repeat on every line of the agent block) options.
+- **Dedicated Selection Colors**: Added `selection_bar_fg_color` and `selection_bar_bg_color` for styling only the selection indicator.
+- **Transparent Selection**: Setting `current_item_bg_color = "none"` now correctly disables row background highlighting in all modes.
+
 ## [0.4.6] - 2026-01-31
 
 ### Added

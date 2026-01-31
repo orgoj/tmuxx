@@ -150,6 +150,19 @@ background_color = "#e0e0e0"
   pattern = "Processing..."
 ```
 
+### Appearance & Selection
+
+| Option | Default | Description |
+|--------|---------|-------------|
+| `selection_mode` | `"bar"` | Selection style: `"background"` (full row) or `"bar"` (sidebar indicator) |
+| `selection_char` | `">"` | Character used for selection in bar mode |
+| `selection_char_repeat` | `true` | If true, repeat selection char on every line of the agent block |
+| `selection_bar_width` | `1` | Width of the selection indicator column |
+| `selection_bar_fg_color` | `"black"` | Foreground color of the selection bar |
+| `selection_bar_bg_color` | `"yellow"` | Background color of the selection bar |
+| `current_item_bg_color` | `"none"` | Background color of the selected row (set to `"none"` for transparency) |
+| `agent_name_color` | `"#000000"` | Default color for agent names in the tree |
+
 ### Process Indicators
 
 Agents running inside containers (Docker, Podman) or SSH sessions can display an icon next to their name.

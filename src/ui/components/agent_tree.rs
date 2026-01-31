@@ -144,12 +144,24 @@ impl AgentTreeWidget {
 
         let header_template = &state.config.pane_tree.header_template;
 
-        let selected_bg = Styles::parse_color(&state.config.current_item_bg_color);
+        let selected_bg_raw = &state.config.current_item_bg_color;
+        let selected_bg = if selected_bg_raw.to_lowercase() == "none" {
+            None
+        } else {
+            Some(Styles::parse_color(selected_bg_raw))
+        };
+
         let multi_select_bg = state
             .config
             .multi_selection_bg_color
             .as_ref()
-            .map(|c| Styles::parse_color(c));
+            .and_then(|c| {
+                if c.to_lowercase() == "none" {
+                    None
+                } else {
+                    Some(Styles::parse_color(c))
+                }
+            });
         let header_fg = Styles::parse_color(&state.config.pane_tree.session_header_fg_color);
         let header_bg = state
             .config
@@ -159,6 +171,7 @@ impl AgentTreeWidget {
             .map(|c| Styles::parse_color(c));
 
         let mut color_cache: HashMap<String, Color> = HashMap::new();
+        let _selection_mode = state.config.selection_mode.as_str();
 
         for (session, windows) in tree.sessions.iter() {
             // Render Session Header (once per session)
@@ -205,18 +218,25 @@ impl AgentTreeWidget {
                     let mut item = ListItem::new(rendered_lines);
 
                     // Apply style to the whole item
-                    if is_cursor {
-                        item = item.style(Style::default().bg(selected_bg));
-                    } else if is_selected {
-                        if let Some(bg) = multi_select_bg {
-                            item = item.style(Style::default().bg(bg));
-                        } else if let Some(bg_color) = &agent.background_color {
-                            item = item.style(Style::default().bg(Styles::parse_color(bg_color)));
-                        }
-                    } else if let Some(bg_color) = &agent.background_color {
-                        item = item.style(Style::default().bg(Styles::parse_color(bg_color)));
+                    let mut item_style = Style::default();
+
+                    // 1. Base background from agent config
+                    if let Some(bg_color) = &agent.background_color {
+                        item_style = item_style.bg(Styles::parse_color(bg_color));
                     }
 
+                    // 2. Apply selection background if configured
+                    if is_cursor {
+                        if let Some(bg) = selected_bg {
+                            item_style = item_style.bg(bg);
+                        }
+                    } else if is_selected {
+                        if let Some(bg) = multi_select_bg {
+                            item_style = item_style.bg(bg);
+                        }
+                    }
+
+                    item = item.style(item_style);
                     items.push(item);
                 }
             }
@@ -282,18 +302,17 @@ impl AgentTreeWidget {
 
             for ((window_num, window_name), window_agents) in windows.iter() {
                 for (original_idx, agent) in window_agents.iter() {
+                    // Calculate height by rendering (fast enough for click handling)
                     let mut ctx = AgentRenderCtx {
                         state,
                         session,
                         window_id: *window_num,
                         window_name,
                         available_width: width,
-                        is_cursor: false,
+                        is_cursor: false, // height same regardless
                         is_selected: false,
                         color_cache: &mut color_cache,
                     };
-
-                    // Calculate height by rendering (fast enough for click handling)
                     let height = render_parsed_template(&parsed_template, agent, &mut ctx).len();
 
                     // Check if row matches this agent item block
@@ -320,6 +339,9 @@ fn parse_template(template: &str) -> Vec<Vec<TemplatePart>> {
         .lines()
         .map(|line| {
             let mut parts = Vec::new();
+            // In bar mode, we want the bar at the very beginning of EVERY line
+            // We'll handle this during rendering.
+
             let mut last_end = 0;
             while let Some(start) = line[last_end..].find('{') {
                 let abs_start = last_end + start;
@@ -351,22 +373,114 @@ fn render_parsed_template<'a, 'b>(
     ctx: &mut AgentRenderCtx<'a, 'b>,
 ) -> Vec<Line<'a>> {
     let mut lines = Vec::with_capacity(parsed_lines.len());
+    let selection_mode = ctx.state.config.selection_mode.as_str();
+    let selection_char = &ctx.state.config.selection_char;
+    let selection_repeat = ctx.state.config.selection_char_repeat;
+    let bar_width = ctx.state.config.selection_bar_width as usize;
 
-    for line_parts in parsed_lines {
+    // Determine bar colors
+    let bar_fg = ctx
+        .state
+        .config
+        .selection_bar_fg_color
+        .as_ref()
+        .map(|c| Styles::parse_color(c))
+        .unwrap_or_else(|| {
+            let bg = &ctx.state.config.current_item_bg_color;
+            if bg.to_lowercase() == "none" {
+                Color::Yellow // Fallback if bg is none
+            } else {
+                Styles::parse_color(bg)
+            }
+        });
+
+    let bar_bg = ctx
+        .state
+        .config
+        .selection_bar_bg_color
+        .as_ref()
+        .and_then(|c| {
+            if c.to_lowercase() == "none" {
+                None
+            } else {
+                Some(Styles::parse_color(c))
+            }
+        });
+
+    let mut bar_style = Style::default().fg(bar_fg);
+    if let Some(bg) = bar_bg {
+        bar_style = bar_style.bg(bg);
+    }
+
+    for (line_idx, line_parts) in parsed_lines.iter().enumerate() {
         // Special case: {subagents} placeholder expands to multiple lines
         if line_parts.len() == 1 {
             if let TemplatePart::Placeholder(p) = &line_parts[0] {
                 if p == "subagents" {
-                    lines.extend(render_subagents(agent, ctx.state, ctx.available_width));
+                    let mut sub_lines = render_subagents(agent, ctx.state, ctx.available_width);
+                    // Apply selection bar to subagent lines too
+                    if ctx.is_cursor && selection_mode == "bar" && selection_repeat {
+                        for line in &mut sub_lines {
+                            // Prepend bar
+                            let mut new_spans =
+                                vec![Span::styled(selection_char.repeat(bar_width), bar_style)];
+
+                            // Trim leading spaces from the first span of the sub-line
+                            if let Some(first_span) = line.spans.first_mut() {
+                                let mut text = first_span.content.to_string();
+                                let mut removed = 0;
+                                while removed < bar_width && text.starts_with(' ') {
+                                    text.remove(0);
+                                    removed += 1;
+                                }
+                                *first_span = Span::styled(text, first_span.style);
+                            }
+
+                            new_spans.extend(line.spans.clone());
+                            line.spans = new_spans;
+                        }
+                    } else if ctx.is_cursor && selection_mode == "bar" && !selection_repeat {
+                        // Just add padding if not repeating
+                        for line in &mut sub_lines {
+                            let mut new_spans = vec![Span::raw(" ".repeat(bar_width))];
+                            new_spans.extend(line.spans.clone());
+                            line.spans = new_spans;
+                        }
+                    }
+                    lines.extend(sub_lines);
                     continue;
                 }
             }
         }
 
-        let mut spans = Vec::with_capacity(line_parts.len());
-        for part in line_parts {
+        let mut spans = Vec::with_capacity(line_parts.len() + 1);
+
+        // Add vertical selection bar at the start if in bar mode
+        if ctx.is_cursor && selection_mode == "bar" {
+            if line_idx == 0 || selection_repeat {
+                spans.push(Span::styled(selection_char.repeat(bar_width), bar_style));
+            } else {
+                // If not repeating, we still need to add padding to keep alignment
+                spans.push(Span::raw(" ".repeat(bar_width)));
+            }
+        }
+
+        for (i, part) in line_parts.iter().enumerate() {
             match part {
-                TemplatePart::Text(t) => spans.push(Span::raw(t.clone())),
+                TemplatePart::Text(t) => {
+                    let mut text = t.clone();
+                    // If we added a bar, we might want to trim leading spaces from the first text part
+                    // to keep the layout consistent with non-bar mode or non-selected state.
+                    if i == 0 && ctx.is_cursor && selection_mode == "bar" {
+                        let spaces_to_remove = bar_width;
+                        let mut removed = 0;
+                        while removed < spaces_to_remove && text.starts_with(' ') {
+                            text.remove(0);
+                            removed += 1;
+                        }
+                    }
+                    spans.push(Span::raw(text));
+                }
                 TemplatePart::Placeholder(name) => {
                     spans.push(render_placeholder(name, agent, ctx));
                     if name == "name" {
@@ -382,7 +496,34 @@ fn render_parsed_template<'a, 'b>(
 
     // Auto-append status details (approval/questions) if not explicitly handled
     if agent.status.needs_attention() {
-        lines.extend(render_status_details(agent, ctx.available_width));
+        let mut detail_lines = render_status_details(agent, ctx.available_width);
+        // Apply selection bar to detail lines too
+        if ctx.is_cursor && selection_mode == "bar" {
+            for line in &mut detail_lines {
+                // Prepend bar or spaces
+                let span = if selection_repeat {
+                    Span::styled(selection_char.repeat(bar_width), bar_style)
+                } else {
+                    Span::raw(" ".repeat(bar_width))
+                };
+                let mut new_spans = vec![span];
+
+                // Trim leading spaces from the first span
+                if let Some(first_span) = line.spans.first_mut() {
+                    let mut text = first_span.content.to_string();
+                    let mut removed = 0;
+                    while removed < bar_width && text.starts_with(' ') {
+                        text.remove(0);
+                        removed += 1;
+                    }
+                    *first_span = Span::styled(text, first_span.style);
+                }
+
+                new_spans.extend(line.spans.clone());
+                line.spans = new_spans;
+            }
+        }
+        lines.extend(detail_lines);
     }
 
     lines
@@ -404,15 +545,26 @@ fn render_placeholder<'a, 'b>(
             Style::default().fg(Color::White),
         ),
         "selection" => {
+            let selection_mode = ctx.state.config.selection_mode.as_str();
+            let selection_char = &ctx.state.config.selection_char;
+
             let text = if ctx.is_selected && ctx.is_cursor {
-                "▶☑"
+                format!("{}☑", selection_char)
             } else if ctx.is_selected {
-                " ☑"
+                " ☑".to_string()
             } else if ctx.is_cursor {
-                "▶ "
+                format!("{} ", selection_char)
             } else {
-                "  "
+                "  ".to_string()
             };
+
+            // In bar mode, we don't need the selection placeholder to render the bar
+            // (it's now rendered for every line), so we just show status icons/padding
+            if selection_mode == "bar" {
+                let bar_text = if ctx.is_selected { "☑" } else { " " };
+                return Span::styled(bar_text, Style::default().fg(Color::Cyan));
+            }
+
             if ctx.is_cursor {
                 Span::styled(
                     text,

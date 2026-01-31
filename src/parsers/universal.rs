@@ -341,13 +341,13 @@ impl AgentParser for UniversalParser {
             let mut hostname = "unknown";
             for i in 1..parts.len() {
                 if !parts[i].starts_with('-') {
-                    // Skip options with arguments if possible? 
+                    // Skip options with arguments if possible?
                     // For now, simple is better.
-                    if let Some(prev) = parts.get(i-1) {
-                         // Common options that take an argument
-                         if matches!(*prev, "-p" | "-i" | "-l" | "-F" | "-E" | "-S" | "-c" | "-o") {
-                             continue;
-                         }
+                    if let Some(prev) = parts.get(i - 1) {
+                        // Common options that take an argument
+                        if matches!(*prev, "-p" | "-i" | "-l" | "-F" | "-E" | "-S" | "-c" | "-o") {
+                            continue;
+                        }
                     }
                     hostname = parts[i];
                     // Strip user@ if present

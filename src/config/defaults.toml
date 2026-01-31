@@ -9,13 +9,19 @@ debug_mode = false
 truncate_long_lines = true
 popup_trigger_key = "/"
 ignore_self = true
+selection_mode = "bar"
+selection_char = "#"
+selection_char_repeat = true
+selection_bar_width = 1
+selection_bar_fg_color = "yellow"
+selection_bar_bg_color = "black"
 log_actions = true
 hide_bottom_input = true
 terminal_wrapper = ""
 
 todo_full_width = true
 agent_name_color = "#000000"
-current_item_bg_color = "#cacaca"
+current_item_bg_color = "none"
 sidebar_width = 60
 capture_buffer_size = 16384
 
@@ -87,7 +93,7 @@ priority = 100
   # ==========================================================================
   # 1. Structural Split: Find the prompt area (─── line) from bottom.
   # 2. Working: Spinner on FIRST line of LAST block in body has top priority.
-  # 3. Approval: TUI menus (Esc to cancel) or Yes/No prompts (❯ 1. Yes) 
+  # 3. Approval: TUI menus (Esc to cancel) or Yes/No prompts (❯ 1. Yes)
   #    are detected in both body and prompt groups.
   # 4. Idle: Default state if no refinements match after splitting.
   # ==========================================================================

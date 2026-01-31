@@ -206,10 +206,16 @@ impl MenuTreeWidget {
             })
             .collect();
 
+        let highlight_bg = if app_config.current_item_bg_color.to_lowercase() == "none" {
+            Color::Cyan
+        } else {
+            parse_color(&app_config.current_item_bg_color)
+        };
+
         let list = List::new(list_items)
             .highlight_style(
                 Style::default()
-                    .bg(parse_color(&app_config.current_item_bg_color))
+                    .bg(highlight_bg)
                     .fg(Color::Black)
                     .add_modifier(Modifier::BOLD),
             )

@@ -104,6 +104,28 @@ pub struct Config {
     #[serde(default)]
     pub multi_selection_bg_color: Option<String>,
 
+    /// Selection indicator mode: "background" (default), "bar", "none"
+    #[serde(default = "default_selection_mode")]
+    pub selection_mode: String,
+
+    /// Character to use for selection in "bar" mode (default: "█")
+    #[serde(default = "default_selection_char")]
+    pub selection_char: String,
+
+    /// Whether the selection char should repeat for every line of the agent (default: true)
+    #[serde(default = "default_true")]
+    pub selection_char_repeat: bool,
+
+    /// Width of the selection bar if mode is "bar" (default: 2)
+    #[serde(default = "default_selection_bar_width")]
+    pub selection_bar_width: u16,
+
+    /// Foreground color of the selection bar (optional, defaults to current_item_bg_color)
+    pub selection_bar_fg_color: Option<String>,
+
+    /// Background color of the selection bar (optional)
+    pub selection_bar_bg_color: Option<String>,
+
     /// Whether to display TODO from a file instead of parsing pane output
     #[serde(default)]
     pub todo_from_file: bool,
@@ -334,6 +356,18 @@ fn default_notification_delay() -> u64 {
     60000
 }
 
+fn default_selection_mode() -> String {
+    "bar".to_string()
+}
+
+fn default_selection_char() -> String {
+    ">".to_string()
+}
+
+fn default_selection_bar_width() -> u16 {
+    1
+}
+
 #[derive(Deserialize, Default)]
 #[serde(default)]
 struct PartialConfig {
@@ -354,6 +388,12 @@ struct PartialConfig {
     agent_name_color: Option<String>,
     current_item_bg_color: Option<String>,
     multi_selection_bg_color: Option<String>,
+    selection_mode: Option<String>,
+    selection_char: Option<String>,
+    selection_char_repeat: Option<bool>,
+    selection_bar_width: Option<u16>,
+    selection_bar_fg_color: Option<String>,
+    selection_bar_bg_color: Option<String>,
     todo_from_file: Option<bool>,
     todo_files: Option<Vec<String>>,
     sidebar_width: Option<SidebarWidth>,
@@ -418,6 +458,24 @@ impl PartialConfig {
         }
         if let Some(v) = self.multi_selection_bg_color {
             config.multi_selection_bg_color = Some(v);
+        }
+        if let Some(v) = self.selection_mode {
+            config.selection_mode = v;
+        }
+        if let Some(v) = self.selection_char {
+            config.selection_char = v;
+        }
+        if let Some(v) = self.selection_char_repeat {
+            config.selection_char_repeat = v;
+        }
+        if let Some(v) = self.selection_bar_width {
+            config.selection_bar_width = v;
+        }
+        if let Some(v) = self.selection_bar_fg_color {
+            config.selection_bar_fg_color = Some(v);
+        }
+        if let Some(v) = self.selection_bar_bg_color {
+            config.selection_bar_bg_color = Some(v);
         }
         if let Some(v) = self.todo_from_file {
             config.todo_from_file = v;
