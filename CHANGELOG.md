@@ -5,6 +5,13 @@ All notable changes to **Tmuxx** (formerly tmuxcc) will be documented in this fi
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.4.6] - 2026-01-31
+
+### Added
+- **Dynamic SSH Agent**: Added specialized SSH agent that automatically extracts and displays the remote hostname (e.g., "SSH: cislo5") using new `name_template` support.
+- **Regex Capture in Status**: Enhanced `state_rules` to support named regex capture groups in status strings (e.g., `status = "{host}"` with `(?P<host>...)` pattern).
+- **Dynamic Agent Names**: Added `name_template` field to agent definitions, allowing agent names in the tree to be dynamically generated from pane metadata (title, cmdline, etc.).
+
 ## [0.4.5] - 2026-01-29
 
 ### Added

@@ -323,6 +323,46 @@ impl AgentParser for UniversalParser {
         &self.config.name
     }
 
+    fn agent_display_name(&self, pane: &crate::tmux::PaneInfo) -> String {
+        let mut name = self
+            .config
+            .name_template
+            .clone()
+            .unwrap_or_else(|| self.config.name.clone());
+        name = name.replace("{name}", &self.config.name);
+        name = name.replace("{id}", &self.config.id);
+        name = name.replace("{title}", &pane.title);
+        name = name.replace("{cmdline}", &pane.cmdline);
+
+        // Specialized SSH hostname extraction from cmdline
+        if name.contains("{hostname}") && (self.config.id == "ssh" || self.config.name == "SSH") {
+            // Very simple extraction: look for the first arg after 'ssh' that doesn't start with '-'
+            let parts: Vec<&str> = pane.cmdline.split_whitespace().collect();
+            let mut hostname = "unknown";
+            for i in 1..parts.len() {
+                if !parts[i].starts_with('-') {
+                    // Skip options with arguments if possible? 
+                    // For now, simple is better.
+                    if let Some(prev) = parts.get(i-1) {
+                         // Common options that take an argument
+                         if matches!(*prev, "-p" | "-i" | "-l" | "-F" | "-E" | "-S" | "-c" | "-o") {
+                             continue;
+                         }
+                    }
+                    hostname = parts[i];
+                    // Strip user@ if present
+                    if let Some(h) = hostname.split('@').last() {
+                        hostname = h;
+                    }
+                    break;
+                }
+            }
+            name = name.replace("{hostname}", hostname);
+        }
+
+        name
+    }
+
     fn agent_id(&self) -> &str {
         &self.config.id
     }
@@ -461,8 +501,15 @@ impl AgentParser for UniversalParser {
                     MatchLocation::Anywhere => target_text,
                 };
 
-                if refinement.re.is_match(match_text) {
-                    status_str = refinement.status.clone();
+                if let Some(caps) = refinement.re.captures(match_text) {
+                    let mut current_status = refinement.status.clone();
+                    for name in refinement.re.capture_names().flatten() {
+                        if let Some(m) = caps.name(name) {
+                            current_status =
+                                current_status.replace(&format!("{{{}}}", name), m.as_str());
+                        }
+                    }
+                    status_str = current_status;
                     if refinement.kind.is_some() {
                         status_kind = refinement.kind.clone();
                     }
@@ -751,5 +798,68 @@ impl AgentParser for UniversalParser {
 
     fn is_ai(&self) -> bool {
         self.config.is_ai
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::app::config::{AgentConfig, AgentKeys};
+    use crate::tmux::PaneInfo;
+
+    #[test]
+    fn test_agent_display_name() {
+        let config = AgentConfig {
+            id: "ssh".to_string(),
+            name: "SSH".to_string(),
+            name_template: Some("SSH: {hostname}".to_string()),
+            color: None,
+            background_color: None,
+            priority: 0,
+            matchers: Vec::new(),
+            state_rules: Vec::new(),
+            title_indicators: None,
+            default_status: None,
+            default_type: None,
+            is_ai: false,
+            subagent_rules: None,
+            layout: None,
+            process_indicators: Vec::new(),
+            summary_rules: None,
+            highlight_rules: Vec::new(),
+            keys: AgentKeys::default(),
+        };
+
+        let parser = UniversalParser::new(config, 1024);
+        let pane = PaneInfo {
+            session: "test".to_string(),
+            window: 0,
+            window_name: "test".to_string(),
+            pane: 0,
+            command: "ssh".to_string(),
+            title: "cislo5".to_string(),
+            path: "/tmp".to_string(),
+            pid: 123,
+            cmdline: "ssh -p 22 user@cislo5".to_string(),
+            child_commands: Vec::new(),
+            ancestor_commands: Vec::new(),
+        };
+
+        assert_eq!(parser.agent_display_name(&pane), "SSH: cislo5");
+
+        let pane2 = PaneInfo {
+            session: "test".to_string(),
+            window: 0,
+            window_name: "test".to_string(),
+            pane: 0,
+            command: "ssh".to_string(),
+            title: "cislo5".to_string(),
+            path: "/tmp".to_string(),
+            pid: 123,
+            cmdline: "ssh s8".to_string(),
+            child_commands: Vec::new(),
+            ancestor_commands: Vec::new(),
+        };
+        assert_eq!(parser.agent_display_name(&pane2), "SSH: s8");
     }
 }

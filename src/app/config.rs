@@ -565,6 +565,11 @@ pub struct AgentConfig {
     /// Display Name
     pub name: String,
 
+    /// Template for dynamic agent name.
+    /// Placeholders: {name}, {cmdline}, {title}, {id}, {hostname}
+    #[serde(default)]
+    pub name_template: Option<String>,
+
     /// Agent color theme (e.g. "magenta", "blue", "green")
     #[serde(default)]
     pub color: Option<String>,

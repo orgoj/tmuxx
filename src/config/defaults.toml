@@ -188,6 +188,33 @@ priority = 100
   input = ["{input}", "Enter"]
 
 [[agents]]
+id = "ssh"
+name = "SSH"
+name_template = "SSH: {hostname}"
+is_ai = false
+background_color = "#e6f3ff"
+priority = 20
+  [[agents.matchers]]
+  type = "command"
+  pattern = "(?i)^ssh$"
+
+  [[agents.matchers]]
+  type = "ancestor"
+  pattern = "(?i)^ssh$"
+
+  [[agents.state_rules]]
+  status = "connected"
+  type = "idle"
+  pattern = '''(?m)^.*@(?P<host>[a-zA-Z0-9.-]+)[:\s].*[$#%❯]\s*$'''
+
+  [[agents.state_rules.refinements]]
+  group = "body"
+  location = "last_line"
+  pattern = '''(?m)^.*@(?P<host>[a-zA-Z0-9.-]+)[:\s].*[$#%❯]\s*$'''
+  status = "{host}"
+  type = "idle"
+
+[[agents]]
 id = "pi-powerline"
 name = "Pi (Powerline)"
 background_color = "#eef2ff"

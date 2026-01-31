@@ -36,6 +36,11 @@ pub trait AgentParser: Send + Sync {
     /// Returns the name of the agent
     fn agent_name(&self) -> &str;
 
+    /// Returns the display name of the agent, potentially dynamic based on pane info
+    fn agent_display_name(&self, _pane: &PaneInfo) -> String {
+        self.agent_name().to_string()
+    }
+
     /// Returns the ID of the agent (from config)
     fn agent_id(&self) -> &str;
 
