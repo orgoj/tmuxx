@@ -78,6 +78,8 @@ pub struct CommandConfig {
     pub terminal: bool,
     #[serde(default)]
     pub external_terminal: bool,
+    #[serde(default)]
+    pub active_in_tmux: bool,
 }
 
 /// Holds all key binding configuration
@@ -228,6 +230,7 @@ mod tests {
                 blocking: false,
                 terminal: false,
                 external_terminal: false,
+                active_in_tmux: false,
             }),
         );
         bindings.insert(
@@ -237,6 +240,7 @@ mod tests {
                 blocking: true,
                 terminal: false,
                 external_terminal: false,
+                active_in_tmux: true,
             }),
         );
 
@@ -257,11 +261,13 @@ mod tests {
                 blocking,
                 terminal,
                 external_terminal,
+                active_in_tmux,
             })) => {
                 assert_eq!(command, "zede ${SESSION_DIR}");
                 assert!(!blocking);
                 assert!(!terminal);
                 assert!(!external_terminal);
+                assert!(!active_in_tmux);
             }
             _ => panic!("Expected ExecuteCommand action"),
         }
@@ -271,11 +277,13 @@ mod tests {
                 blocking,
                 terminal,
                 external_terminal,
+                active_in_tmux,
             })) => {
                 assert_eq!(command, "wezterm cli attach ${SESSION_NAME}");
                 assert!(blocking);
                 assert!(!terminal);
                 assert!(!external_terminal);
+                assert!(active_in_tmux);
             }
             _ => panic!("Expected ExecuteCommand action"),
         }

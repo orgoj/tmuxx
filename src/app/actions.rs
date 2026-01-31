@@ -117,6 +117,7 @@ pub enum Action {
         blocking: bool,
         terminal: bool,
         external_terminal: bool,
+        active_in_tmux: bool,
     },
     /// Show modal textarea dialog
     ShowModalTextarea {

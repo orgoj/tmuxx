@@ -240,19 +240,53 @@ fn parse_key_action(value: &str) -> Result<KeyAction> {
             Ok(KeyAction::Navigate(nav))
         }
         s if s.starts_with("command:") => {
-            // Format: command:CMD or command:CMD:blocking
+            // Format: command:CMD[:blocking][:terminal][:external][:active]
             let cmd_part = s.strip_prefix("command:").unwrap();
-            let (command, blocking) = if let Some((cmd, "blocking")) = cmd_part.rsplit_once(':') {
-                (cmd.to_string(), true)
+            let parts: Vec<&str> = cmd_part.split(':').collect();
+
+            if parts.len() > 1 {
+                // Last parts might be flags
+                let mut blocking = false;
+                let mut terminal = false;
+                let mut external_terminal = false;
+                let mut active_in_tmux = false;
+
+                // Everything except known flags at the end is part of the command
+                // This is still a bit ambiguous if command contains colons
+                // So we work backwards from the end
+                let mut i = parts.len() - 1;
+                let mut flags_found = true;
+                while i > 0 && flags_found {
+                    match parts[i] {
+                        "blocking" => blocking = true,
+                        "terminal" => terminal = true,
+                        "external" => external_terminal = true,
+                        "active" => active_in_tmux = true,
+                        _ => {
+                            flags_found = false;
+                            continue;
+                        }
+                    }
+                    i -= 1;
+                }
+
+                let command = parts[0..=i].join(":");
+                Ok(KeyAction::ExecuteCommand(CommandConfig {
+                    command,
+                    blocking,
+                    terminal,
+                    external_terminal,
+                    active_in_tmux,
+                }))
             } else {
-                (cmd_part.to_string(), false)
-            };
-            Ok(KeyAction::ExecuteCommand(CommandConfig {
-                command,
-                blocking,
-                terminal: false, // Default to false for overrides for now, or would need to parse
-                external_terminal: false,
-            }))
+                Ok(KeyAction::ExecuteCommand(CommandConfig {
+                    command: cmd_part.to_string(),
+                    blocking: false,
+                    terminal: false,
+                    external_terminal: false,
+                    active_in_tmux: false,
+                }))
+            }
         }
         _ => Err(anyhow!(
             "Invalid key action: '{}'. Valid formats: approve, reject, approve_all, rename_session, refresh, send_number:N, send_keys:KEYS, kill_app:METHOD, navigate:ACTION, command:CMD[:blocking]",
@@ -450,6 +484,7 @@ mod tests {
                     command,
                     blocking,
                     terminal,
+                    active_in_tmux,
                     ..
                 }),
             ) => {
@@ -457,6 +492,7 @@ mod tests {
                 assert_eq!(command, "echo test");
                 assert!(!blocking);
                 assert!(!terminal);
+                assert!(!active_in_tmux);
             }
             _ => panic!("Expected ExecuteCommand action"),
         }
@@ -470,6 +506,7 @@ mod tests {
                     command,
                     blocking,
                     terminal,
+                    active_in_tmux,
                     ..
                 }),
             ) => {
@@ -477,8 +514,31 @@ mod tests {
                 assert_eq!(command, "ls -la");
                 assert!(blocking);
                 assert!(!terminal);
+                assert!(!active_in_tmux);
             }
             _ => panic!("Expected ExecuteCommand action with blocking=true"),
+        }
+
+        // Test command with multiple flags
+        let override_val =
+            ConfigOverride::parse("kb.t", "command:wezterm:terminal:active").unwrap();
+        match override_val {
+            ConfigOverride::KeyBinding(
+                _,
+                KeyAction::ExecuteCommand(CommandConfig {
+                    command,
+                    blocking,
+                    terminal,
+                    active_in_tmux,
+                    ..
+                }),
+            ) => {
+                assert_eq!(command, "wezterm");
+                assert!(!blocking);
+                assert!(terminal);
+                assert!(active_in_tmux);
+            }
+            _ => panic!("Expected ExecuteCommand action with flags"),
         }
 
         // Test command with colons in the command itself

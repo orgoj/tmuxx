@@ -191,6 +191,7 @@ Define your own hierarchical menu (`m` key):
     [[menu.items.items]]
     name = "Status"
     # Execute a command in the agent's directory
+    # Flags: blocking, terminal, external_terminal, active_in_tmux
     execute_command = { command = "git status", blocking = true }
 ```
 
@@ -274,13 +275,15 @@ You can define custom keybindings to execute external commands using variables l
 **Example 1: Open a new terminal window attached to the selected agent**
 Instead of relying on `f` (switch-client), you can spawn a new terminal window (e.g., WezTerm, Alacritty, Ghostty) attached directly to the agent's pane.
 
+Use `active_in_tmux = true` to ensure the correct window is active when you attach.
+
 ```toml
 [key_bindings]
 # Press 't' to open WezTerm attached to the agent's specific pane
-"t" = { execute_command = { command = "wezterm start -- tmux attach -t ${PANE_TARGET}" } }
+"t" = { execute_command = { command = "wezterm start -- tmux attach -t ${PANE_TARGET}", active_in_tmux = true } }
 
 # Press 'Alt+t' to open Alacritty attached to the session
-"M-t" = { execute_command = { command = "alacritty -e tmux attach -t ${SESSION_NAME}" } }
+"M-t" = { execute_command = { command = "alacritty -e tmux attach -t ${SESSION_NAME}", active_in_tmux = true } }
 ```
 
 **Example 2: Open VS Code or Editor in Agent's Directory**

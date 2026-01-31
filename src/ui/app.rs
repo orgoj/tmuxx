@@ -485,17 +485,11 @@ async fn run_loop(
                                          if let Some(execute_command) = cmd {
                                               state.toggle_menu();
 
-                                              // Expand variables
-                                              let expanded = if let Some(agent) = state.selected_agent() {
-                                                  expand_command_variables(&execute_command.command, agent)
+                                              // Get context from selected agent before any state mutations
+                                              let (target, path, expanded) = if let Some(agent) = state.selected_agent() {
+                                                  (Some(agent.target.clone()), agent.path.clone(), expand_command_variables(&execute_command.command, agent))
                                               } else {
-                                                  execute_command.command.clone()
-                                              };
-
-                                              let path = if let Some(agent) = state.selected_agent() {
-                                                  agent.path.clone()
-                                              } else {
-                                                  String::new()
+                                                  (None, String::new(), execute_command.command.clone())
                                               };
 
                                               let action = Action::ExecuteCommand {
@@ -503,8 +497,17 @@ async fn run_loop(
                                                   blocking: execute_command.blocking,
                                                   terminal: execute_command.terminal,
                                                   external_terminal: execute_command.external_terminal,
+                                                  active_in_tmux: execute_command.active_in_tmux,
                                               };
                                               state.log_action(&action);
+
+                                              if execute_command.active_in_tmux {
+                                                  if let Some(t) = target {
+                                                      if let Err(e) = tmux_client.select_window(&t) {
+                                                          state.set_error(format!("Failed to select window: {}", e));
+                                                      }
+                                                  }
+                                              }
 
                                               if execute_command.external_terminal {
                                                    if let Some(wrapper) = &state.config.terminal_wrapper {
@@ -1008,10 +1011,21 @@ async fn run_loop(
                                     blocking,
                                     terminal: is_terminal,
                                     external_terminal,
+                                    active_in_tmux,
                                 } => {
-                                    if let Some(agent) = state.selected_agent() {
-                                        let expanded = expand_command_variables(&command, agent);
-                                        let path = agent.path.clone();
+                                    let (target, path, expanded) = if let Some(agent) = state.selected_agent() {
+                                        (Some(agent.target.clone()), agent.path.clone(), expand_command_variables(&command, agent))
+                                    } else {
+                                        (None, String::new(), String::new())
+                                    };
+
+                                    if let Some(target) = target {
+                                        // Ensure the agent's window is active in tmux if requested
+                                        if active_in_tmux {
+                                            if let Err(e) = tmux_client.select_window(&target) {
+                                                state.set_error(format!("Failed to select window: {}", e));
+                                            }
+                                        }
 
                                         // Case 1: External Terminal (wrapper)
                                         if external_terminal {
@@ -1603,11 +1617,13 @@ fn map_key_to_action(
                     blocking,
                     terminal,
                     external_terminal,
+                    active_in_tmux,
                 }) => Action::ExecuteCommand {
                     command: command.clone(),
                     blocking: *blocking,
                     terminal: *terminal,
                     external_terminal: *external_terminal,
+                    active_in_tmux: *active_in_tmux,
                 },
                 KeyAction::ToggleMenu => Action::ToggleMenu,
                 KeyAction::TogglePrompts => Action::TogglePrompts,

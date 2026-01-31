@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- **Command flag `active_in_tmux`**: New optional parameter for `ExecuteCommand` (in TOML as `active_in_tmux = true`, in CLI as `:active`).
+- **Automatic Window Activation**: When a command with `active_in_tmux` is executed, `tmuxx` automatically switches the active window in the target tmux session to the one containing the selected agent.
+- **Improved CLI Overrides**: Enhanced `command:` syntax in CLI overrides (`--set`) to support multiple flags: `:blocking`, `:terminal`, `:external`, and `:active`.
+
+
 ## [0.4.7] - 2026-01-31
 
 ### Added
