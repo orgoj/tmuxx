@@ -226,6 +226,8 @@ pub struct ThemeConfig {
     pub footer_key: String,
     #[serde(default = "default_footer_text_color")]
     pub footer_text: String,
+    #[serde(default = "default_bg_color")]
+    pub bg: String,
 }
 
 fn default_idle_color() -> String {
@@ -282,6 +284,9 @@ fn default_footer_key_color() -> String {
 fn default_footer_text_color() -> String {
     "white".to_string()
 }
+fn default_bg_color() -> String {
+    "none".to_string()
+}
 
 impl Default for ThemeConfig {
     fn default() -> Self {
@@ -304,6 +309,7 @@ impl Default for ThemeConfig {
             subagent_failed: default_subagent_failed_color(),
             footer_key: default_footer_key_color(),
             footer_text: default_footer_text_color(),
+            bg: default_bg_color(),
         }
     }
 }
@@ -569,6 +575,7 @@ struct PartialThemeConfig {
     subagent_failed: Option<String>,
     footer_key: Option<String>,
     footer_text: Option<String>,
+    bg: Option<String>,
 }
 
 impl PartialThemeConfig {
@@ -626,6 +633,9 @@ impl PartialThemeConfig {
         }
         if let Some(v) = self.footer_text {
             theme.footer_text = v;
+        }
+        if let Some(v) = self.bg {
+            theme.bg = v;
         }
     }
 }

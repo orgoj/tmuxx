@@ -127,6 +127,16 @@ async fn run_loop(
             // Draw UI
             terminal.draw(|frame| {
                 let size = frame.area();
+
+                // 1. Fill background if set in theme
+                if state.styles.bg != ratatui::style::Color::Reset {
+                    frame.render_widget(
+                        ratatui::widgets::Block::default()
+                            .style(ratatui::style::Style::default().bg(state.styles.bg)),
+                        size,
+                    );
+                }
+
                 let main_chunks = Layout::main_layout(size);
 
                 // Header

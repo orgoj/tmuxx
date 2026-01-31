@@ -21,6 +21,7 @@ pub struct Styles {
     pub subagent_failed: Style,
     pub footer_key: Style,
     pub footer_text: Style,
+    pub bg: Color,
 }
 
 impl Styles {
@@ -43,6 +44,7 @@ impl Styles {
             subagent_failed: Style::default(),
             footer_key: Style::default(),
             footer_text: Style::default(),
+            bg: Color::Reset,
         };
 
         if let Some(c) = Self::parse_color(&theme.idle) {
@@ -105,6 +107,9 @@ impl Styles {
         }
         if let Some(c) = Self::parse_color(&theme.footer_text) {
             styles.footer_text = styles.footer_text.fg(c);
+        }
+        if let Some(c) = Self::parse_color(&theme.bg) {
+            styles.bg = c;
         }
 
         styles

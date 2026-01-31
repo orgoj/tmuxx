@@ -7,11 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.5.0] - 2026-01-31
+
 ### Added
 - **Named Color Themes**: Full support for multiple color themes. Toggle between them instantly using `Ctrl+t`.
-- **Predefined Themes**: Added `nord` and `monochrome` themes in addition to the `default` theme.
+- **Predefined Themes**: Added `nord`, `monochrome`, and neon `cyberpunk` themes in addition to the `default` theme.
 - **Theme Overrides**: New `[theme_override]` section in `config.toml` allows global overriding of specific colors across all themes.
 - **Configurable UI Elements**: Extended theme support to all UI elements including borders, headers, scrollbars, and syntax highlighting.
+- **Background Color Support**: Themes can now define a global background color (`bg`).
 - **Command flag `active_in_tmux`**: New optional parameter for `ExecuteCommand` (in TOML as `active_in_tmux = true`, in CLI as `:active`).
 - **Automatic Window Activation**: When a command with `active_in_tmux` is executed, `tmuxx` automatically switches the active window in the target tmux session to the one containing the selected agent.
 - **Improved CLI Overrides**: Enhanced `command:` syntax in CLI overrides (`--set`) to support multiple flags: `:blocking`, `:terminal`, `:external`, and `:active`.
