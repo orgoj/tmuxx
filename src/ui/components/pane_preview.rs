@@ -312,32 +312,19 @@ impl PanePreviewWidget {
         let agent = state.selected_visible_agent();
 
         if let Some(agent) = agent {
-            // Split area into PWD line and the rest for the box
-            let chunks = Layout::default()
-                .direction(Direction::Vertical)
-                .constraints([Constraint::Length(1), Constraint::Min(0)])
-                .split(area);
-
-            // Render PWD
-            let pwd_line = Line::from(vec![
-                Span::styled(" PWD: ", state.styles.dimmed),
-                Span::styled(&agent.path, state.styles.normal),
-            ]);
-            frame.render_widget(Paragraph::new(pwd_line), chunks[0]);
-
-            let box_area = chunks[1];
-
             // Calculate available lines (area height minus border)
-            let available_lines = box_area.height.saturating_sub(2) as usize;
+            let available_lines = area.height.saturating_sub(2) as usize;
 
             // Calculate max line width for truncation
             let max_line_width = state
                 .config
                 .max_line_width
                 .map(|w| w as usize)
-                .unwrap_or_else(|| box_area.width.saturating_sub(2) as usize);
+                .unwrap_or_else(|| area.width.saturating_sub(2) as usize);
 
             let title = format!(" {} ({}) ", agent.target, agent.name);
+            let pwd_title = format!(" PWD: {} ", agent.path);
+
             let mut styled_lines: Vec<Line> = Vec::new();
 
             // Take enough lines to fill the area
@@ -387,13 +374,14 @@ impl PanePreviewWidget {
             }
 
             let block = Block::default()
-                .title(title)
+                .title(ratatui::widgets::block::Title::from(title).alignment(ratatui::layout::Alignment::Left))
+                .title(ratatui::widgets::block::Title::from(pwd_title).alignment(ratatui::layout::Alignment::Right))
                 .borders(Borders::ALL)
                 .border_type(BorderType::Rounded)
                 .border_style(state.styles.border);
 
             let paragraph = Paragraph::new(styled_lines).block(block);
-            frame.render_widget(paragraph, box_area);
+            frame.render_widget(paragraph, area);
         } else {
             let block = Block::default()
                 .title(" Preview ")
