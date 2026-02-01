@@ -2,6 +2,8 @@
 
 ## 🔮 Nápady a Roadmap (Ideas)
 
+- definovatelne barvy podle session name match ? podledni vyhraje
+
 ### AI Integrace
 - **AI-Powered Workflows**: Analýza obrazovky pomocí AI a navrhování akcí
 - **Context-aware Suggestions**: Návrhy příkazů na základě stavu agenta

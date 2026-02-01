@@ -39,5 +39,7 @@ tmux capture-pane -t ct-test -p
 
 #### B. UI Verification
 - Perform visual verification of TUI elements.
+- **Agent Properties**: Verify agent metadata (hostnames, titles) is correctly extracted, especially when agents are running in subshells or across SSH.
+- **State Detection**: Verify that agent state (Idle/Working/AwaitingApproval) matches the buffer content using the simplest (KISS) possible regex.
 - Verify that configuration overrides work as expected.
 - Run `cargo clippy` to ensure no linting regressions.

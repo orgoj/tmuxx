@@ -116,6 +116,9 @@ Claude Code's Task tool spawns subagents (e.g., Explore, Plan agents). Detection
 3. Full cmdline (e.g., "/usr/bin/node /usr/bin/claude")
 4. Child process commands (for agents run in shells)
 
+- **Property Extraction**: Look up and down the process tree (`child_commands`/`ancestor_commands`) to find agent metadata like SSH hostnames.
+- **KISS Matching**: Prefer simple, prompt-based regex for state detection over complex state-specific refinements.
+
 Parsers check ALL detection strings to handle various detection scenarios.
 
 ### Multi-Agent Selection
@@ -137,6 +140,7 @@ Parsers check ALL detection strings to handle various detection scenarios.
 - Uses TOML format (`~/.config/tmuxx/config.toml` on Linux)
 - `Config::load()` merges CLI args > config file > defaults
 - Custom agent patterns can be added via `[[agent_patterns]]` sections
+- **Themes**: Defined in `themes` map; `theme` key is the active selector; `theme_override` allows global tweaks.
 - `--init-config` creates default config, `--show-config-path` shows location
 
 ## Testing Guidelines
@@ -178,6 +182,8 @@ Parsers check ALL detection strings to handle various detection scenarios.
 20. **Async design**: prefer tokio::spawn for I/O and external commands to ensure TUI responsiveness.
 
 ## Development Workflow
+
+- **Verification**: ALWAYS run `./scripts/reload-test.sh` and `cargo build --release` to verify TUI behavior before concluding a task.
 
 ### Skill-First Development
 
