@@ -768,10 +768,7 @@ impl PartialConfig {
 
         if let Some(v) = self.themes {
             for (name, partial_theme) in v {
-                let theme = config
-                    .themes
-                    .entry(name)
-                    .or_insert_with(ThemeConfig::default);
+                let theme = config.themes.entry(name).or_default();
                 partial_theme.apply(theme);
             }
         }

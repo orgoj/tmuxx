@@ -4,6 +4,7 @@ on:
   push:
     tags:
       - 'v*'
+  workflow_dispatch:
 
 env:
   CARGO_TERM_COLOR: always
@@ -29,26 +30,39 @@ jobs:
             artifact: tmuxx
     steps:
       - uses: actions/checkout@v4
-      - uses: dtolnay/rust-toolchain@stable
+      - uses: dtolnay/rust-toolchain@1.93.0
         with:
+          toolchain: 1.93.0
           targets: ${{ matrix.target }}
       - uses: Swatinem/rust-cache@v2
       - name: Build
         run: cargo build --release --target ${{ matrix.target }}
       - name: Package
         run: |
-          cd target/${{ matrix.target }}/release
-          tar czf ../../../tmuxx-${{ github.ref_name }}-${{ matrix.target }}.tar.gz ${{ matrix.artifact }}
+          # Detect the actual binary path
+          BIN_PATH="target/${{ matrix.target }}/release/${{ matrix.artifact }}"
+          if [ ! -f "$BIN_PATH" ]; then
+            # Fallback if target was not used as a subdirectory (sometimes happens for native)
+            BIN_PATH="target/release/${{ matrix.artifact }}"
+          fi
+          
+          # Use tag name or branch name for the archive
+          REF_NAME="${{ github.ref_name }}"
+          # Replace / with - in ref name to avoid path issues
+          REF_NAME_SAFE=$(echo $REF_NAME | sed 's/\//-/g')
+          
+          tar czf "tmuxx-${REF_NAME_SAFE}-${{ matrix.target }}.tar.gz" -C "$(dirname "$BIN_PATH")" "${{ matrix.artifact }}"
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
           name: tmuxx-${{ matrix.target }}
-          path: tmuxx-${{ github.ref_name }}-${{ matrix.target }}.tar.gz
+          path: tmuxx-*.tar.gz
 
   create-release:
     name: Create Release
     needs: build-release
     runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/')
     steps:
       - uses: actions/checkout@v4
       - name: Download artifacts
@@ -57,8 +71,7 @@ jobs:
           path: artifacts
           merge-multiple: true
       - name: Create Release
-        uses: softprops/action-gh-release@v1
+        uses: softprops/action-gh-release@v2
         with:
           files: artifacts/*
           generate_release_notes: true
-

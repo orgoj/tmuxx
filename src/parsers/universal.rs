@@ -378,7 +378,7 @@ impl AgentParser for UniversalParser {
 
                             let mut h = candidate;
                             // Strip user@ if present
-                            if let Some(stripped) = h.split('@').last() {
+                            if let Some(stripped) = h.split('@').next_back() {
                                 h = stripped;
                             }
                             // Strip trailing [mux] or similar if present
