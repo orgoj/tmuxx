@@ -1,0 +1,155 @@
+BASHRC.D: homebrew init
+BASHRC.D: brew completions
+BASHRC.D: mise
+BASHRC.D: GO init
+BASHRC.D: bun
+BASHRC.D: cargo
+BASHRC.D: chezmoi
+BASHRC.D: cass completions
+BASHRC.D: ntm shell integration
+BASHRC.D: direnv init
+BASHRC.D: fzf init
+BASHRC.D: MOP
+BASHRC.D: pipx
+BASHRC.D: pnpm
+BASHRC.D: z+zi command
+BASHRC.D: starship
+
+michael@wdt/mp2/mpaheca 12GiB/31GiB on gcp:
+> ssh mpaheca
+Welcome to Ubuntu 24.04.3 LTS (GNU/Linux 5.15.0-134-generic x86_64)
+
+ * Documentation:  https://help.ubuntu.com
+ * Management:     https://landscape.canonical.com
+ * Support:        https://ubuntu.com/pro
+Last login: Wed Jan 28 09:44:59 2026 from 109.105.48.65
+
+
+--------------------------------------------------------------------------------
+Pro praci s MP virtualem pouzivejte prikaz mp viz: mp help
+Typicka prace na projectu:
+mp workon <projekt>
+mp serve
+otevrit URL: http://<projekt>.mpUSER:4200/
+mp build
+otevrit URL: http://<projekt>.mpUSER:8080/
+--------------------------------------------------------------------------------
+
+
+MP2 docker --.bash_profile
+Logged as heca
+Welcome in mp! --mploader
+Git user: Michael Heca
+2048 SHA256:a54IWa49zMU0fVgnIirRzwqaoEl3XonHVTjxzMZ0/QY heca@wdt.cz (RSA)
+Welcome HECA!
+LOAD: /home/user/.bashrc.d/mise
+Init mise version manager https://mise.jdx.dev/
+2048 SHA256:a54IWa49zMU0fVgnIirRzwqaoEl3XonHVTjxzMZ0/QY heca@wdt.cz (RSA)
+heca@mpaheca:~
+$ s
+[screen is terminating]
+heca@mpaheca:~
+$
+logout
+Shared connection to artur.magnetpro.cz closed.
+
+michael@wdt/mp2/mpaheca 12GiB/31GiB on gcp: took 2m9s
+> ssh mpaheca
+Last login: Sun Feb  1 09:34:05 2026 from 109.105.48.65
+
+
+--------------------------------------------------------------------------------
+Pro praci s MP virtualem pouzivejte prikaz mp viz: mp help
+Typicka prace na projectu:
+mp workon <projekt>
+mp serve
+otevrit URL: http://<projekt>.mpUSER:4200/
+mp build
+otevrit URL: http://<projekt>.mpUSER:8080/
+--------------------------------------------------------------------------------
+
+
+MP2 docker --.bash_profile
+Logged as heca
+Welcome in mp! --mploader
+Git user: Michael Heca
+2048 SHA256:a54IWa49zMU0fVgnIirRzwqaoEl3XonHVTjxzMZ0/QY heca@wdt.cz (RSA)
+Welcome HECA!
+LOAD: /home/user/.bashrc.d/mise
+Init mise version manager https://mise.jdx.dev/
+2048 SHA256:a54IWa49zMU0fVgnIirRzwqaoEl3XonHVTjxzMZ0/QY heca@wdt.cz (RSA)
+heca@mpaheca:~
+$
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

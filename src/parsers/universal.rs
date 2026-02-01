@@ -334,29 +334,85 @@ impl AgentParser for UniversalParser {
         name = name.replace("{title}", &pane.title);
         name = name.replace("{cmdline}", &pane.cmdline);
 
-        // Specialized SSH hostname extraction from cmdline
+        // Specialized SSH hostname extraction from cmdline or child processes
         if name.contains("{hostname}") && (self.config.id == "ssh" || self.config.name == "SSH") {
-            // Very simple extraction: look for the first arg after 'ssh' that doesn't start with '-'
-            let parts: Vec<&str> = pane.cmdline.split_whitespace().collect();
             let mut hostname = "unknown";
-            for i in 1..parts.len() {
-                if !parts[i].starts_with('-') {
-                    // Skip options with arguments if possible?
-                    // For now, simple is better.
-                    if let Some(prev) = parts.get(i - 1) {
-                        // Common options that take an argument
-                        if matches!(*prev, "-p" | "-i" | "-l" | "-F" | "-E" | "-S" | "-c" | "-o") {
-                            continue;
+
+            // List of all command lines to check for ssh hostname
+            let mut candidates = vec![pane.cmdline.as_str()];
+            for cmd in &pane.child_commands {
+                candidates.push(cmd.as_str());
+            }
+            for cmd in &pane.ancestor_commands {
+                candidates.push(cmd.as_str());
+            }
+
+            'found: for cmdline in candidates {
+                let parts: Vec<&str> = cmdline.split_whitespace().collect();
+                for i in 0..parts.len() {
+                    let part = parts[i];
+                    // Look for ssh command (might be path/to/ssh)
+                    // Also check for "ssh:" prefix (mux processes often look like "ssh: user@host [mux]")
+                    if part == "ssh" || part.ends_with("/ssh") || part.starts_with("ssh:") {
+                        let start_idx = if part.starts_with("ssh:") { i } else { i + 1 };
+                        // Look for the first arg after 'ssh' that doesn't start with '-'
+                        for j in start_idx..parts.len() {
+                            let candidate = if part.starts_with("ssh:") && j == i {
+                                &part[4..] // Strip "ssh:"
+                            } else {
+                                parts[j]
+                            };
+
+                            if candidate.is_empty() || candidate.starts_with('-') {
+                                continue;
+                            }
+
+                            if let Some(prev) = parts.get(j.saturating_sub(1)) {
+                                if matches!(
+                                    *prev,
+                                    "-p" | "-i" | "-l" | "-F" | "-E" | "-S" | "-c" | "-o"
+                                ) {
+                                    continue;
+                                }
+                            }
+
+                            let mut h = candidate;
+                            // Strip user@ if present
+                            if let Some(stripped) = h.split('@').last() {
+                                h = stripped;
+                            }
+                            // Strip trailing [mux] or similar if present
+                            if let Some(stripped) = h.split_whitespace().next() {
+                                h = stripped;
+                            }
+
+                            hostname = h;
+                            break 'found;
                         }
                     }
-                    hostname = parts[i];
-                    // Strip user@ if present
-                    if let Some(h) = hostname.split('@').last() {
-                        hostname = h;
-                    }
-                    break;
                 }
             }
+
+            // Fallback: try to find it in the title if it looks like a remote shell
+            if hostname == "unknown" {
+                // Common formats: "user@host: path", "host: path", "ssh host"
+                if let Some(at_idx) = pane.title.find('@') {
+                    let rest = &pane.title[at_idx + 1..];
+                    let h = rest
+                        .split(|c: char| !c.is_alphanumeric() && c != '.' && c != '-')
+                        .next()
+                        .unwrap_or("");
+                    if !h.is_empty() {
+                        hostname = h;
+                    }
+                } else if pane.title.starts_with("ssh ") {
+                    hostname = pane.title[4..]
+                        .split_whitespace()
+                        .next()
+                        .unwrap_or("unknown");
+                }
+            }
+
             name = name.replace("{hostname}", hostname);
         }
 
@@ -863,5 +919,35 @@ mod tests {
             ancestor_commands: Vec::new(),
         };
         assert_eq!(parser.agent_display_name(&pane2), "SSH: s8");
+
+        let pane3 = PaneInfo {
+            session: "test".to_string(),
+            window: 0,
+            window_name: "test".to_string(),
+            pane: 0,
+            command: "bash".to_string(),
+            title: "bash".to_string(),
+            path: "/tmp".to_string(),
+            pid: 123,
+            cmdline: "-bash".to_string(),
+            child_commands: vec!["/usr/bin/ssh mpaheca".to_string()],
+            ancestor_commands: Vec::new(),
+        };
+        assert_eq!(parser.agent_display_name(&pane3), "SSH: mpaheca");
+
+        let pane4 = PaneInfo {
+            session: "test".to_string(),
+            window: 0,
+            window_name: "test".to_string(),
+            pane: 0,
+            command: "bash".to_string(),
+            title: "user@remotehost: ~".to_string(),
+            path: "/tmp".to_string(),
+            pid: 123,
+            cmdline: "-bash".to_string(),
+            child_commands: Vec::new(),
+            ancestor_commands: vec!["sshd: user@pts/0".to_string()],
+        };
+        assert_eq!(parser.agent_display_name(&pane4), "SSH: remotehost");
     }
 }

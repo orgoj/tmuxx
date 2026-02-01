@@ -284,6 +284,9 @@ name_template = "SSH: {hostname}"
 is_ai = false
 background_color = "#e6f3ff"
 priority = 20
+  default_type = "working"
+  default_status = "Working"
+
   [[agents.matchers]]
   type = "command"
   pattern = "(?i)^ssh$"
@@ -295,14 +298,8 @@ priority = 20
   [[agents.state_rules]]
   status = "connected"
   type = "idle"
-  pattern = '''(?m)^.*@(?P<host>[a-zA-Z0-9.-]+)[:\s].*[$#%❯]\s*$'''
-
-  [[agents.state_rules.refinements]]
-  group = "body"
-  location = "last_line"
-  pattern = '''(?m)^.*@(?P<host>[a-zA-Z0-9.-]+)[:\s].*[$#%❯]\s*$'''
-  status = "{host}"
-  type = "idle"
+  last_lines = 300
+  pattern = '''(?s).*[$#%❯]\s*\z'''
 
 [[agents]]
 id = "pi-powerline"

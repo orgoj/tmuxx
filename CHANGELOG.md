@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+- **Simplified SSH Agent Detection**: Replaced complex regex-based state detection with a robust KISS (Keep It Simple, Stupid) approach similar to the generic shell agent. It now reliably detects "idle" (connected) state by looking for common prompt characters at the end of the buffer.
+- **Improved SSH Hostname Extraction**: Enhanced `SSH: {hostname}` resolution to support nested agents (running in subshells) and multiplexed connections. The parser now inspects the entire process tree (children and ancestors) and falls back to the pane title to find the correct remote host.
+- **Fixed "SSH: unknown"**: Correctly resolves remote hostnames even when the `ssh` command is not the primary process of the pane or when running inside complex wrappers.
+
 ## [0.5.0] - 2026-01-31
 
 ### Added

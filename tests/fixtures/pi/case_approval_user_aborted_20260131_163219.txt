@@ -1,0 +1,170 @@
+ - 37         let bg_color = Color::Rgb(200, 200, 200);
+ + 39         // Background color
+ + 40         let bg_color = styles.selected.bg.unwrap_or(Color::Rgb(200, 200, 200));
+ + 41         let fg_color = styles.selected.fg.unwrap_or(Color::Black);
+   38
+   39         // Configure styling with background
+ - 40         textarea.set_style(Style::default().fg(Color::White).bg(bg_color));
+ - 41         textarea.set_cursor_style(Style::default().bg(Color::Black).fg(Color::White));
+ + 44         textarea.set_style(Style::default().fg(fg_color).bg(bg_color));
+ + 45         textarea.set_cursor_style(styles.normal.bg(fg_color).fg(bg_color));
+   42         textarea.set_cursor_line_style(Style::default()); // Disable underline on cursor line
+ - 43         textarea.set_placeholder_style(Style::default().fg(Color::DarkGray).bg(bg_color));
+ + 47         textarea.set_placeholder_style(styles.dimmed.bg(bg_color));
+   44         textarea.set_placeholder_text(&prompt);
+   45
+   46         Self {
+   47             textarea,
+      ...
+
+
+
+ edit src/ui/components/modal_textarea.rs:119
+
+      ...
+  115 /// Widget for rendering modal textarea
+  116 pub struct ModalTextareaWidget;
+  117
+  118 impl ModalTextareaWidget {
+ -119     pub fn render(frame: &mut Frame, area: Rect, state: &ModalTextareaState) {
+ +119     pub fn render(frame: &mut Frame, area: Rect, state: &ModalTextareaState, styles: &Styles) {
+  120         // Check minimum terminal size
+  121         if area.width < 40 || area.height < 10 {
+  122             return;
+  123         }
+  124
+  125         // Create centered popup (80% width, 60% height)
+  126         let popup_area = Self::centered_popup(area, 80, 60);
+  127
+  128         // Clear background
+  129         frame.render_widget(Clear, popup_area);
+  130
+  131         // Block with NO background color (transparent)
+  132         let block = Block::default()
+  133             .borders(Borders::ALL)
+  134             .border_type(BorderType::Rounded)
+  135             .title(state.title.as_str())
+ -136             .title_style(
+ -137                 Style::default()
+ -138                     .fg(Color::Cyan)
+ -139                     .add_modifier(Modifier::BOLD),
+ -140             );
+ +136             .title_style(styles.header);
+  141         let inner = block.inner(popup_area);
+  142         frame.render_widget(block, popup_area);
+  143
+  144         // Create layout inside block
+  145         let chunks = Layout::default()
+  146             .direction(Direction::Vertical)
+  147             .margin(1)
+  148             .constraints([Constraint::Min(1), Constraint::Length(1)])
+  149             .split(inner);
+  150
+  151         // Render textarea (placeholder is built-in)
+  152         frame.render_widget(&state.textarea, chunks[0]);
+  153
+  154         // Render scrollbar
+  155         let lines_count = state.textarea.lines().len();
+  156         let (row, _) = state.textarea.cursor();
+  157         let scrollbar_state = ScrollbarState::new(lines_count).position(row);
+  158         let scrollbar = Scrollbar::default()
+  159             .orientation(ScrollbarOrientation::VerticalRight)
+  160             .begin_symbol(Some("↑"))
+  161             .end_symbol(Some("↓"));
+  162
+  163         frame.render_stateful_widget(
+  164             scrollbar,
+  165             chunks[0].inner(ratatui::layout::Margin {
+  166                 vertical: 0,
+  167                 horizontal: 0,
+  168             }), // Render over the textarea
+  169             &mut scrollbar_state.clone(), // Clone because we don't have mutable state here easily, but state is small
+  170         );
+  171
+  172         // Render hints on ONE LINE
+  173         let hints = if state.readonly {
+  174             Line::from(vec![
+ -175                 Span::styled("[Esc]", Style::default().fg(Color::Yellow)),
+ +171                 Span::styled("[Esc]", styles.footer_key),
+  176                 Span::raw(" Close  "),
+ -177                 Span::styled("[↑/↓]", Style::default().fg(Color::Yellow)),
+ +173                 Span::styled("[↑/↓]", styles.footer_key),
+  178                 Span::raw(" Scroll"),
+  179             ])
+  180         } else {
+  181             Line::from(vec![
+ -182                 Span::styled("[Enter]", Style::default().fg(Color::Yellow)),
+ +178                 Span::styled("[Enter]", styles.footer_key),
+  183                 Span::raw(if state.is_single_line {
+  184                     " Submit  "
+  185                 } else {
+  186                     " Newline  "
+  187                 }),
+  188                 Span::raw(if !state.is_single_line { "  " } else { "" }),
+  189                 Span::styled(
+  190                     if !state.is_single_line {
+  191                         "[Alt+Enter]"
+  192                     } else {
+  193                         ""
+  194                     },
+ -195                     Style::default().fg(Color::Yellow),
+ +191                     styles.footer_key,
+  196                 ),
+  197                 Span::raw(if !state.is_single_line {
+  198                     " Submit  "
+  199                 } else {
+  200                     ""
+  201                 }),
+ -202                 Span::styled("[Esc]", Style::default().fg(Color::Yellow)),
+ +198                 Span::styled("[Esc]", styles.footer_key),
+  203                 Span::raw(" Cancel  "),
+ -204                 Span::styled("[Ctrl+U/R]", Style::default().fg(Color::Yellow)),
+ +200                 Span::styled("[Ctrl+U/R]", styles.footer_key),
+  205                 Span::raw(" Undo/Redo"),
+  206             ])
+  207         };
+  208
+      ...
+
+
+
+
+ edit src/app/state.rs:700
+
+       ...
+   696                 "".to_string(),
+   697                 crate::ui::components::HelpWidget::generate_help_text(&self.config),
+   698                 false, // not single_line
+   699                 true,  // readonly!
+ + 700                 &self.styles,
+   700             );
+   701             self.modal_textarea = Some(help_text);
+   702         }
+   703         // Clear modal textarea when closing help
+       ...
+
+ ⠴ Working...
+
+
+ edit src/ui/app.rs:217
+
+       ...
+   213                 }
+   214
+   215                 // Modal textarea (before help)
+   216                 if let Some(modal_state) = &state.modal_textarea {
+ - 217                     ModalTextareaWidget::render(frame, size, modal_state);
+ + 217                     ModalTextareaWidget::render(frame, size, modal_state, &state.styles);
+   218                 }
+   219
+   220                 // Menu Tree (before help)
+   221                 if state.show_menu {
+       ...
+
+ ⠴ Working...
+ Operation aborted
+───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+[dippy] allow [edit]: edit src/ui/app.rs: ./**
+───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+~/work/ai/TOOLS/tmuxx (main)
+↑633k ↓30k R5.7M $3.266 (sub) 13.1%/1.0M (auto)                                                                                       (google-antigravity) gemini-3-flash • minimal
