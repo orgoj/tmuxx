@@ -583,3 +583,5 @@ full_template = '''  {selection}{status_char} {name}
 "X" = "kill_session"
 "C-t" = "next_theme"
 "C-r" = "reload_config"
+# Command Palette: quick launcher (! for shell commands in selected directory)
+"C-p" = "show_command_palette"

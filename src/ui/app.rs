@@ -23,8 +23,9 @@ use crate::parsers::ParserRegistry;
 use crate::tmux::TmuxClient;
 
 use super::components::{
-    AgentTreeWidget, FooterWidget, HeaderWidget, InputWidget, MenuTreeWidget, ModalTextareaWidget,
-    PanePreviewWidget, PopupInputWidget, SubagentLogWidget,
+    AgentTreeWidget, CommandPaletteItem, CommandPaletteWidget, CommandType, FooterWidget,
+    HeaderWidget, InputWidget, MenuTreeWidget, ModalTextareaWidget, PanePreviewWidget,
+    PopupInputWidget, SubagentLogWidget,
 };
 use super::Layout;
 
@@ -225,6 +226,11 @@ async fn run_loop(
                 // Modal textarea (before help)
                 if let Some(modal_state) = &state.modal_textarea {
                     ModalTextareaWidget::render(frame, size, modal_state, &state.styles);
+                }
+
+                // Command palette (before help)
+                if let Some(ref command_palette) = state.command_palette {
+                    CommandPaletteWidget::render(frame, size, command_palette, &state.styles);
                 }
 
                 // Menu Tree (before help)
@@ -1465,6 +1471,148 @@ async fn run_loop(
                                 Action::NextTheme => {
                                     state.next_theme();
                                 }
+                                Action::ShowCommandPalette => {
+                                    let items = generate_command_palette_items(state);
+                                    state.show_command_palette();
+                                    // Generate command palette items when opening
+                                    if let Some(ref mut cp) = state.command_palette {
+                                        cp.items = items;
+                                    }
+                                }
+                                Action::HideCommandPalette => {
+                                    state.hide_command_palette();
+                                }
+                                Action::CommandPaletteInputChar(c) => {
+                                    state.command_palette_input(c);
+                                }
+                                Action::CommandPaletteBackspace => {
+                                    state.command_palette_backspace();
+                                }
+                                Action::CommandPaletteClear => {
+                                    state.command_palette_clear();
+                                }
+                                Action::CommandPaletteSelectUp => {
+                                    if let Some(ref cp) = state.command_palette {
+                                        let filtered_items =
+                                            crate::ui::components::CommandPaletteWidget::filter_commands(
+                                                &cp.items,
+                                                &cp.filter,
+                                            );
+                                        state.command_palette_select_up(filtered_items.len());
+                                    }
+                                }
+                                Action::CommandPaletteSelectDown => {
+                                    if let Some(ref cp) = state.command_palette {
+                                        let filtered_items =
+                                            crate::ui::components::CommandPaletteWidget::filter_commands(
+                                                &cp.items,
+                                                &cp.filter,
+                                            );
+                                        state.command_palette_select_down(filtered_items.len());
+                                    }
+                                }
+                                Action::CommandPaletteSelectFirst => {
+                                    if let Some(ref _cp) = state.command_palette {
+                                        state.command_palette_select_first();
+                                    }
+                                }
+                                Action::CommandPaletteSelectLast => {
+                                    if let Some(ref cp) = state.command_palette {
+                                        let filtered_items =
+                                            crate::ui::components::CommandPaletteWidget::filter_commands(
+                                                &cp.items,
+                                                &cp.filter,
+                                            );
+                                        state.command_palette_select_last(filtered_items.len());
+                                    }
+                                }
+                                Action::CommandPaletteExecute => {
+                                    // Execute selected command
+                                    let (filter, items) = if let Some(ref cp) = state.command_palette {
+                                        (cp.filter.clone(), cp.items.clone())
+                                    } else {
+                                        continue; // No command palette, nothing to do
+                                    };
+
+                                    let filtered_items =
+                                        crate::ui::components::CommandPaletteWidget::filter_commands(
+                                            &items,
+                                            &filter,
+                                        );
+
+                                    let selected_index = state
+                                        .command_palette
+                                        .as_ref()
+                                        .map(|cp| cp.selected_index())
+                                        .unwrap_or(0);
+
+                                    // If filter starts with !, execute as shell command
+                                    if let Some(stripped) = filter.strip_prefix('!') {
+                                        let shell_cmd = stripped.trim().to_string();
+                                        if !shell_cmd.is_empty() {
+                                            // Store in history
+                                            if let Some(ref mut cp) = state.command_palette {
+                                                if cp.history.len() >= 20 {
+                                                    cp.history.pop();
+                                                }
+                                                cp.history.insert(0, format!("!{}", shell_cmd));
+                                            }
+
+                                            // Execute shell command in selected agent's directory
+                                            if let Some(agent) = state.selected_agent() {
+                                                let cmd_config = CommandConfig {
+                                                    command: shell_cmd.clone(),
+                                                    blocking: false,
+                                                    terminal: false,
+                                                    external_terminal: false,
+                                                    active_in_tmux: true,
+                                                };
+
+                                                match execute_command_config(
+                                                    &cmd_config,
+                                                    &agent.path,
+                                                    tmux_client,
+                                                    Some(&agent.target),
+                                                ) {
+                                                    Ok(_) => {
+                                                        state
+                                                            .set_status(format!("Executed: {}", shell_cmd));
+                                                    }
+                                                    Err(e) => {
+                                                        state.set_error(format!(
+                                                            "Failed to execute shell command: {}",
+                                                            e
+                                                        ));
+                                                    }
+                                                }
+                                            } else {
+                                                state.set_error("No agent selected".to_string());
+                                            }
+                                        }
+                                        state.hide_command_palette();
+                                    } else if let Some((_, item)) = filtered_items.get(selected_index)
+                                    {
+                                        // Clone item before borrowing state mutably
+                                        let item_cloned = (*item).clone();
+                                        // Execute internal command
+                                        match execute_command_palette_item(
+                                            &item_cloned,
+                                            state,
+                                            tmux_client,
+                                        ) {
+                                            Ok(_) => {
+                                                // Status already set by execute function
+                                            }
+                                            Err(e) => {
+                                                state.set_error(format!(
+                                                    "Failed to execute command: {}",
+                                                    e
+                                                ));
+                                            }
+                                        }
+                                        state.hide_command_palette();
+                                    }
+                                }
                                 Action::None => {}
                             }
                         }
@@ -1510,6 +1658,25 @@ fn map_key_to_action(
             KeyCode::Enter if modal.is_single_line => Action::ModalTextareaSubmit,
             KeyCode::Enter if modifiers.contains(KeyModifiers::ALT) => Action::ModalTextareaSubmit,
             _ => Action::None, // All other keys handled directly in event loop
+        };
+    }
+
+    // If command palette is shown, handle navigation and input
+    if state.command_palette.is_some() {
+        return match code {
+            KeyCode::Char('c') if modifiers.contains(KeyModifiers::CONTROL) => Action::Quit,
+            KeyCode::Esc => Action::HideCommandPalette,
+            KeyCode::Enter => Action::CommandPaletteExecute,
+            KeyCode::Char('u') if modifiers.contains(KeyModifiers::CONTROL) => {
+                Action::CommandPaletteClear
+            }
+            KeyCode::Up => Action::CommandPaletteSelectUp,
+            KeyCode::Down => Action::CommandPaletteSelectDown,
+            KeyCode::Home => Action::CommandPaletteSelectFirst,
+            KeyCode::End => Action::CommandPaletteSelectLast,
+            KeyCode::Char(c) => Action::CommandPaletteInputChar(c),
+            KeyCode::Backspace => Action::CommandPaletteBackspace,
+            _ => Action::None,
         };
     }
 
@@ -1653,6 +1820,7 @@ fn map_key_to_action(
                 KeyAction::ToggleFilterSelected => Action::ToggleFilterSelected,
                 KeyAction::ReloadConfig => Action::ReloadConfig,
                 KeyAction::NextTheme => Action::NextTheme,
+                KeyAction::ShowCommandPalette => Action::ShowCommandPalette,
             };
         }
     }
@@ -1780,4 +1948,309 @@ fn get_log_stdio(debug_mode: bool) -> std::process::Stdio {
         }
     }
     std::process::Stdio::null()
+}
+
+/// Execute a CommandConfig
+fn execute_command_config(
+    cmd_config: &CommandConfig,
+    path: &str,
+    tmux_client: &TmuxClient,
+    target: Option<&str>,
+) -> Result<()> {
+    let CommandConfig {
+        command,
+        blocking,
+        terminal: is_terminal,
+        external_terminal,
+        active_in_tmux,
+    } = cmd_config;
+
+    // Expand command variables if target is provided
+    // We'll skip variable expansion for now - it would need agent data
+    let expanded = command.clone();
+
+    if *active_in_tmux {
+        if let Some(target_str) = target {
+            // Ensure the agent's window is active in tmux if requested
+            if let Err(e) = tmux_client.select_window(target_str) {
+                anyhow::bail!("Failed to select window: {}", e);
+            }
+        }
+    }
+
+    // Case 1: External Terminal (wrapper)
+    if *external_terminal {
+        let wrapper = "wezterm cli spawn -- bash -c \"{cmd}\""; // Default wrapper
+        let wrapped = wrapper.replace("{cmd}", &expanded);
+        let mut cmd = tokio::process::Command::new("bash");
+        cmd.args(["-c", &wrapped])
+            .stdin(std::process::Stdio::null())
+            .stdout(std::process::Stdio::null())
+            .stderr(std::process::Stdio::null());
+
+        if !path.is_empty() {
+            cmd.current_dir(path);
+        }
+
+        match cmd.spawn() {
+            Ok(_) => Ok(()),
+            Err(e) => anyhow::bail!("Failed to spawn external terminal: {}", e),
+        }
+    }
+    // Case 2: Terminal application (interactive, takes over screen)
+    else if *is_terminal {
+        // Run command synchronously with inherited stdio
+        let mut command = std::process::Command::new("bash");
+        command
+            .args(["-c", &expanded])
+            .stdin(std::process::Stdio::inherit())
+            .stdout(std::process::Stdio::inherit())
+            .stderr(std::process::Stdio::inherit());
+
+        if !path.is_empty() {
+            command.current_dir(path);
+        }
+
+        let result = command.status();
+        match result {
+            Ok(_) => Ok(()),
+            Err(e) => anyhow::bail!("Failed to execute terminal command: {}", e),
+        }
+    }
+    // Case 3: Blocking command (wait for completion)
+    else if *blocking {
+        let mut command = std::process::Command::new("bash");
+        command.args(["-c", &expanded]);
+
+        if !path.is_empty() {
+            command.current_dir(path);
+        }
+
+        let result = command.status();
+        match result {
+            Ok(_) => Ok(()),
+            Err(e) => anyhow::bail!("Failed to execute blocking command: {}", e),
+        }
+    }
+    // Case 4: Non-blocking command (spawn in background)
+    else {
+        let mut command = std::process::Command::new("bash");
+        command
+            .args(["-c", &expanded])
+            .stdin(std::process::Stdio::null())
+            .stdout(std::process::Stdio::null())
+            .stderr(std::process::Stdio::null());
+
+        if !path.is_empty() {
+            command.current_dir(path);
+        }
+
+        match command.spawn() {
+            Ok(_) => Ok(()),
+            Err(e) => anyhow::bail!("Failed to spawn background command: {}", e),
+        }
+    }
+}
+
+/// Generate command palette items from config
+fn generate_command_palette_items(state: &AppState) -> Vec<CommandPaletteItem> {
+    let mut items = Vec::new();
+
+    // Add ExecuteCommand items from key bindings
+    for (key, action) in &state.config.key_bindings.bindings {
+        if let KeyAction::ExecuteCommand(cmd_config) = action {
+            items.push(CommandPaletteItem {
+                name: format!("{} ({})", cmd_config.command, key),
+                item_type: CommandType::ExecuteCommand {
+                    command: cmd_config.command.clone(),
+                },
+            });
+        }
+    }
+
+    // Add SendKeys items
+    for (key, action) in &state.config.key_bindings.bindings {
+        if let KeyAction::SendKeys(keys) = action {
+            items.push(CommandPaletteItem {
+                name: format!("Send: {} ({})", keys, key),
+                item_type: CommandType::SendKeys { keys: keys.clone() },
+            });
+        }
+    }
+
+    // Add Navigate items
+    items.push(CommandPaletteItem {
+        name: "Navigate: Next Agent".to_string(),
+        item_type: CommandType::Navigate(NavAction::NextAgent),
+    });
+    items.push(CommandPaletteItem {
+        name: "Navigate: Previous Agent".to_string(),
+        item_type: CommandType::Navigate(NavAction::PrevAgent),
+    });
+    items.push(CommandPaletteItem {
+        name: "Navigate: First Agent".to_string(),
+        item_type: CommandType::Navigate(NavAction::FirstAgent),
+    });
+    items.push(CommandPaletteItem {
+        name: "Navigate: Last Agent".to_string(),
+        item_type: CommandType::Navigate(NavAction::LastAgent),
+    });
+
+    // Add common KeyActions
+    items.push(CommandPaletteItem {
+        name: "Approve".to_string(),
+        item_type: CommandType::KeyAction {
+            name: "Approve".to_string(),
+        },
+    });
+    items.push(CommandPaletteItem {
+        name: "Reject".to_string(),
+        item_type: CommandType::KeyAction {
+            name: "Reject".to_string(),
+        },
+    });
+    items.push(CommandPaletteItem {
+        name: "Approve All".to_string(),
+        item_type: CommandType::KeyAction {
+            name: "Approve All".to_string(),
+        },
+    });
+
+    // Add common shell commands (suggestions)
+    items.push(CommandPaletteItem {
+        name: "!git status".to_string(),
+        item_type: CommandType::ShellCommand {
+            command: "git status".to_string(),
+        },
+    });
+    items.push(CommandPaletteItem {
+        name: "!git diff".to_string(),
+        item_type: CommandType::ShellCommand {
+            command: "git diff".to_string(),
+        },
+    });
+    items.push(CommandPaletteItem {
+        name: "!git log --oneline -10".to_string(),
+        item_type: CommandType::ShellCommand {
+            command: "git log --oneline -10".to_string(),
+        },
+    });
+    items.push(CommandPaletteItem {
+        name: "!ls -la".to_string(),
+        item_type: CommandType::ShellCommand {
+            command: "ls -la".to_string(),
+        },
+    });
+
+    items.sort_by(|a, b| a.name.cmp(&b.name));
+    items
+}
+
+/// Execute a command palette item
+fn execute_command_palette_item(
+    item: &CommandPaletteItem,
+    state: &mut AppState,
+    tmux_client: &TmuxClient,
+) -> Result<()> {
+    match &item.item_type {
+        CommandType::ExecuteCommand { command } => {
+            let agent = state
+                .selected_agent()
+                .ok_or_else(|| anyhow::anyhow!("No agent selected"))?;
+
+            // Find the CommandConfig from key bindings
+            let cmd_config = state
+                .config
+                .key_bindings
+                .bindings
+                .values()
+                .find_map(|action| {
+                    if let KeyAction::ExecuteCommand(cmd) = action {
+                        if cmd.command == *command {
+                            Some(cmd.clone())
+                        } else {
+                            None
+                        }
+                    } else {
+                        None
+                    }
+                })
+                .ok_or_else(|| anyhow::anyhow!("Command config not found: {}", command))?;
+
+            execute_command_config(&cmd_config, &agent.path, tmux_client, Some(&agent.target))?;
+            state.set_status(format!("Executed: {}", command));
+        }
+        CommandType::SendKeys { keys } => {
+            let agent = state
+                .selected_agent()
+                .ok_or_else(|| anyhow::anyhow!("No agent selected"))?;
+            tmux_client.send_keys(&agent.target, keys)?;
+            state.set_status(format!("Sent keys: {}", keys));
+        }
+        CommandType::Navigate(nav) => match nav {
+            NavAction::NextAgent => {
+                state.select_next();
+                state.refresh_project_todo();
+            }
+            NavAction::PrevAgent => {
+                state.select_prev();
+                state.refresh_project_todo();
+            }
+            NavAction::FirstAgent => {
+                state.select_first();
+                state.refresh_project_todo();
+            }
+            NavAction::LastAgent => {
+                state.select_last();
+                state.refresh_project_todo();
+            }
+        },
+        CommandType::KeyAction { name } => {
+            // Map common key actions to their actions
+            let action = match name.as_str() {
+                "Approve" => Action::Approve,
+                "Reject" => Action::Reject,
+                "Approve All" => Action::ApproveAll,
+                _ => return Err(anyhow::anyhow!("Unknown key action: {}", name)),
+            };
+
+            // Execute the action
+            match action {
+                Action::Approve => {
+                    // Handle approve logic (simplified)
+                    if let Some(agent) = state.selected_agent() {
+                        tmux_client.send_keys(&agent.target, "y")?;
+                        state.set_status("Approved".to_string());
+                    }
+                }
+                Action::Reject => {
+                    if let Some(agent) = state.selected_agent() {
+                        tmux_client.send_keys(&agent.target, "n")?;
+                        state.set_status("Rejected".to_string());
+                    }
+                }
+                Action::ApproveAll => {
+                    state.set_status(
+                        "Approve all - not implemented for command palette".to_string(),
+                    );
+                }
+                _ => {}
+            }
+        }
+        CommandType::ShellCommand { command } => {
+            let agent = state
+                .selected_agent()
+                .ok_or_else(|| anyhow::anyhow!("No agent selected"))?;
+            let cmd_config = CommandConfig {
+                command: command.clone(),
+                blocking: false,
+                terminal: false,
+                external_terminal: false,
+                active_in_tmux: true,
+            };
+            execute_command_config(&cmd_config, &agent.path, tmux_client, Some(&agent.target))?;
+            state.set_status(format!("Executed: {}", command));
+        }
+    }
+    Ok(())
 }

@@ -144,6 +144,26 @@ pub enum Action {
     ReloadConfig,
     /// Switch to next color theme
     NextTheme,
+    /// Show command palette
+    ShowCommandPalette,
+    /// Hide command palette without executing
+    HideCommandPalette,
+    /// Execute selected command from command palette
+    CommandPaletteExecute,
+    /// Add character to command palette filter
+    CommandPaletteInputChar(char),
+    /// Delete character from command palette filter
+    CommandPaletteBackspace,
+    /// Clear command palette filter
+    CommandPaletteClear,
+    /// Move selection up in command palette
+    CommandPaletteSelectUp,
+    /// Move selection down in command palette
+    CommandPaletteSelectDown,
+    /// Move selection to first item in command palette
+    CommandPaletteSelectFirst,
+    /// Move selection to last item in command palette
+    CommandPaletteSelectLast,
 }
 
 impl Action {
@@ -211,6 +231,16 @@ impl Action {
             Action::ToggleFilterSelected => "Toggle selected agents filter",
             Action::ReloadConfig => "Reload configuration",
             Action::NextTheme => "Switch to next color theme",
+            Action::ShowCommandPalette => "Show command palette",
+            Action::HideCommandPalette => "Hide command palette",
+            Action::CommandPaletteExecute => "Execute command palette selection",
+            Action::CommandPaletteInputChar(_) => "Type in command palette",
+            Action::CommandPaletteBackspace => "Delete character (command palette)",
+            Action::CommandPaletteClear => "Clear command palette input",
+            Action::CommandPaletteSelectUp => "Move selection up (command palette)",
+            Action::CommandPaletteSelectDown => "Move selection down (command palette)",
+            Action::CommandPaletteSelectFirst => "Move to first item (command palette)",
+            Action::CommandPaletteSelectLast => "Move to last item (command palette)",
             Action::None => "",
         }
     }

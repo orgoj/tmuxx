@@ -1,5 +1,9 @@
 # TODO - Tmuxx
 
+## ✅ Nedávno dokončeno (Recently Completed)
+
+- **Command Palette** (`Ctrl-P`): Quick launcher for internal commands and shell commands with fuzzy search. Use `!` prefix for shell commands executed in selected agent's directory.
+
 ## 🔮 Nápady a Roadmap (Ideas)
 
 - definovatelne barvy podle session name match ? podledni vyhraje

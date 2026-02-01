@@ -1,4 +1,5 @@
 mod agent_tree;
+pub mod command_palette;
 mod footer;
 mod header;
 mod help;
@@ -10,6 +11,7 @@ mod popup_input;
 mod subagent_log;
 
 pub use agent_tree::AgentTreeWidget;
+pub use command_palette::{CommandPaletteItem, CommandPaletteWidget, CommandType};
 pub use footer::FooterWidget;
 pub use header::HeaderWidget;
 pub use help::HelpWidget;
@@ -20,3 +22,6 @@ pub use modal_textarea::ModalTextareaWidget;
 pub use pane_preview::PanePreviewWidget;
 pub use popup_input::PopupInputWidget;
 pub use subagent_log::SubagentLogWidget;
+
+// Re-export CommandPaletteState from app::state
+pub use crate::app::CommandPaletteState;

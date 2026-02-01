@@ -68,6 +68,8 @@ pub enum KeyAction {
     ReloadConfig,
     /// Switch to next color theme
     NextTheme,
+    /// Show command palette for quick command execution
+    ShowCommandPalette,
 }
 
 /// Configuration for command execution

@@ -2,6 +2,9 @@ use crate::agents::MonitoredAgent;
 use crate::monitor::SystemStats;
 use crate::ui::components::{MenuTreeState, ModalTextareaState};
 use crate::ui::Styles;
+
+// Import command palette types
+use crate::ui::components::command_palette::CommandPaletteItem;
 // use ratatui::style::{Color, Style};
 use std::collections::HashSet;
 use std::sync::OnceLock;
@@ -144,6 +147,98 @@ pub enum MessageKind {
     Welcome,
 }
 
+/// State for command palette dialog
+#[derive(Debug, Clone)]
+pub struct CommandPaletteState {
+    /// Current filter/input text
+    pub filter: String,
+    /// List of available commands
+    pub items: Vec<CommandPaletteItem>,
+    /// List state for scrollable list
+    pub list_state: ratatui::widgets::ListState,
+    /// Command history (last 20 commands)
+    pub history: Vec<String>,
+    /// History index (when navigating history)
+    pub history_index: Option<usize>,
+}
+
+impl Default for CommandPaletteState {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+impl CommandPaletteState {
+    pub fn new() -> Self {
+        Self {
+            filter: String::new(),
+            items: Vec::new(),
+            list_state: ratatui::widgets::ListState::default().with_selected(Some(0)),
+            history: Vec::new(),
+            history_index: None,
+        }
+    }
+
+    pub fn add_char(&mut self, c: char) {
+        self.filter.push(c);
+        self.list_state.select(Some(0));
+    }
+
+    pub fn backspace(&mut self) {
+        self.filter.pop();
+        self.list_state.select(Some(0));
+    }
+
+    pub fn clear(&mut self) {
+        self.filter.clear();
+        self.list_state.select(Some(0));
+    }
+
+    pub fn select_up(&mut self, items_len: usize) {
+        let i = match self.list_state.selected() {
+            Some(i) => {
+                if i > 0 {
+                    i - 1
+                } else if items_len > 0 {
+                    items_len - 1
+                } else {
+                    0
+                }
+            }
+            None => 0,
+        };
+        self.list_state.select(Some(i));
+    }
+
+    pub fn select_down(&mut self, items_len: usize) {
+        let i = match self.list_state.selected() {
+            Some(i) => {
+                if i < items_len.saturating_sub(1) {
+                    i + 1
+                } else {
+                    0
+                }
+            }
+            None => 0,
+        };
+        self.list_state.select(Some(i));
+    }
+
+    pub fn select_first(&mut self) {
+        self.list_state.select(Some(0));
+    }
+
+    pub fn select_last(&mut self, items_len: usize) {
+        if items_len > 0 {
+            self.list_state.select(Some(items_len - 1));
+        }
+    }
+
+    pub fn selected_index(&self) -> usize {
+        self.list_state.selected().unwrap_or(0)
+    }
+}
+
 /// Status message with its kind
 #[derive(Debug, Clone)]
 pub struct StatusMessage {
@@ -186,6 +281,8 @@ pub struct AppState {
     pub popup_input: Option<PopupInputState>,
     /// Modal textarea dialog state (None = not shown)
     pub modal_textarea: Option<ModalTextareaState>,
+    /// Command palette state (None = not shown)
+    pub command_palette: Option<CommandPaletteState>,
     /// Current filter pattern (None = no filter, Some("") = show all, Some("text") = filter)
     pub filter_pattern: Option<String>,
     /// Whether subagent log is shown
@@ -268,6 +365,7 @@ impl AppState {
             show_help: false,
             popup_input: None,
             modal_textarea: None,
+            command_palette: None,
             filter_pattern: None,
             show_subagent_log: false,
             show_summary_detail: true,
@@ -1059,6 +1157,65 @@ impl AppState {
             }
         }
         self.current_todo = todo_content;
+    }
+
+    /// Show command palette
+    pub fn show_command_palette(&mut self) {
+        self.command_palette = Some(CommandPaletteState::new());
+    }
+
+    /// Hide command palette
+    pub fn hide_command_palette(&mut self) {
+        self.command_palette = None;
+    }
+
+    /// Add character to command palette filter
+    pub fn command_palette_input(&mut self, c: char) {
+        if let Some(cp) = &mut self.command_palette {
+            cp.add_char(c);
+        }
+    }
+
+    /// Delete character from command palette filter
+    pub fn command_palette_backspace(&mut self) {
+        if let Some(cp) = &mut self.command_palette {
+            cp.backspace();
+        }
+    }
+
+    /// Clear command palette filter
+    pub fn command_palette_clear(&mut self) {
+        if let Some(cp) = &mut self.command_palette {
+            cp.clear();
+        }
+    }
+
+    /// Move selection up in command palette
+    pub fn command_palette_select_up(&mut self, items_len: usize) {
+        if let Some(cp) = &mut self.command_palette {
+            cp.select_up(items_len);
+        }
+    }
+
+    /// Move selection down in command palette
+    pub fn command_palette_select_down(&mut self, items_len: usize) {
+        if let Some(cp) = &mut self.command_palette {
+            cp.select_down(items_len);
+        }
+    }
+
+    /// Move selection to first item in command palette
+    pub fn command_palette_select_first(&mut self) {
+        if let Some(cp) = &mut self.command_palette {
+            cp.select_first();
+        }
+    }
+
+    /// Move selection to last item in command palette
+    pub fn command_palette_select_last(&mut self, items_len: usize) {
+        if let Some(cp) = &mut self.command_palette {
+            cp.select_last(items_len);
+        }
     }
 }
 

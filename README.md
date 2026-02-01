@@ -30,6 +30,7 @@ While designed with first-class support for AI coding agents (Claude Code, Pi, G
     -   **Approvals**: `y`/`n` to approve/reject agent requests (file edits, execution).
     -   **Menus**: Fuzzy-searchable Command Menu (`m`) and Prompts Menu (`p`).
     -   **Editor**: Built-in multi-line input editor (`Shift+I`).
+    -   **Command Palette** (`Ctrl-P`): Quick launcher for all tmuxx commands and shell commands with fuzzy search. Use `!` prefix for shell commands executed in selected agent's directory.
 -   **Focus Management**:
     -   **Cross-Session Jump**: Instantly switch tmux focus to the selected agent's pane (even across sessions).
 -   **Filtering & Navigation**:
@@ -100,6 +101,7 @@ All bindings are configurable in `config.toml`. Defaults:
 | **Actions** | | |
 | `y` / `n` | Approve/Reject | Confirm agent action (e.g. file edit) |
 | `a` | Approve All | Approve all pending requests |
+| `C-p` | Command Palette | Quick command launcher (! for shell in selected dir) |
 | `/` | Input | Open popup to send text to agent |
 | `Shift+I` | Editor | Open multiline editor for prompt |
 | `C-l` | Refresh | Force refresh / clear error states |
@@ -117,6 +119,12 @@ All bindings are configurable in `config.toml`. Defaults:
 | `x` | Filter Active | Show only active (non-idle) agents |
 | `C-t` | Next Theme | Cycle through available color themes |
 | `S` | Subagents | Toggle subagent log view |
+| **Command Palette** (`Ctrl-P`) | | |
+| `↑` / `↓` | Navigate | Move selection up/down (scrollable list) |
+| `Home` / `End` | First/Last | Jump to first/last item in list |
+| `Esc` | Close | Close command palette |
+| `Enter` | Execute | Run selected command |
+| `!cmd` | Shell | Execute shell command in selected agent's directory |
 
 ---
 

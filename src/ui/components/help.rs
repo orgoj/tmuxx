@@ -129,6 +129,9 @@ impl HelpWidget {
                     "Commands",
                     format!("  {:14} Run: {}", keys_str, cmd.command),
                 ),
+                KeyAction::ShowCommandPalette => {
+                    add_line("General", format!("  {:14} Command Palette", keys_str))
+                }
             }
         }
 
