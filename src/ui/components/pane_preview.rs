@@ -374,8 +374,8 @@ impl PanePreviewWidget {
             }
 
             let block = Block::default()
-                .title(ratatui::widgets::block::Title::from(title).alignment(ratatui::layout::Alignment::Left))
-                .title(ratatui::widgets::block::Title::from(pwd_title).alignment(ratatui::layout::Alignment::Right))
+                .title_top(Line::from(title).alignment(ratatui::layout::Alignment::Left))
+                .title_top(Line::from(pwd_title).alignment(ratatui::layout::Alignment::Right))
                 .borders(Borders::ALL)
                 .border_type(BorderType::Rounded)
                 .border_style(state.styles.border);
