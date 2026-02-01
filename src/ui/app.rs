@@ -102,6 +102,159 @@ pub async fn run_app(config: Config) -> Result<()> {
     result
 }
 
+/// Create next variable popup for menu item variable collection
+fn create_next_variable_popup(
+    menu_item_path: Vec<String>,
+    collected_vars: std::collections::HashMap<String, String>,
+    remaining_vars: Vec<(String, String)>,
+) -> crate::app::PopupInputState {
+    let (next_var, next_prompt) = &remaining_vars[0];
+    let new_remaining: Vec<(String, String)> = remaining_vars.iter().skip(1).cloned().collect();
+
+    crate::app::PopupInputState {
+        title: format!("Variable: {}", next_var),
+        prompt: next_prompt.clone(),
+        buffer: String::new(),
+        cursor: 0,
+        popup_type: crate::app::PopupType::MenuVariableInput {
+            menu_item_path,
+            variable_name: next_var.clone(),
+            collected_vars,
+            remaining_vars: new_remaining,
+        },
+    }
+}
+
+/// Expand menu variables in command string
+fn expand_menu_variables(
+    command: String,
+    collected_vars: &std::collections::HashMap<String, String>,
+) -> String {
+    let mut expanded = command;
+
+    for (var_name, var_value) in collected_vars {
+        let placeholder = format!("${{{}}}", var_name);
+        expanded = expanded.replace(&placeholder, var_value);
+    }
+
+    expanded
+}
+
+/// Execute a menu command with variable substitution
+async fn execute_menu_command(
+    state: &mut AppState,
+    terminal: &mut Terminal<CrosstermBackend<io::Stdout>>,
+    expanded: &str,
+    execute_command: &CommandConfig,
+    path: &str,
+    tmux_client: &TmuxClient,
+) {
+    if execute_command.active_in_tmux {
+        if let Some(agent) = state.selected_agent() {
+            if let Err(e) = tmux_client.select_window(&agent.target) {
+                state.set_error(format!("Failed to select window: {}", e));
+            }
+        }
+    }
+
+    if execute_command.external_terminal {
+        if let Some(wrapper) = &state.config.terminal_wrapper {
+            let wrapped = wrapper.replace("{cmd}", expanded);
+            let mut cmd = tokio::process::Command::new("bash");
+            cmd.args(["-c", &wrapped])
+                .stdin(std::process::Stdio::null())
+                .stdout(std::process::Stdio::null())
+                .stderr(std::process::Stdio::null());
+
+            if !path.is_empty() {
+                cmd.current_dir(path);
+            }
+
+            match cmd.spawn() {
+                Ok(_) => state.set_status(format!("External: {}", expanded)),
+                Err(e) => state.set_error(format!("Failed to spawn external terminal: {}", e)),
+            }
+        } else {
+            state.set_error("terminal_wrapper not configured".to_string());
+        }
+    } else if execute_command.terminal {
+        // Suspend TUI
+        if let Err(e) = disable_raw_mode() {
+            state.set_error(format!("Failed to disable raw mode: {}", e));
+        }
+        if let Err(e) = execute!(
+            terminal.backend_mut(),
+            LeaveAlternateScreen,
+            DisableMouseCapture
+        ) {
+            state.set_error(format!("Failed to leave alternate screen: {}", e));
+        }
+        if let Err(e) = terminal.show_cursor() {
+            state.set_error(format!("Failed to show cursor: {}", e));
+        }
+
+        // Run command synchronously
+        let mut command = std::process::Command::new("bash");
+        command
+            .args(["-c", expanded])
+            .stdin(std::process::Stdio::inherit())
+            .stdout(std::process::Stdio::inherit())
+            .stderr(std::process::Stdio::inherit());
+
+        if !path.is_empty() {
+            command.current_dir(path);
+        }
+
+        let _ = command.status();
+
+        // Restore TUI
+        if let Err(e) = enable_raw_mode() {
+            state.set_error(format!("Failed to enable raw mode: {}", e));
+        }
+        if let Err(e) = execute!(
+            terminal.backend_mut(),
+            EnterAlternateScreen,
+            EnableMouseCapture
+        ) {
+            state.set_error(format!("Failed to enter alternate screen: {}", e));
+        }
+        if let Err(e) = terminal.hide_cursor() {
+            state.set_error(format!("Failed to hide cursor: {}", e));
+        }
+        if let Err(e) = terminal.clear() {
+            state.set_error(format!("Failed to clear terminal: {}", e));
+        }
+    } else if execute_command.blocking {
+        let mut cmd = tokio::process::Command::new("bash");
+        cmd.args(["-c", expanded]);
+        if !path.is_empty() {
+            cmd.current_dir(path);
+        }
+        match cmd.output().await {
+            Ok(output) => {
+                if output.status.success() {
+                    state.set_status(format!("Executed: {}", expanded));
+                } else {
+                    state.set_error(format!("Failed: {}", expanded));
+                }
+            }
+            Err(e) => state.set_error(format!("Failed to execute: {}", e)),
+        }
+    } else {
+        // Background spawn
+        let mut cmd = tokio::process::Command::new("bash");
+        cmd.args(["-c", expanded])
+            .stdin(std::process::Stdio::null())
+            .stdout(std::process::Stdio::null())
+            .stderr(std::process::Stdio::null());
+        if !path.is_empty() {
+            cmd.current_dir(path);
+        }
+        let _ = cmd.spawn();
+        state.set_status(format!("Started: {}", expanded));
+    }
+}
+
 async fn run_loop(
     terminal: &mut Terminal<CrosstermBackend<io::Stdout>>,
     state: &mut AppState,
@@ -274,6 +427,9 @@ async fn run_loop(
             // Handle monitor updates
             Some(update) = rx.recv() => {
                 state.agents = update.agents;
+                if let Some(todo) = update.external_todo {
+                    state.external_todo = Some(todo);
+                }
                 // Sync selection based on agent IDs
                 state.sync_selection();
 
@@ -492,136 +648,54 @@ async fn run_loop(
 
                                  KeyCode::Enter => {
                                      if let Some(index) = state.menu_tree.list_state.selected() {
-                                         let (cmd, is_submenu, p) = if let Some(flat) = find_flat_menu_item_by_index(&state.config.menu, &state.menu_tree, index) {
-                                              (flat.item.execute_command.clone(), !flat.item.items.is_empty(), flat.path)
+                                         let (cmd, is_submenu, path_to_item, item_vars) = if let Some(flat) = find_flat_menu_item_by_index(&state.config.menu, &state.menu_tree, index) {
+                                              (flat.item.execute_command.clone(), !flat.item.items.is_empty(), flat.path, flat.item.variables.clone())
                                          } else {
-                                              (None, false, Vec::new())
+                                              (None, false, Vec::new(), std::collections::HashMap::new())
                                          };
 
                                          if let Some(execute_command) = cmd {
                                               state.toggle_menu();
 
-                                              // Get context from selected agent before any state mutations
-                                              let (target, path, expanded) = if let Some(agent) = state.selected_agent() {
-                                                  (Some(agent.target.clone()), agent.path.clone(), expand_command_variables(&execute_command.command, agent))
+                                              if !item_vars.is_empty() {
+                                                  // Need to collect variables
+                                                  let mut remaining: Vec<(String, String)> = item_vars.into_iter().collect();
+                                                  remaining.sort_by(|a, b| a.0.cmp(&b.0)); // Sort for deterministic order
+
+                                                  state.popup_input = Some(create_next_variable_popup(
+                                                      path_to_item,
+                                                      std::collections::HashMap::new(),
+                                                      remaining,
+                                                  ));
                                               } else {
-                                                  (None, String::new(), execute_command.command.clone())
-                                              };
+                                                  // No variables, execute directly
+                                                  // Get context from selected agent before any state mutations
+                                                  let (_target, path, expanded) = if let Some(agent) = state.selected_agent() {
+                                                      (Some(agent.target.clone()), agent.path.clone(), expand_command_variables(&execute_command.command, agent))
+                                                  } else {
+                                                      (None, String::new(), execute_command.command.clone())
+                                                  };
 
-                                              let action = Action::ExecuteCommand {
-                                                  command: execute_command.command.clone(),
-                                                  blocking: execute_command.blocking,
-                                                  terminal: execute_command.terminal,
-                                                  external_terminal: execute_command.external_terminal,
-                                                  active_in_tmux: execute_command.active_in_tmux,
-                                              };
-                                              state.log_action(&action);
+                                                  let action = Action::ExecuteCommand {
+                                                      command: execute_command.command.clone(),
+                                                      blocking: execute_command.blocking,
+                                                      terminal: execute_command.terminal,
+                                                      external_terminal: execute_command.external_terminal,
+                                                      active_in_tmux: execute_command.active_in_tmux,
+                                                  };
+                                                  state.log_action(&action);
 
-                                              if execute_command.active_in_tmux {
-                                                  if let Some(t) = target {
-                                                      if let Err(e) = tmux_client.select_window(&t) {
-                                                          state.set_error(format!("Failed to select window: {}", e));
-                                                      }
-                                                  }
-                                              }
-
-                                              if execute_command.external_terminal {
-                                                   if let Some(wrapper) = &state.config.terminal_wrapper {
-                                                       let wrapped = wrapper.replace("{cmd}", &expanded);
-                                                       let mut cmd = tokio::process::Command::new("bash");
-                                                       cmd.args(["-c", &wrapped])
-                                                          .stdin(std::process::Stdio::null())
-                                                          .stdout(std::process::Stdio::null())
-                                                          .stderr(std::process::Stdio::null());
-
-                                                       if !path.is_empty() {
-                                                           cmd.current_dir(&path);
-                                                       }
-
-                                                       match cmd.spawn() {
-                                                           Ok(_) => state.set_status(format!("External: {}", expanded)),
-                                                           Err(e) => state.set_error(format!("Failed to spawn external terminal: {}", e)),
-                                                       }
-                                                   } else {
-                                                       state.set_error("terminal_wrapper not configured".to_string());
-                                                   }
-                                              } else if execute_command.terminal {
-                                                     // Suspend TUI
-                                                     if let Err(e) = crossterm::terminal::disable_raw_mode() {
-                                                         state.set_error(format!("Failed to disable raw mode: {}", e));
-                                                     }
-                                                     if let Err(e) = crossterm::execute!(
-                                                         terminal.backend_mut(),
-                                                         crossterm::terminal::LeaveAlternateScreen,
-                                                         crossterm::event::DisableMouseCapture
-                                                     ) {
-                                                         state.set_error(format!("Failed to leave alternate screen: {}", e));
-                                                     }
-                                                     if let Err(e) = terminal.show_cursor() {
-                                                         state.set_error(format!("Failed to show cursor: {}", e));
-                                                     }
-
-                                                     // Run command synchronously
-                                                     let mut command = std::process::Command::new("bash");
-                                                     command.args(["-c", &expanded])
-                                                         .stdin(std::process::Stdio::inherit())
-                                                         .stdout(std::process::Stdio::inherit())
-                                                         .stderr(std::process::Stdio::inherit());
-
-                                                     if !path.is_empty() {
-                                                         command.current_dir(&path);
-                                                     }
-
-                                                     let _ = command.status();
-
-                                                     // Restore TUI
-                                                     if let Err(e) = crossterm::terminal::enable_raw_mode() {
-                                                         state.set_error(format!("Failed to enable raw mode: {}", e));
-                                                     }
-                                                     if let Err(e) = crossterm::execute!(
-                                                         terminal.backend_mut(),
-                                                         crossterm::terminal::EnterAlternateScreen,
-                                                         crossterm::event::EnableMouseCapture
-                                                     ) {
-                                                         state.set_error(format!("Failed to enter alternate screen: {}", e));
-                                                     }
-                                                     if let Err(e) = terminal.hide_cursor() {
-                                                         state.set_error(format!("Failed to hide cursor: {}", e));
-                                                     }
-                                                     if let Err(e) = terminal.clear() {
-                                                         state.set_error(format!("Failed to clear terminal: {}", e));
-                                                     }
-                                              } else if execute_command.blocking {
-                                                     let mut cmd = tokio::process::Command::new("bash");
-                                                     cmd.args(["-c", &expanded]);
-                                                     if !path.is_empty() {
-                                                         cmd.current_dir(&path);
-                                                     }
-                                                     match cmd.output().await {
-                                                         Ok(output) => {
-                                                              if output.status.success() {
-                                                                   state.set_status(format!("Executed: {}", expanded));
-                                                              } else {
-                                                                   state.set_error(format!("Failed: {}", expanded));
-                                                              }
-                                                         }
-                                                         Err(e) => state.set_error(format!("Failed to execute: {}", e)),
-                                                     }
-                                              } else {
-                                                   // Background spawn
-                                                   let mut cmd = tokio::process::Command::new("bash");
-                                                   cmd.args(["-c", &expanded])
-                                                      .stdin(std::process::Stdio::null())
-                                                      .stdout(std::process::Stdio::null())
-                                                      .stderr(std::process::Stdio::null());
-                                                   if !path.is_empty() {
-                                                       cmd.current_dir(&path);
-                                                   }
-                                                   let _ = cmd.spawn();
-                                                   state.set_status(format!("Started: {}", expanded));
+                                                  execute_menu_command(
+                                                      state,
+                                                      terminal,
+                                                      &expanded,
+                                                      &execute_command,
+                                                      &path,
+                                                      tmux_client,
+                                                  ).await;
                                               }
                                          } else if is_submenu {
-                                              state.menu_tree.toggle_expansion(p);
+                                              state.menu_tree.toggle_expansion(path_to_item);
                                          }
                                      }
                                  }
@@ -1377,6 +1451,80 @@ async fn run_loop(
                                                     }
                                                 } else {
                                                     state.set_error("No agent selected".to_string());
+                                                }
+                                            }
+                                            PopupType::MenuVariableInput {
+                                                menu_item_path,
+                                                variable_name,
+                                                mut collected_vars,
+                                                remaining_vars,
+                                            } => {
+                                                collected_vars.insert(variable_name, popup.buffer);
+
+                                                if remaining_vars.is_empty() {
+                                                    // All variables collected, execute command
+                                                    // Find the menu item
+                                                    let execute_command = {
+                                                        let mut current_items = &state.config.menu.items;
+                                                        let mut target_item = None;
+
+                                                        for name in &menu_item_path {
+                                                            if let Some(item) =
+                                                                current_items.iter().find(|i| &i.name == name)
+                                                            {
+                                                                target_item = Some(item);
+                                                                current_items = &item.items;
+                                                            } else {
+                                                                target_item = None;
+                                                                break;
+                                                            }
+                                                        }
+                                                        target_item.and_then(|i| i.execute_command.clone())
+                                                    };
+
+                                                    if let Some(execute_command) = execute_command {
+                                                        let expanded = expand_menu_variables(
+                                                            execute_command.command.clone(),
+                                                            &collected_vars,
+                                                        );
+                                                        let (target_path, final_expanded) =
+                                                            if let Some(agent) = state.selected_agent() {
+                                                                (
+                                                                    agent.path.clone(),
+                                                                    expand_command_variables(
+                                                                        &expanded, agent,
+                                                                    ),
+                                                                )
+                                                            } else {
+                                                                (String::new(), expanded)
+                                                            };
+
+                                                        let action = Action::ExecuteCommand {
+                                                            command: execute_command.command.clone(),
+                                                            blocking: execute_command.blocking,
+                                                            terminal: execute_command.terminal,
+                                                            external_terminal: execute_command.external_terminal,
+                                                            active_in_tmux: execute_command.active_in_tmux,
+                                                        };
+                                                        state.log_action(&action);
+
+                                                        execute_menu_command(
+                                                            state,
+                                                            terminal,
+                                                            &final_expanded,
+                                                            &execute_command,
+                                                            &target_path,
+                                                            tmux_client,
+                                                        )
+                                                        .await;
+                                                    }
+                                                } else {
+                                                    // Still have variables to collect, show next popup
+                                                    state.popup_input = Some(create_next_variable_popup(
+                                                        menu_item_path,
+                                                        collected_vars,
+                                                        remaining_vars,
+                                                    ));
                                                 }
                                             }
                                         }

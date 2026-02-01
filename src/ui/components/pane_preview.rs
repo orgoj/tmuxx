@@ -70,7 +70,9 @@ impl PanePreviewWidget {
             frame.render_widget(outer_block, area);
 
             // Determine if we should show TODO in full width
-            let has_todo = if state.config.todo_from_file {
+            let has_todo = if let Some(ext) = &state.external_todo {
+                !ext.is_empty()
+            } else if state.config.todo_from_file {
                 state.current_todo.is_some()
             } else {
                 !summary.tasks.is_empty()
@@ -89,9 +91,17 @@ impl PanePreviewWidget {
                     .to_vec()
             };
 
-            // Left column (or full): TODOs (from file or from agent parsing)
+            // Left column (or full): TODOs (from external, file or from agent parsing)
             let mut todo_lines: Vec<Line> = Vec::new();
-            if state.config.todo_from_file {
+            if let Some(todo) = &state.external_todo {
+                todo_lines.push(Line::from(vec![Span::styled(
+                    &state.config.messages.label_todo,
+                    state.styles.dimmed.add_modifier(Modifier::BOLD),
+                )]));
+                for line in todo.lines() {
+                    todo_lines.push(Line::from(vec![Span::styled(line, state.styles.normal)]));
+                }
+            } else if state.config.todo_from_file {
                 if let Some(todo) = &state.current_todo {
                     todo_lines.push(Line::from(vec![Span::styled(
                         &state.config.messages.label_todo,

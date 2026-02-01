@@ -58,6 +58,7 @@ pub struct UniversalParser {
     subagent_rules: Option<CompiledSubagentRules>,
     summary_rules: Option<CompiledSummaryRules>,
     highlight_rules: Vec<CompiledHighlightRule>,
+    global_highlight_rules: Vec<CompiledHighlightRule>,
     layout_rules: Option<CompiledLayoutRules>,
 }
 
@@ -133,7 +134,11 @@ struct CompiledLayoutRules {
 }
 
 impl UniversalParser {
-    pub fn new(config: AgentConfig, capture_buffer_size: usize) -> Self {
+    pub fn new(
+        config: AgentConfig,
+        capture_buffer_size: usize,
+        global_highlight_rules: &[crate::app::config::HighlightRule],
+    ) -> Self {
         let mut matchers = Vec::new();
         for m in &config.matchers {
             match m {
@@ -281,6 +286,17 @@ impl UniversalParser {
             header_separator: l.header_separator.as_ref().and_then(|p| Regex::new(p).ok()),
         });
 
+        let compiled_global_highlights = global_highlight_rules
+            .iter()
+            .filter_map(|r| {
+                Regex::new(&r.pattern).ok().map(|re| CompiledHighlightRule {
+                    re,
+                    color: r.color.clone(),
+                    modifiers: r.modifiers.clone(),
+                })
+            })
+            .collect();
+
         UniversalParser {
             config,
             capture_buffer_size,
@@ -289,6 +305,7 @@ impl UniversalParser {
             subagent_rules,
             summary_rules,
             highlight_rules,
+            global_highlight_rules: compiled_global_highlights,
             layout_rules,
         }
     }
@@ -827,6 +844,28 @@ impl AgentParser for UniversalParser {
                 return Some(style);
             }
         }
+
+        // Global fallback
+        for rule in &self.global_highlight_rules {
+            if rule.re.is_match(line) {
+                let mut style = ratatui::style::Style::default();
+                if let Some(color) = crate::ui::Styles::parse_color(&rule.color) {
+                    style = style.fg(color);
+                }
+                for modifier in &rule.modifiers {
+                    match modifier.to_lowercase().as_str() {
+                        "bold" => style = style.add_modifier(ratatui::style::Modifier::BOLD),
+                        "italic" => style = style.add_modifier(ratatui::style::Modifier::ITALIC),
+                        "dim" => style = style.add_modifier(ratatui::style::Modifier::DIM),
+                        "reversed" => {
+                            style = style.add_modifier(ratatui::style::Modifier::REVERSED)
+                        }
+                        _ => {}
+                    }
+                }
+                return Some(style);
+            }
+        }
         None
     }
 
@@ -888,7 +927,7 @@ mod tests {
             keys: AgentKeys::default(),
         };
 
-        let parser = UniversalParser::new(config, 1024);
+        let parser = UniversalParser::new(config, 1024, &[]);
         let pane = PaneInfo {
             session: "test".to_string(),
             window: 0,

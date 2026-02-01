@@ -49,6 +49,17 @@ pub enum PopupType {
         /// The session name to kill
         session: String,
     },
+    /// Input for menu item variable
+    MenuVariableInput {
+        /// The full path to the menu item being executed
+        menu_item_path: Vec<String>,
+        /// The name of the variable being collected
+        variable_name: String,
+        /// Already collected variables
+        collected_vars: std::collections::HashMap<String, String>,
+        /// Remaining variables to collect (name, prompt)
+        remaining_vars: Vec<(String, String)>,
+    },
 }
 
 /// State for popup input dialog
@@ -305,6 +316,8 @@ pub struct AppState {
     pub truecolor_supported: bool,
     /// Content of the project TODO file for the currently selected agent
     pub current_todo: Option<String>,
+    /// Content from external TODO command
+    pub external_todo: Option<String>,
     /// Whether the command menu is shown
     /// Whether the command menu is shown
     pub show_menu: bool,
@@ -380,6 +393,7 @@ impl AppState {
             system_stats: SystemStats::new(),
             truecolor_supported,
             current_todo: None,
+            external_todo: None,
             show_menu: false,
             menu_tree: MenuTreeState::new(),
             show_prompts: false,

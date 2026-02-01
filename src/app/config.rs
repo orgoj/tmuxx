@@ -162,6 +162,10 @@ pub struct Config {
     #[serde(default)]
     pub messages: MessageConfig,
 
+    /// Global highlight rules (fallback for all agents)
+    #[serde(default)]
+    pub global_highlight_rules: Vec<HighlightRule>,
+
     /// Command template for notifications.
     /// Placeholders: {title}, {message}, {agent}, {session}, {target}, {path}, {approval_type}, {count}
     #[serde(default)]
@@ -174,6 +178,14 @@ pub struct Config {
     /// Notification mode: First (one notification until interaction) or Each (per-agent)
     #[serde(default)]
     pub notification_mode: NotificationMode,
+
+    /// External command to generate TODO content (e.g. "task export status:pending")
+    #[serde(default)]
+    pub todo_command: Option<String>,
+
+    /// Refresh interval for external TODO command in milliseconds
+    #[serde(default = "default_todo_refresh")]
+    pub todo_refresh_interval_ms: u64,
 
     /// Name of the active theme
     #[serde(default = "default_theme_name")]
@@ -494,6 +506,10 @@ fn default_notification_delay() -> u64 {
     60000
 }
 
+fn default_todo_refresh() -> u64 {
+    30000
+}
+
 fn default_selection_mode() -> String {
     "bar".to_string()
 }
@@ -544,10 +560,13 @@ struct PartialConfig {
     indicators: Option<StatusIndicators>,
     timing: Option<TimingConfig>,
     messages: Option<MessageConfig>,
+    global_highlight_rules: Option<Vec<HighlightRule>>,
 
     notification_command: Option<String>,
     notification_delay_ms: Option<u64>,
     notification_mode: Option<NotificationMode>,
+    todo_command: Option<String>,
+    todo_refresh_interval_ms: Option<u64>,
     theme: Option<String>,
     #[serde(rename = "theme_override")]
     theme_overrides: Option<PartialThemeConfig>,
@@ -746,6 +765,9 @@ impl PartialConfig {
         if let Some(v) = self.messages {
             config.messages = v;
         }
+        if let Some(v) = self.global_highlight_rules {
+            config.global_highlight_rules = v;
+        }
         if let Some(v) = self.notification_command {
             config.notification_command = Some(v);
         }
@@ -754,6 +776,12 @@ impl PartialConfig {
         }
         if let Some(v) = self.notification_mode {
             config.notification_mode = v;
+        }
+        if let Some(v) = self.todo_command {
+            config.todo_command = Some(v);
+        }
+        if let Some(v) = self.todo_refresh_interval_ms {
+            config.todo_refresh_interval_ms = v;
         }
         if let Some(v) = self.theme {
             config.theme = v;
@@ -1239,6 +1267,7 @@ impl Config {
                             description: None,
                             execute_command: None,
                             text: None,
+                            variables: std::collections::HashMap::new(),
                             items: subdir_config.items,
                         });
                     }
@@ -1253,6 +1282,7 @@ impl Config {
                         description: None,
                         execute_command: None,
                         text: Some(content),
+                        variables: std::collections::HashMap::new(),
                         items: Vec::new(),
                     });
                 }

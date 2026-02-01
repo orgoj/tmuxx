@@ -24,5 +24,8 @@ pub struct MenuItem {
     pub text: Option<String>,
 
     #[serde(default)]
+    pub variables: std::collections::HashMap<String, String>,
+
+    #[serde(default)]
     pub items: Vec<MenuItem>,
 }

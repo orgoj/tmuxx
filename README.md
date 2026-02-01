@@ -38,6 +38,9 @@ While designed with first-class support for AI coding agents (Claude Code, Pi, G
     -   **Tree View**: Organized by Session -> Window -> Pane (`c` to toggle compact mode).
 -   **Project Context**: Automatically displays `TODO.md` or `README.md` from the agent's working directory.
 -   **Full-Width TODO**: Option to show TODO list across the entire summary area for better readability (default: `true`).
+-   **External TODO Generator**: Dynamically populate the TODO section from external shell commands (e.g. `taskwarrior`).
+-   **Interactive Variables**: Custom menu items can prompt for values during execution.
+-   **Global Highlighting**: System-wide regex rules for consistent highlighting across all monitored panes.
 -   **Regression Testing**: Built-in suite to verify regex parsing against captured pane snapshots.
 
 ---
@@ -157,6 +160,47 @@ background_color = "#e0e0e0"
   status = "Working"
   type = "working"
   pattern = "Processing..."
+```
+
+### Global Highlight Rules
+
+You can define system-wide highlighting rules that apply to all agents in `config.toml`:
+
+```toml
+[[global_highlight_rules]]
+pattern = "(?i)error|fail|exception|panic"
+color = "red"
+modifiers = ["bold"]
+
+[[global_highlight_rules]]
+pattern = "(?i)success|ok|passed"
+color = "green"
+```
+
+### External TODO Generator
+
+Instead of reading a static `TODO.md` file, you can populate the TODO section using a shell command:
+
+```toml
+# Fetch pending tasks from Taskwarrior
+todo_command = "task export status:pending | head -n 10"
+todo_refresh_interval_ms = 60000 # Refresh every minute
+```
+
+### Command Menu with Variables
+
+You can define variables in menu items. When selected, `tmuxx` will prompt for a value:
+
+```toml
+[menu]
+  [[menu.items]]
+  name = "Git"
+    [[menu.items.items]]
+    name = "Checkout Branch"
+    # The variable ${branch} triggers a popup input
+    execute_command = { command = "git checkout ${branch}", blocking = true }
+    [menu.items.items.variables]
+    branch = "Enter branch name:"
 ```
 
 ### Appearance & Selection

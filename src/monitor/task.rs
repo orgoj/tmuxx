@@ -17,6 +17,7 @@ use crate::tmux::{refresh_process_cache, TmuxClient};
 #[derive(Debug, Clone)]
 pub struct MonitorUpdate {
     pub agents: AgentTree,
+    pub external_todo: Option<String>,
 }
 
 /// Background task that monitors tmux panes for AI agents
@@ -40,6 +41,14 @@ pub struct MonitorTask {
     global_notification_sent: bool,
     /// Shared flag - UI sets true on interaction, monitor reads and clears
     user_interacted: Arc<AtomicBool>,
+    /// Last time the external TODO command was run
+    last_todo_refresh: Option<Instant>,
+    /// Cached external TODO content
+    cached_external_todo: Option<String>,
+    /// Whether the external TODO command is currently running
+    todo_command_running: bool,
+    /// Whether the cached TODO was updated since last send
+    todo_updated: bool,
 }
 
 impl MonitorTask {
@@ -66,15 +75,88 @@ impl MonitorTask {
             notified_agents: HashSet::new(),
             global_notification_sent: false,
             user_interacted,
+            last_todo_refresh: None,
+            cached_external_todo: None,
+            todo_command_running: false,
+            todo_updated: false,
         }
     }
 
     /// Runs the monitoring loop
     pub async fn run(mut self) {
+        let (todo_tx, mut todo_rx) = mpsc::channel(1);
+
         loop {
+            // Check if we need to refresh external TODO
+            if let Some(cmd_str) = &self.config.todo_command {
+                let now = Instant::now();
+                let should_refresh = match self.last_todo_refresh {
+                    None => true,
+                    Some(last) => {
+                        now.duration_since(last)
+                            >= Duration::from_millis(self.config.todo_refresh_interval_ms)
+                    }
+                };
+
+                if should_refresh && !self.todo_command_running {
+                    self.todo_command_running = true;
+                    self.last_todo_refresh = Some(now);
+                    let cmd_str_clone = cmd_str.clone();
+                    let todo_tx_clone = todo_tx.clone();
+
+                    tokio::spawn(async move {
+                        let res = match tokio::process::Command::new("bash")
+                            .args(["-c", &cmd_str_clone])
+                            .output()
+                            .await
+                        {
+                            Ok(output) => {
+                                if output.status.success() {
+                                    Some(String::from_utf8_lossy(&output.stdout).to_string())
+                                } else {
+                                    warn!(
+                                        "External TODO command failed: {}",
+                                        String::from_utf8_lossy(&output.stderr)
+                                    );
+                                    None
+                                }
+                            }
+                            Err(e) => {
+                                warn!("Failed to run external TODO command: {}", e);
+                                None
+                            }
+                        };
+                        let _ = todo_tx_clone.send(res).await;
+                    });
+                }
+            }
+
+            // Non-blocking check for TODO result
+            match todo_rx.try_recv() {
+                Ok(res) => {
+                    self.todo_command_running = false;
+                    if let Some(todo) = res {
+                        self.cached_external_todo = Some(todo);
+                        self.todo_updated = true;
+                    }
+                }
+                Err(mpsc::error::TryRecvError::Empty) => {}
+                Err(mpsc::error::TryRecvError::Disconnected) => {
+                    // This shouldn't happen as we hold todo_tx
+                }
+            }
+
             match self.poll_agents().await {
                 Ok(tree) => {
-                    let update = MonitorUpdate { agents: tree };
+                    let update = MonitorUpdate {
+                        agents: tree,
+                        external_todo: if self.todo_updated {
+                            self.todo_updated = false;
+                            self.cached_external_todo.clone()
+                        } else {
+                            None
+                        },
+                    };
                     if self.tx.send(update).await.is_err() {
                         debug!("Monitor channel closed, stopping");
                         break;
