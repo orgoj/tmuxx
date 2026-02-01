@@ -1,0 +1,121 @@
+BASHRC.D: homebrew init
+BASHRC.D: brew completions
+BASHRC.D: mise
+BASHRC.D: GO init
+BASHRC.D: bun
+BASHRC.D: cargo
+BASHRC.D: chezmoi
+BASHRC.D: cass completions
+BASHRC.D: ntm shell integration
+BASHRC.D: direnv init
+BASHRC.D: fzf init
+BASHRC.D: MOP
+BASHRC.D: pipx
+BASHRC.D: pnpm
+BASHRC.D: z+zi command
+BASHRC.D: starship
+
+michael@~/bin git:master [!?] py:v3.12.1217GiB/31GiB on gcp:
+> Cs
+
+ ▐▛███▜▌   Claude Code v2.1.25
+▝▜█████▛▘  Sonnet 4.5 · Claude Max
+  ▘▘ ▝▝    ~/bin
+  ⎿  SessionStart:startup hook succeeded
+  ⎿  SessionStart:startup hook succeeded: Success
+  ⎿  SessionStart:startup hook succeeded: Success
+
+❯ besi mi tu moltbod pres user systemd, potrebuji zjistit jake services a jak to vypnu/zapnu
+  ⎿  UserPromptSubmit hook succeeded: Success
+  ⎿  Interrupted · What should Claude do instead?
+
+❯ besi mi tu moltbot pres user systemd, potrebuji zjistit jake services a jak to vypnu/zapnu
+  ⎿  UserPromptSubmit hook succeeded: Success
+
+· Puttering… (31s · ↓ 528 tokens · thinking)
+
+─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+❯ 
+─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+  esc to interrupt                                                                                                                                                                                         0 tokens
+                                                                                                                                                                                   current: 2.1.25 · latest: 2.1.25
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
