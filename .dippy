@@ -50,3 +50,8 @@ allow git add *
 
 # docasne pro reorganizaci
 #allow cp *
+
+# yolo
+allow git commit *
+allow git add *
+allow rustfmt *

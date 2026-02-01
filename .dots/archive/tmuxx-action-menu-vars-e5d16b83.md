@@ -1,9 +1,10 @@
 ---
 title: Action Menu Variables
-status: open
+status: closed
 priority: 3
 issue-type: task
-created-at: "2026-01-29T16:48:42.303139+01:00"
+created-at: "\"2026-01-29T16:48:42.303139+01:00\""
+closed-at: "2026-01-29T22:58:50.405358+01:00"
 ---
 
 Účel: Menu položky s input prompty pro proměnné, sjednoceno s existujícím systémem expansion.
