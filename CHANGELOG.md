@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.6.0] - 2026-02-01
+
 ### Added
 - **Command Palette** (`Ctrl-P`): New quick command launcher with fuzzy search support. Access all internal tmuxx commands and shell commands from a single popup. Use `!` prefix for shell commands executed in the selected agent's directory. Includes history for recently used commands.
 - **Scrollable Command List**: Command palette now features scrollable list with scrollbar indicator when items don't fit on screen.
@@ -14,6 +16,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Improved UI Layout**: Command palette now has a separator line between input and command list, with hints displayed below the list.
 - **Compact Popup Layout**: Reduced popup height from 50% to 40%, simplified layout constraints, and removed all vertical padding to eliminate empty lines between widgets.
 
+### Fixed
+- **Ctrl-C in Dialogs**: Improved event handling so `Ctrl-C` now correctly quits the application even when a modal dialog (like Command Palette) is open.
 ## [0.5.1] - 2026-02-01
 
 ### Changed
