@@ -1,0 +1,205 @@
+ +109                 };
+ +110
+   97                 todo_lines.push(Line::from(vec![Span::styled(
+ - 98                     &state.config.messages.label_todo,
+ +112                     label,
+   99                     state.styles.dimmed.add_modifier(Modifier::BOLD),
+  100                 )]));
+  101                 for line in todo.lines() {
+  102                     todo_lines.push(Line::from(vec![Span::styled(line, state.styles.normal)]));
+  103                 }
+  104             } else if state.config.todo_from_file {
+  105                 if let Some(todo) = &state.current_todo {
+ +120                     let label = if let Some(source) = &state.todo_source {
+ +121                         format!("Project TODO ({}):", source)
+ +122                     } else {
+ +123                         state.config.messages.label_todo.clone()
+ +124                     };
+ +125
+  106                     todo_lines.push(Line::from(vec![Span::styled(
+ -107                         &state.config.messages.label_todo,
+ +127                         label,
+  108                         state.styles.dimmed.add_modifier(Modifier::BOLD),
+  109                     )]));
+  110                     for line in todo.lines() {
+  111                         todo_lines.push(Line::from(vec![Span::styled(line, state.styles.normal)]));
+      ...
+
+
+
+ read src/ui/app.rs:250-349
+
+         if !path.is_empty() {
+             cmd.current_dir(path);
+         }
+         let _ = cmd.spawn();
+         state.set_status(format!("Started: {}", expanded));
+     }
+ }
+
+ async fn run_loop(
+     terminal: &mut Terminal<CrosstermBackend<io::Stdout>>,
+ ... (92 more lines, ctrl+o to expand)
+
+
+ Refining Display Logic
+
+ I've decided to render the current working directory (PWD) as a Paragraph within render_detailed. Modifying the main layout felt too cumbersome, so I'm opting for a simpler approach by incorporating it in a
+ separate block. This keeps the design cleaner while still providing the required information.
+
+ Considering Display Position
+
+ I am now focusing on placement, aiming for an elegant integration of the current working directory. Adding it right after the header, as the user did with their example ASCII art, seems promising. Alternatively,
+ I am considering making it a direct part of the title for the detailed preview box. I'll test these options to align with the user's "nad spodmim boxem" suggestion.
+
+ Prioritizing Title Integration
+
+ I'm now integrating the current working directory (CWD) directly into the title. My initial aim is to keep the TUI interface clean. I've focused on splitting the preview area within src/ui/app.rs in the code,
+ which allows the CWD to appear above the main box, ensuring its visibility. The example snippet with the CWD above the box gives a good idea of how this will look.
+
+
+
+ edit src/ui/components/pane_preview.rs
+
+ Could not find the exact text in src/ui/components/pane_preview.rs. The old text must match exactly including all whitespace and newlines.
+
+
+
+ read src/ui/components/pane_preview.rs:250-349
+
+         let agent = state.selected_visible_agent();
+
+         let (title, content) = if let Some(agent) = agent {
+             let title = format!(" Preview: {} ({}) ", agent.target, agent.name);
+
+             // Use config-driven parser for approval keys
+             let registry = ParserRegistry::with_config(&state.config);
+             let (approve_key, reject_key) = if let Some(parser) = registry
+                 .all_parsers()
+                 .find(|p| p.agent_name() == agent.name)
+ ... (92 more lines, ctrl+o to expand)
+
+
+
+ edit src/ui/components/pane_preview.rs
+
+ Could not find the exact text in src/ui/components/pane_preview.rs. The old text must match exactly including all whitespace and newlines.
+
+
+
+ edit src/ui/components/pane_preview.rs
+
+ Could not find the exact text in src/ui/components/pane_preview.rs. The old text must match exactly including all whitespace and newlines.
+
+
+
+ read src/ui/components/pane_preview.rs
+
+ use ratatui::{
+     layout::{Constraint, Direction, Layout, Rect},
+     style::{Color, Modifier, Style},
+     text::{Line, Span},
+     widgets::{Block, BorderType, Borders, Paragraph},
+     Frame,
+ };
+ use unicode_width::{UnicodeWidthChar, UnicodeWidthStr};
+
+ use crate::agents::AgentStatus;
+ ... (390 more lines, ctrl+o to expand)
+
+
+
+ write src/ui/components/pane_preview.rs
+
+ use ratatui::{
+     layout::{Constraint, Direction, Layout, Rect},
+     style::{Color, Modifier, Style},
+     text::{Line, Span},
+     widgets::{Block, BorderType, Borders, Paragraph},
+     Frame,
+ };
+ use unicode_width::{UnicodeWidthChar, UnicodeWidthStr};
+
+ use crate::agents::AgentStatus;
+ ... (404 more lines, 414 total, ctrl+o to expand)
+
+
+
+ $ cargo check
+
+ Checking tmuxx v0.6.0 (/home/michael/work/ai/TOOLS/tmuxx)
+     Finished `dev` profile [unoptimized + debuginfo] target(s) in 1.59s
+
+
+
+ $ git add src/app/state.rs src/ui/components/pane_preview.rs && git commit -m "ui: implement boxed layout for right column with TODO source and PWD"
+
+ [dev2 5236c36] ui: implement boxed layout for right column with TODO source and PWD
+  2 files changed, 83 insertions(+), 34 deletions(-)
+
+
+ Upravil jsem zobrazení pravého sloupce tak, aby odpovídalo tvému požadavku na "boxy" a přehlednější informace:
+
+ ### Hlavní změny v UI:
+
+ 1. Boxy s kulatými rohy: Horní (TODO/Activity) i spodní (Preview) sekce mají teď ohraničení s kulatými rohy a titulky.
+ 2. Zdroj TODO v titulku:
+     - Pokud se TODO čte ze souboru, v titulku horního boxu se zobrazí název souboru (např. shell (TODO.md)).
+     - Pokud se používá externí příkaz (todo_command), zobrazí se tento příkaz (např. shell (cmd: task export...)).
+ 3. PWD nad spodním boxem: Nad detailním náhledem (spodní box) přibyl řádek se zobrazením aktuální pracovní cesty (PWD: /h/m/w/...).
+ 4. Sjednocení s agentem: Titulek spodního boxu teď obsahuje cílový pane a jméno agenta (např. cc-ansible-contimex:2.0 (shell)).
+
+ Všechny změny jsou v branchi dev2, která je teď plně připravená, otestovaná a obsahuje i všechny předchozí opravy a featury.
+
+ Chceš si to v této branchi vyzkoušet, nebo to můžeme rovnou mergnout do main?
+
+
+ to pwd melo byt v hormim okraji ramecku pridane, ne dalsi radek nad tim
+
+
+ Re-designing the Display
+
+ I'm currently focused on integrating the PWD information directly into the top border of the preview box. I'm examining the render_detailed function in src/ui/components/pane_preview to see how the current
+ display is set up to find the best place to make this change.
+
+ Refactoring the Layout
+
+ I'm removing the layout split to streamline the display of PWD information, aiming to integrate it within the preview box's top border. I've located the render_detailed function within
+ src/ui/components/pane_preview and will modify the block definition to include the pwd_line directly in the block's title.
+
+
+
+
+ $ grep ratatui Cargo.toml
+
+ ratatui = "0.29"
+
+
+ Exploring Title Flexibility
+
+ I've been examining the recent Ratatui update. Specifically, the implementation of multiple titles and alignments for Block::title sparked a new line of thinking. The ability to customize titles like this is
+ compelling, and I'm currently conceptualizing how to best leverage it to enhance the application.
+
+
+
+
+ edit src/ui/components/pane_preview.rs
+
+ Could not find the exact text in src/ui/components/pane_preview.rs. The old text must match exactly including all whitespace and newlines.
+
+ ⠏ Working...
+ Error: Cloud Code Assist API error (429): You have exhausted your capacity on this model. Your quota will reset after 1h18m37s.
+
+ Error: Cloud Code Assist API error (429): You have exhausted your capacity on this model. Your quota will reset after 1h18m22s.
+
+ Error: Cloud Code Assist API error (429): You have exhausted your capacity on this model. Your quota will reset after 1h18m5s.
+
+ Error: Cloud Code Assist API error (429): You have exhausted your capacity on this model. Your quota will reset after 1h17m46s.
+
+ Error: Retry failed after 3 attempts: Cloud Code Assist API error (429): You have exhausted your capacity on this model. Your quota will reset after 1h17m46s.
+
+─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+
+─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+~/work/ai/TOOLS/tmuxx (dev)
+↑1.3M ↓50k R17M $9.105 (sub) 0.0%/1.0M (auto)                                                                                                                              (google-antigravity) gemini-3-flash • high
