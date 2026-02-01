@@ -318,6 +318,8 @@ pub struct AppState {
     pub current_todo: Option<String>,
     /// Content from external TODO command
     pub external_todo: Option<String>,
+    /// Source of current TODO content (file path or command)
+    pub todo_source: Option<String>,
     /// Whether the command menu is shown
     /// Whether the command menu is shown
     pub show_menu: bool,
@@ -394,6 +396,7 @@ impl AppState {
             truecolor_supported,
             current_todo: None,
             external_todo: None,
+            todo_source: None,
             show_menu: false,
             menu_tree: MenuTreeState::new(),
             show_prompts: false,
@@ -1140,8 +1143,15 @@ impl AppState {
 
     /// Refresh the current project TODO content based on the selected agent's path
     pub fn refresh_project_todo(&mut self) {
+        // If external TODO command is configured, it takes precedence and is managed by MonitorTask
+        if let Some(cmd) = &self.config.todo_command {
+            self.todo_source = Some(format!("cmd: {}", cmd));
+            return;
+        }
+
         if !self.config.todo_from_file {
             self.current_todo = None;
+            self.todo_source = None;
             return;
         }
 
@@ -1149,15 +1159,18 @@ impl AppState {
             &agent.path
         } else {
             self.current_todo = None;
+            self.todo_source = None;
             return;
         };
 
         if path.is_empty() {
             self.current_todo = None;
+            self.todo_source = None;
             return;
         }
 
         let mut todo_content = None;
+        let mut todo_source = None;
         for file in &self.config.todo_files {
             let full_path = std::path::Path::new(path).join(file);
             if full_path.exists() && full_path.is_file() {
@@ -1166,11 +1179,13 @@ impl AppState {
                     // Limit to first 20 lines to keep it reasonable
                     let lines: Vec<&str> = content.lines().take(20).collect();
                     todo_content = Some(lines.join("\n"));
+                    todo_source = Some(file.clone());
                     break;
                 }
             }
         }
         self.current_todo = todo_content;
+        self.todo_source = todo_source;
     }
 
     /// Show command palette

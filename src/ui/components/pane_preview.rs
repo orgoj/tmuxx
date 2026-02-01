@@ -59,9 +59,16 @@ impl PanePreviewWidget {
                 crate::parsers::AgentSummary::default()
             };
 
+            // Title with source information
+            let title = if let Some(source) = &state.todo_source {
+                format!(" {} ({}) ", agent.name, source)
+            } else {
+                format!(" {} ", agent.name)
+            };
+
             // Outer block for the entire summary area
             let outer_block = Block::default()
-                .title(format!(" {} ", agent.name))
+                .title(title)
                 .borders(Borders::ALL)
                 .border_type(BorderType::Rounded)
                 .border_style(state.styles.border);
@@ -94,8 +101,15 @@ impl PanePreviewWidget {
             // Left column (or full): TODOs (from external, file or from agent parsing)
             let mut todo_lines: Vec<Line> = Vec::new();
             if let Some(todo) = &state.external_todo {
+                // Label with source
+                let label = if let Some(source) = &state.todo_source {
+                    format!("Project TODO ({}):", source)
+                } else {
+                    state.config.messages.label_todo.clone()
+                };
+
                 todo_lines.push(Line::from(vec![Span::styled(
-                    &state.config.messages.label_todo,
+                    label,
                     state.styles.dimmed.add_modifier(Modifier::BOLD),
                 )]));
                 for line in todo.lines() {
@@ -103,8 +117,14 @@ impl PanePreviewWidget {
                 }
             } else if state.config.todo_from_file {
                 if let Some(todo) = &state.current_todo {
+                    let label = if let Some(source) = &state.todo_source {
+                        format!("Project TODO ({}):", source)
+                    } else {
+                        state.config.messages.label_todo.clone()
+                    };
+
                     todo_lines.push(Line::from(vec![Span::styled(
-                        &state.config.messages.label_todo,
+                        label,
                         state.styles.dimmed.add_modifier(Modifier::BOLD),
                     )]));
                     for line in todo.lines() {
@@ -291,19 +311,33 @@ impl PanePreviewWidget {
     pub fn render_detailed(frame: &mut Frame, area: Rect, state: &AppState) {
         let agent = state.selected_visible_agent();
 
-        // Calculate available lines (area height minus border)
-        let available_lines = area.height.saturating_sub(2) as usize;
+        if let Some(agent) = agent {
+            // Split area into PWD line and the rest for the box
+            let chunks = Layout::default()
+                .direction(Direction::Vertical)
+                .constraints([Constraint::Length(1), Constraint::Min(0)])
+                .split(area);
 
-        // Calculate max line width for truncation
-        let max_line_width = state
-            .config
-            .max_line_width
-            .map(|w| w as usize)
-            .unwrap_or_else(|| area.width.saturating_sub(2) as usize);
+            // Render PWD
+            let pwd_line = Line::from(vec![
+                Span::styled(" PWD: ", state.styles.dimmed),
+                Span::styled(&agent.path, state.styles.normal),
+            ]);
+            frame.render_widget(Paragraph::new(pwd_line), chunks[0]);
 
-        let (title, lines) = if let Some(agent) = agent {
+            let box_area = chunks[1];
+
+            // Calculate available lines (area height minus border)
+            let available_lines = box_area.height.saturating_sub(2) as usize;
+
+            // Calculate max line width for truncation
+            let max_line_width = state
+                .config
+                .max_line_width
+                .map(|w| w as usize)
+                .unwrap_or_else(|| box_area.width.saturating_sub(2) as usize);
+
             let title = format!(" {} ({}) ", agent.target, agent.name);
-
             let mut styled_lines: Vec<Line> = Vec::new();
 
             // Take enough lines to fill the area
@@ -326,7 +360,6 @@ impl PanePreviewWidget {
                 // Apply syntax highlighting based on config rules
                 let style = parser.and_then(|p| p.highlight_line(&display_line));
 
-                // If no rule matched, use default behavior (some fallback highlighting)
                 if let Some(s) = style {
                     styled_lines.push(Line::from(vec![Span::styled(display_line, s)]));
                 } else {
@@ -353,27 +386,28 @@ impl PanePreviewWidget {
                 }
             }
 
-            (title, styled_lines)
+            let block = Block::default()
+                .title(title)
+                .borders(Borders::ALL)
+                .border_type(BorderType::Rounded)
+                .border_style(state.styles.border);
+
+            let paragraph = Paragraph::new(styled_lines).block(block);
+            frame.render_widget(paragraph, box_area);
         } else {
-            (
-                " Preview ".to_string(),
-                vec![Line::from(vec![Span::styled(
-                    "No agent selected",
-                    state.styles.dimmed,
-                )])],
-            )
-        };
+            let block = Block::default()
+                .title(" Preview ")
+                .borders(Borders::ALL)
+                .border_type(BorderType::Rounded)
+                .border_style(Style::default().fg(Color::Gray));
 
-        let block = Block::default()
-            .title(title)
-            .borders(Borders::ALL)
-            .border_type(BorderType::Rounded)
-            .border_style(state.styles.border);
+            let paragraph = Paragraph::new(vec![Line::from(vec![Span::styled(
+                "No agent selected",
+                state.styles.dimmed,
+            )])])
+            .block(block);
 
-        // Never wrap - lines are truncated, each source line = 1 visual line
-        // This ensures "last N lines" shows exactly the last N visual lines
-        let paragraph = Paragraph::new(lines).block(block);
-
-        frame.render_widget(paragraph, area);
+            frame.render_widget(paragraph, area);
+        }
     }
 }
