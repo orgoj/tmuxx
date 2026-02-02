@@ -24,6 +24,7 @@ pub enum ConfigOverride {
     NotificationCommand(Option<String>),
     NotificationDelayMs(u64),
     NotificationMode(NotificationMode),
+    TodoCommandTimeoutMs(u64),
 }
 
 impl ConfigOverride {
@@ -168,8 +169,17 @@ impl ConfigOverride {
                 };
                 Ok(ConfigOverride::NotificationMode(mode))
             }
+            "todocommandtimeoutms" | "todotimeout" => {
+                let val = value.parse::<u64>().map_err(|_| {
+                    anyhow!(
+                        "Invalid value for todo_command_timeout_ms: '{}'. Expected milliseconds.",
+                        value
+                    )
+                })?;
+                Ok(ConfigOverride::TodoCommandTimeoutMs(val))
+            }
             _ => Err(anyhow!(
-                "Unknown config key: '{}'. Valid keys: poll_interval_ms, capture_lines, show_detached_sessions, debug_mode, truncate_long_lines, max_line_width, popup_trigger_key, ignore_sessions, ignore_self, log_actions, sidebar_width, terminal_wrapper, notification_command, notification_delay_ms, notification_mode, keybindings.KEY (or kb.KEY)",
+                "Unknown config key: '{}'. Valid keys: poll_interval_ms, capture_lines, show_detached_sessions, debug_mode, truncate_long_lines, max_line_width, popup_trigger_key, ignore_sessions, ignore_self, log_actions, sidebar_width, terminal_wrapper, notification_command, notification_delay_ms, notification_mode, todo_command_timeout_ms, keybindings.KEY (or kb.KEY)",
                 key
             )),
         }
@@ -196,6 +206,7 @@ impl ConfigOverride {
             ConfigOverride::NotificationCommand(val) => config.notification_command = val,
             ConfigOverride::NotificationDelayMs(val) => config.notification_delay_ms = val,
             ConfigOverride::NotificationMode(val) => config.notification_mode = val,
+            ConfigOverride::TodoCommandTimeoutMs(val) => config.todo_command_timeout_ms = val,
         }
     }
 }

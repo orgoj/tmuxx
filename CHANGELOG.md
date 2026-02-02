@@ -10,6 +10,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 - Reduced allocations when recalculating visible agent indices.
 - Send Ctrl-C/Ctrl-D as a single tmux command to improve kill sequence reliability.
+- Cache process indicator regexes to avoid repeated compilation during polling.
+- Added a configurable timeout for external TODO commands.
 
 ### Fixed
 - Added warnings when the process cache refresh fails to aid debugging.

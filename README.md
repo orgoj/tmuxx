@@ -185,6 +185,7 @@ Instead of reading a static `TODO.md` file, you can populate the TODO section us
 # Fetch pending tasks from Taskwarrior
 todo_command = "task export status:pending | head -n 10"
 todo_refresh_interval_ms = 60000 # Refresh every minute
+todo_command_timeout_ms = 10000 # Timeout for the command
 ```
 
 ### Command Menu with Variables
