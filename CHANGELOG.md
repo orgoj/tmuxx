@@ -7,10 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.7.0] - 2026-02-02
+
 ### Fixed
 - **State Detection (Universal Parser)**: Fixed an issue where trailing empty lines in the capture buffer would break "last line" and "last block" detection. The parser now trims trailing whitespace before matching, ensuring reliable state updates even with large terminal windows.
 - **Pi/Dippy Detection**: Added specific detection rules for Dippy approval prompts (`[dippy] allow [type]`) and generic error messages (`Error: msg`).
 - **Claude Detection**: Improved robustness of Claude state detection by increasing the detection buffer (`last_lines`) and improving separator line handling.
+- **Empty Agent List on No Sessions**: Fixed an issue where closing all tmux sessions would cause `tmuxx` to keep displaying the last known session instead of an empty list.
 
 ### Changed
 - **Regression Tests**: Fixed and categorized several test fixtures. Moved Pi-specific tests to their own suite and corrected "unknown" status filenames to match expected results. Increased test coverage to 82 passed cases.
@@ -20,9 +23,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Global Highlight Rules**: Introduced a global configuration for syntax highlighting that applies as a fallback to all agents. This ensures consistent highlighting of common patterns like "error", "fail", "success", and diff markers across different tools. Configure with `[[global_highlight_rules]]` in `config.toml`.
 - **External TODO Generator**: Support for fetching TODO content from an external shell command (e.g., Taskwarrior). Configure with `todo_command` and `todo_refresh_interval_ms`. External output takes precedence over file-based TODOs.
 - **Menu Variables**: Support for interactive variables in Command/Prompt menus. Use `${VARIABLE_NAME}` in command/text templates to trigger an input popup before execution.
-
-### Fixed
-- **Empty Agent List on No Sessions**: Fixed an issue where closing all tmux sessions would cause `tmuxx` to keep displaying the last known session instead of an empty list.
 
 ## [0.6.0] - 2026-02-01
 
