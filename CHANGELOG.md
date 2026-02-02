@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+- Reduced allocations when recalculating visible agent indices.
+- Send Ctrl-C/Ctrl-D as a single tmux command to improve kill sequence reliability.
+
+### Fixed
+- Added warnings when the process cache refresh fails to aid debugging.
+
 ## [0.7.0] - 2026-02-02
 
 ### Fixed
