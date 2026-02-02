@@ -4,13 +4,6 @@ on:
   pull_request:
     branches: [master, main]
     paths-ignore:
-      - '**.md'
-      - 'docs/**'
-      - 'LICENSE'
-      - '.gitignore'
-  push:
-    tags:
-      - 'v*'
 
 env:
   CARGO_TERM_COLOR: always
