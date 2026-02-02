@@ -8,8 +8,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Fixed
-- **Cursor Navigation Order**: Fixed an issue where the cursor would "jump" non-linearly when navigating up and down. The agent list is now strictly sorted by Session, Window, and Pane to match the visual tree display.
-- **Natural Window Sorting**: Agents are now sorted numerically by window index (e.g., window 10 comes after window 2) instead of alphabetically.
+- **State Detection (Universal Parser)**: Fixed an issue where trailing empty lines in the capture buffer would break "last line" and "last block" detection. The parser now trims trailing whitespace before matching, ensuring reliable state updates even with large terminal windows.
+- **Pi/Dippy Detection**: Added specific detection rules for Dippy approval prompts (`[dippy] allow [type]`) and generic error messages (`Error: msg`).
+- **Claude Detection**: Improved robustness of Claude state detection by increasing the detection buffer (`last_lines`) and improving separator line handling.
+
+### Changed
+- **Regression Tests**: Fixed and categorized several test fixtures. Moved Pi-specific tests to their own suite and corrected "unknown" status filenames to match expected results. Increased test coverage to 82 passed cases.
+- **Improved Detection Buffers**: Increased default `last_lines` buffer for AI agents to 200 lines, ensuring structural separators and prompts are correctly identified in dense output.
 
 ### Added
 - **Global Highlight Rules**: Introduced a global configuration for syntax highlighting that applies as a fallback to all agents. This ensures consistent highlighting of common patterns like "error", "fail", "success", and diff markers across different tools. Configure with `[[global_highlight_rules]]` in `config.toml`.

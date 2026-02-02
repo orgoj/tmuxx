@@ -218,7 +218,7 @@ priority = 100
   [[agents.state_rules]]
   status = "idle"
   type = "idle"
-  last_lines = 40
+  last_lines = 200
   splitter = "separator_line"
 
   # --- WORKING (Checks first line of last block in response body) ---
@@ -336,7 +336,7 @@ priority = 96
   [[agents.state_rules]]
   status = "idle"
   type = "idle"
-  last_lines = 40
+  last_lines = 200
   splitter = "powerline_box"
 
   # --- Question ---
@@ -362,6 +362,21 @@ priority = 96
   pattern = '''Command exited with code [1-9]'''
   status = "Error"
   type = "error"
+
+  # --- Error (Generic) ---
+  [[agents.state_rules.refinements]]
+  group = "body"
+  pattern = '''(?m)^\s*Error: (?P<msg>.*)'''
+  status = "Error: {msg}"
+  type = "error"
+
+  # --- Dippy Approval ---
+  [[agents.state_rules.refinements]]
+  group = "prompt"
+  pattern = '''\[dippy\] allow \[(?P<type>.*?)\]'''
+  status = "Dippy: {type}"
+  type = "approval"
+  approval_type = "other"
 
 [[agents]]
 id = "pi"
@@ -393,7 +408,7 @@ priority = 95
   [[agents.state_rules]]
   status = "idle"
   type = "idle"
-  last_lines = 40
+  last_lines = 200
   splitter = "separator_line"
 
   # --- WORKING (Highest Priority in body) ---
@@ -419,6 +434,21 @@ priority = 95
   pattern = '''Command exited with code [1-9]'''
   status = "Error"
   type = "error"
+
+  # --- Error (Generic) ---
+  [[agents.state_rules.refinements]]
+  group = "body"
+  pattern = '''(?m)^\s*Error: (?P<msg>.*)'''
+  status = "Error: {msg}"
+  type = "error"
+
+  # --- Dippy Approval ---
+  [[agents.state_rules.refinements]]
+  group = "prompt"
+  pattern = '''\[dippy\] allow \[(?P<type>.*?)\]'''
+  status = "Dippy: {type}"
+  type = "approval"
+  approval_type = "other"
 
 [[agents]]
 id = "gemini"

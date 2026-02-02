@@ -50,6 +50,35 @@ fn split_on_powerline(content: &str) -> (String, String) {
     (content.to_string(), String::new())
 }
 
+fn get_match_text<'a>(text: &'a str, location: &MatchLocation) -> &'a str {
+    match location {
+        MatchLocation::LastLine => text
+            .trim_end()
+            .lines()
+            .rev()
+            .find(|l| !l.trim().is_empty())
+            .unwrap_or(""),
+        MatchLocation::LastBlock => {
+            let trimmed = text.trim_end();
+            if let Some(pos) = trimmed.rfind("\n\n") {
+                &trimmed[pos + 2..]
+            } else {
+                trimmed
+            }
+        }
+        MatchLocation::FirstLineOfLastBlock => {
+            let trimmed = text.trim_end();
+            let block = if let Some(pos) = trimmed.rfind("\n\n") {
+                &trimmed[pos + 2..]
+            } else {
+                trimmed
+            };
+            block.lines().find(|l| !l.trim().is_empty()).unwrap_or("")
+        }
+        MatchLocation::Anywhere => text,
+    }
+}
+
 pub struct UniversalParser {
     config: AgentConfig,
     capture_buffer_size: usize,
@@ -550,29 +579,7 @@ impl AgentParser for UniversalParser {
                 } else {
                     &body_group
                 };
-                let match_text = match &refinement.location {
-                    MatchLocation::LastLine => target_text
-                        .lines()
-                        .rev()
-                        .find(|l| !l.trim().is_empty())
-                        .unwrap_or(""),
-                    MatchLocation::LastBlock => {
-                        if let Some(pos) = target_text.rfind("\n\n") {
-                            &target_text[pos + 2..]
-                        } else {
-                            target_text
-                        }
-                    }
-                    MatchLocation::FirstLineOfLastBlock => {
-                        let block = if let Some(pos) = target_text.rfind("\n\n") {
-                            &target_text[pos + 2..]
-                        } else {
-                            target_text
-                        };
-                        block.lines().find(|l| !l.trim().is_empty()).unwrap_or("")
-                    }
-                    MatchLocation::Anywhere => target_text,
-                };
+                let match_text = get_match_text(target_text, &refinement.location);
 
                 if let Some(caps) = refinement.re.captures(match_text) {
                     let mut current_status = refinement.status.clone();
@@ -786,29 +793,7 @@ impl AgentParser for UniversalParser {
                 } else {
                     &body_group
                 };
-                let match_text = match &refinement.location {
-                    MatchLocation::LastLine => target_text
-                        .lines()
-                        .rev()
-                        .find(|l| !l.trim().is_empty())
-                        .unwrap_or(""),
-                    MatchLocation::LastBlock => {
-                        if let Some(pos) = target_text.rfind("\n\n") {
-                            &target_text[pos + 2..]
-                        } else {
-                            target_text
-                        }
-                    }
-                    MatchLocation::FirstLineOfLastBlock => {
-                        let block = if let Some(pos) = target_text.rfind("\n\n") {
-                            &target_text[pos + 2..]
-                        } else {
-                            target_text
-                        };
-                        block.lines().find(|l| !l.trim().is_empty()).unwrap_or("")
-                    }
-                    MatchLocation::Anywhere => target_text,
-                };
+                let match_text = get_match_text(target_text, &refinement.location);
 
                 if refinement.re.is_match(match_text) {
                     explanation.push_str(&format!(
