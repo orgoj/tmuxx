@@ -16,10 +16,10 @@ jobs:
   # Run tests first to make sure we don't build a broken release
   validate:
     name: Validate
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
-      - uses: dtolnay/rust-toolchain@1.93.0
+      - uses: dtolnay/rust-toolchain@master
         with:
           toolchain: 1.93.0
           components: clippy
@@ -35,7 +35,7 @@ jobs:
     strategy:
       matrix:
         include:
-          - os: ubuntu-latest
+          - os: ubuntu-24.04
             target: x86_64-unknown-linux-gnu
             artifact: tmuxx
           - os: macos-latest
@@ -46,7 +46,7 @@ jobs:
             artifact: tmuxx
     steps:
       - uses: actions/checkout@v4
-      - uses: dtolnay/rust-toolchain@1.93.0
+      - uses: dtolnay/rust-toolchain@master
         with:
           toolchain: 1.93.0
           targets: ${{ matrix.target }}
@@ -77,7 +77,7 @@ jobs:
   create-release:
     name: Create Release
     needs: build-release
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     if: startsWith(github.ref, 'refs/tags/')
     steps:
       - uses: actions/checkout@v4
