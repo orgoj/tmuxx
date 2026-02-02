@@ -12,6 +12,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **External TODO Generator**: Support for fetching TODO content from an external shell command (e.g., Taskwarrior). Configure with `todo_command` and `todo_refresh_interval_ms`. External output takes precedence over file-based TODOs.
 - **Menu Variables**: Support for interactive variables in Command/Prompt menus. Use `${VARIABLE_NAME}` in command/text templates to trigger an input popup before execution.
 
+### Fixed
+- **Empty Agent List on No Sessions**: Fixed an issue where closing all tmux sessions would cause `tmuxx` to keep displaying the last known session instead of an empty list.
+
 ## [0.6.0] - 2026-02-01
 
 ### Added

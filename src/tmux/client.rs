@@ -62,6 +62,9 @@ impl TmuxClient {
 
         if !output.status.success() {
             let stderr = String::from_utf8_lossy(&output.stderr);
+            if stderr.contains("no sessions") || stderr.contains("no server running") {
+                return Ok(vec![]);
+            }
             anyhow::bail!("tmux list-panes failed: {}", stderr);
         }
 

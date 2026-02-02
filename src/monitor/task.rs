@@ -164,6 +164,15 @@ impl MonitorTask {
                 }
                 Err(e) => {
                     warn!("Monitor poll error: {}", e);
+                    // Send an empty update on error to ensure UI reflects lack of agents/server
+                    let update = MonitorUpdate {
+                        agents: AgentTree::new(),
+                        external_todo: None,
+                    };
+                    if self.tx.send(update).await.is_err() {
+                        debug!("Monitor channel closed, stopping");
+                        break;
+                    }
                 }
             }
 
