@@ -22,14 +22,19 @@ if ! git diff-index --quiet HEAD --; then
     exit 1
 fi
 
-# 3. Get current version
-CURRENT_VERSION=$(grep '^version =' Cargo.toml | sed 's/version = "\(.*\)"/\1/')
-echo -e "Current version: ${GREEN}$CURRENT_VERSION${NC}"
+# 3. Get version from Cargo.toml
+VERSION=$(grep '^version =' Cargo.toml | sed 's/version = "\(.*\)"/\1/')
+TAG="v$VERSION"
+echo -e "Detected version from Cargo.toml: ${GREEN}$VERSION${NC}"
 
-# 4. Ask for new version
-read -p "Enter new version (e.g., 0.6.1): " NEW_VERSION
-if [ -z "$NEW_VERSION" ]; then
-    echo -e "${RED}Error: Version cannot be empty.${NC}"
+# 4. Check if tag already exists
+if git rev-parse "$TAG" >/dev/null 2>&1; then
+    echo -e "${RED}Error: Tag $TAG already exists locally.${NC}"
+    exit 1
+fi
+
+if git ls-remote --tags origin "$TAG" | grep -q "$TAG"; then
+    echo -e "${RED}Error: Tag $TAG already exists on remote.${NC}"
     exit 1
 fi
 
@@ -37,29 +42,23 @@ fi
 echo -e "${YELLOW}Running tests and checks...${NC}"
 cargo fmt -- --check
 cargo clippy -- -D warnings
+# Note: Regression tests are usually run via cargo run -- test, but here we run standard unit tests
 cargo test
 
-# 6. Update Cargo.toml
-echo -e "${YELLOW}Updating Cargo.toml to $NEW_VERSION...${NC}"
-sed -i "s/^version = \"$CURRENT_VERSION\"/version = \"$NEW_VERSION\"/" Cargo.toml
-cargo check # Update Cargo.lock
+# 6. Verify version in CHANGELOG.md (optional but recommended)
+if ! grep -q "## \[$VERSION\]" CHANGELOG.md; then
+    echo -e "${RED}Error: Version $VERSION not found in CHANGELOG.md. Did you forget to update it?${NC}"
+    exit 1
+fi
 
-# 7. Update CHANGELOG.md
-echo -e "${YELLOW}Updating CHANGELOG.md...${NC}"
-DATE=$(date +%Y-%m-%d)
-# Replace [Unreleased] with [NEW_VERSION] - DATE
-sed -i "s/## \[Unreleased\]/## \[Unreleased\]\n\n## \[$NEW_VERSION\] - $DATE/" CHANGELOG.md
+# 7. Tag the current commit
+echo -e "${YELLOW}Tagging version $TAG...${NC}"
+git tag -a "$TAG" -m "Release $TAG"
 
-# 8. Commit and Tag
-echo -e "${YELLOW}Committing and tagging...${NC}"
-git add Cargo.toml Cargo.lock CHANGELOG.md
-git commit -m "chore: Bump version to $NEW_VERSION"
-git tag -a "v$NEW_VERSION" -m "Release v$NEW_VERSION"
-
-# 9. Push to GitHub
+# 8. Push to GitHub
 echo -e "${YELLOW}Pushing to origin...${NC}"
 git push origin main
-git push origin "v$NEW_VERSION"
+git push origin "$TAG"
 
-echo -e "${GREEN}Release v$NEW_VERSION successfully pushed to GitHub!${NC}"
+echo -e "${GREEN}Release $TAG successfully pushed to GitHub!${NC}"
 echo -e "GitHub Actions should start building the release shortly."
