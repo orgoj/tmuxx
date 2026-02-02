@@ -1017,7 +1017,7 @@ impl AppState {
     /// This should be called whenever agents or filters change.
     pub fn update_visible_indices(&mut self) {
         let old_indices = self.visible_indices.clone();
-        self.visible_indices = self
+        let mut new_indices: Vec<usize> = self
             .agents
             .root_agents
             .iter()
@@ -1025,6 +1025,22 @@ impl AppState {
             .filter(|(idx, agent)| self.matches_filter_impl(*idx, agent))
             .map(|(idx, _)| idx)
             .collect();
+
+        // Sort by Session, Window, Pane to match visual tree display order.
+        // This prevents "jumping" when navigating with Up/Down keys because
+        // the navigation order will now match the visual order in the tree.
+        new_indices.sort_by(|&a_idx, &b_idx| {
+            let a = &self.agents.root_agents[a_idx];
+            let b = &self.agents.root_agents[b_idx];
+
+            a.session
+                .cmp(&b.session)
+                .then_with(|| a.window.cmp(&b.window))
+                .then_with(|| a.window_name.cmp(&b.window_name))
+                .then_with(|| a.pane.cmp(&b.pane))
+        });
+
+        self.visible_indices = new_indices;
 
         // If newly populated from empty, select first
         if old_indices.is_empty() && !self.visible_indices.is_empty() {
@@ -1385,8 +1401,8 @@ mod tests {
         state.agents.root_agents.push(a3);
         state.update_visible_indices();
 
-        // Verify all 3 present
-        assert_eq!(state.visible_agent_indices(), vec![0, 1, 2]);
+        // Verify all 3 present (sorted by session: idle1, idle2, working)
+        assert_eq!(state.visible_agent_indices(), vec![0, 2, 1]);
 
         // Enable Active Filter (should hide 0 and 2)
         state.toggle_filter_active();
@@ -1414,8 +1430,8 @@ mod tests {
         }
         state.update_visible_indices();
 
-        // Now 1 and 2 visible
-        assert_eq!(state.visible_agent_indices(), vec![1, 2]);
+        // Now 1 and 2 visible (sorted: 2, then 1)
+        assert_eq!(state.visible_agent_indices(), vec![2, 1]);
 
         // Navigation: 1 -> 2 -> 1
         assert_eq!(state.selected_index, 1);

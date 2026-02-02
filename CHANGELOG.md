@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+- **Cursor Navigation Order**: Fixed an issue where the cursor would "jump" non-linearly when navigating up and down. The agent list is now strictly sorted by Session, Window, and Pane to match the visual tree display.
+- **Natural Window Sorting**: Agents are now sorted numerically by window index (e.g., window 10 comes after window 2) instead of alphabetically.
+
 ### Added
 - **Global Highlight Rules**: Introduced a global configuration for syntax highlighting that applies as a fallback to all agents. This ensures consistent highlighting of common patterns like "error", "fail", "success", and diff markers across different tools. Configure with `[[global_highlight_rules]]` in `config.toml`.
 - **External TODO Generator**: Support for fetching TODO content from an external shell command (e.g., Taskwarrior). Configure with `todo_command` and `todo_refresh_interval_ms`. External output takes precedence over file-based TODOs.

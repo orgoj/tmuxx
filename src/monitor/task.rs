@@ -319,8 +319,15 @@ impl MonitorTask {
             }
         }
 
-        // Sort agents by target for consistent ordering
-        tree.root_agents.sort_by(|a, b| a.target.cmp(&b.target));
+        // Sort agents by Session, Window, Pane for consistent, logical ordering
+        // that matches the visual tree display (numerical window sorting)
+        tree.root_agents.sort_by(|a, b| {
+            a.session
+                .cmp(&b.session)
+                .then_with(|| a.window.cmp(&b.window))
+                .then_with(|| a.window_name.cmp(&b.window_name))
+                .then_with(|| a.pane.cmp(&b.pane))
+        });
 
         // Notification logic
         self.handle_notifications(&tree);
