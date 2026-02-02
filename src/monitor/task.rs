@@ -1,9 +1,11 @@
 use std::collections::{HashMap, HashSet};
+use std::process::Stdio;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 use std::time::{Duration, Instant};
 
 use regex::Regex;
+use tokio::io::AsyncReadExt;
 use tokio::sync::mpsc;
 use tracing::{debug, error, info, warn};
 
@@ -49,6 +51,8 @@ pub struct MonitorTask {
     todo_command_running: bool,
     /// Whether the cached TODO was updated since last send
     todo_updated: bool,
+    /// Cached regexes for process indicators (None for invalid patterns)
+    process_indicator_regex_cache: HashMap<String, Option<Regex>>,
 }
 
 impl MonitorTask {
@@ -79,6 +83,7 @@ impl MonitorTask {
             cached_external_todo: None,
             todo_command_running: false,
             todo_updated: false,
+            process_indicator_regex_cache: HashMap::new(),
         }
     }
 
@@ -103,26 +108,70 @@ impl MonitorTask {
                     self.last_todo_refresh = Some(now);
                     let cmd_str_clone = cmd_str.clone();
                     let todo_tx_clone = todo_tx.clone();
+                    let todo_timeout = Duration::from_millis(self.config.todo_command_timeout_ms);
 
                     tokio::spawn(async move {
                         let res = match tokio::process::Command::new("bash")
                             .args(["-c", &cmd_str_clone])
-                            .output()
-                            .await
+                            .stdout(Stdio::piped())
+                            .stderr(Stdio::piped())
+                            .spawn()
                         {
-                            Ok(output) => {
-                                if output.status.success() {
-                                    Some(String::from_utf8_lossy(&output.stdout).to_string())
-                                } else {
-                                    warn!(
-                                        "External TODO command failed: {}",
-                                        String::from_utf8_lossy(&output.stderr)
-                                    );
-                                    None
+                            Ok(mut child) => {
+                                let stdout = child.stdout.take();
+                                let stderr = child.stderr.take();
+
+                                let stdout_task = async {
+                                    let mut buffer = Vec::new();
+                                    if let Some(mut out) = stdout {
+                                        out.read_to_end(&mut buffer).await?;
+                                    }
+                                    Ok::<_, std::io::Error>(buffer)
+                                };
+
+                                let stderr_task = async {
+                                    let mut buffer = Vec::new();
+                                    if let Some(mut err) = stderr {
+                                        err.read_to_end(&mut buffer).await?;
+                                    }
+                                    Ok::<_, std::io::Error>(buffer)
+                                };
+
+                                let output = tokio::time::timeout(todo_timeout, async {
+                                    let (status, stdout, stderr) =
+                                        tokio::try_join!(child.wait(), stdout_task, stderr_task)?;
+                                    Ok::<_, std::io::Error>((status, stdout, stderr))
+                                })
+                                .await;
+
+                                match output {
+                                    Ok(Ok((status, stdout, stderr))) => {
+                                        if status.success() {
+                                            Some(String::from_utf8_lossy(&stdout).to_string())
+                                        } else {
+                                            warn!(
+                                                "External TODO command failed: {}",
+                                                String::from_utf8_lossy(&stderr)
+                                            );
+                                            None
+                                        }
+                                    }
+                                    Ok(Err(e)) => {
+                                        warn!("Failed to run external TODO command: {}", e);
+                                        None
+                                    }
+                                    Err(_) => {
+                                        let _ = child.kill().await;
+                                        warn!(
+                                            "External TODO command timed out after {}ms",
+                                            todo_timeout.as_millis()
+                                        );
+                                        None
+                                    }
                                 }
                             }
                             Err(e) => {
-                                warn!("Failed to run external TODO command: {}", e);
+                                warn!("Failed to spawn external TODO command: {}", e);
                                 None
                             }
                         };
@@ -278,16 +327,23 @@ impl MonitorTask {
                 // Calculate process indicators
                 let mut active_indicators = Vec::new();
                 for indicator in parser.process_indicators() {
-                    match Regex::new(&indicator.ancestor_pattern) {
-                        Ok(re) => {
-                            for cmd in &pane.ancestor_commands {
-                                if re.is_match(cmd) {
-                                    active_indicators.push(indicator.icon.clone());
-                                    break;
-                                }
+                    let cached = self
+                        .process_indicator_regex_cache
+                        .entry(indicator.ancestor_pattern.clone())
+                        .or_insert_with(|| match Regex::new(&indicator.ancestor_pattern) {
+                            Ok(re) => Some(re),
+                            Err(e) => {
+                                warn!("Invalid process indicator regex: {}", e);
+                                None
+                            }
+                        });
+                    if let Some(re) = cached {
+                        for cmd in &pane.ancestor_commands {
+                            if re.is_match(cmd) {
+                                active_indicators.push(indicator.icon.clone());
+                                break;
                             }
                         }
-                        Err(e) => warn!("Invalid process indicator regex: {}", e),
                     }
                 }
 

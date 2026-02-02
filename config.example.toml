@@ -19,6 +19,8 @@ truncate_long_lines = true
 # Enable TODO file reading from project root
 todo_from_file = true
 todo_files = ["TODO.md", "NOTES.md", "README.md", "TASKS.md"]
+# Timeout for external TODO command in milliseconds
+todo_command_timeout_ms = 10000
 
 # Notification command
 # Placeholders: {title}, {message}, {agent}, {session}, {target}, {path}, {approval_type}, {count}

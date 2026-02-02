@@ -4,6 +4,7 @@ use std::fmt;
 use std::process::Command;
 use std::sync::OnceLock;
 use std::time::{Duration, Instant};
+use tracing::warn;
 
 #[derive(Clone, Debug)]
 struct ProcessInfo {
@@ -39,7 +40,17 @@ impl ProcessTreeCache {
 
         let output = match output {
             Ok(o) if o.status.success() => o,
-            _ => return,
+            Ok(o) => {
+                warn!(
+                    "ps command failed for process cache refresh: {}",
+                    String::from_utf8_lossy(&o.stderr)
+                );
+                return;
+            }
+            Err(e) => {
+                warn!("Failed to run ps for process cache refresh: {}", e);
+                return;
+            }
         };
 
         self.processes.clear();

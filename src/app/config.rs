@@ -187,6 +187,10 @@ pub struct Config {
     #[serde(default = "default_todo_refresh")]
     pub todo_refresh_interval_ms: u64,
 
+    /// Timeout for external TODO command in milliseconds
+    #[serde(default = "default_todo_command_timeout")]
+    pub todo_command_timeout_ms: u64,
+
     /// Name of the active theme
     #[serde(default = "default_theme_name")]
     pub theme: String,
@@ -510,6 +514,10 @@ fn default_todo_refresh() -> u64 {
     30000
 }
 
+fn default_todo_command_timeout() -> u64 {
+    10000
+}
+
 fn default_selection_mode() -> String {
     "bar".to_string()
 }
@@ -567,6 +575,7 @@ struct PartialConfig {
     notification_mode: Option<NotificationMode>,
     todo_command: Option<String>,
     todo_refresh_interval_ms: Option<u64>,
+    todo_command_timeout_ms: Option<u64>,
     theme: Option<String>,
     #[serde(rename = "theme_override")]
     theme_overrides: Option<PartialThemeConfig>,
@@ -782,6 +791,9 @@ impl PartialConfig {
         }
         if let Some(v) = self.todo_refresh_interval_ms {
             config.todo_refresh_interval_ms = v;
+        }
+        if let Some(v) = self.todo_command_timeout_ms {
+            config.todo_command_timeout_ms = v;
         }
         if let Some(v) = self.theme {
             config.theme = v;

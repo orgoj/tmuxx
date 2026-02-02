@@ -144,6 +144,8 @@ label_agents = "agents"
 # Display TODO from project files (TODO.md, etc.)
 todo_from_file = true
 todo_files = ["TODO.md", "NOTES.md", "TASKS.md", "README.md"]
+# Timeout for external TODO command in milliseconds
+todo_command_timeout_ms = 10000
 
 [[global_highlight_rules]]
 pattern = "(?i)error|fail|exception|panic|⚠"
