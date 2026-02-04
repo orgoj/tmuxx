@@ -214,9 +214,7 @@ impl TmuxClient {
             }
             KillMethod::CtrlCCtrlD => {
                 // Send Ctrl-C then Ctrl-D sequence
-                self.send_keys(target, "C-c")?;
-                std::thread::sleep(std::time::Duration::from_millis(100));
-                self.send_keys(target, "C-d")?;
+                self.send_keys_many(target, &["C-c", "C-d"])?;
                 Ok(())
             }
             KillMethod::Respawn => {

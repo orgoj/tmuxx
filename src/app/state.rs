@@ -1016,7 +1016,7 @@ impl AppState {
     /// Update the cached projection of visible agents.
     /// This should be called whenever agents or filters change.
     pub fn update_visible_indices(&mut self) {
-        let old_indices = self.visible_indices.clone();
+        let was_empty = self.visible_indices.is_empty();
         let mut new_indices: Vec<usize> = self
             .agents
             .root_agents
@@ -1043,7 +1043,7 @@ impl AppState {
         self.visible_indices = new_indices;
 
         // If newly populated from empty, select first
-        if old_indices.is_empty() && !self.visible_indices.is_empty() {
+        if was_empty && !self.visible_indices.is_empty() {
             self.selected_index = self.visible_indices[0];
             self.update_selected_id();
         }
