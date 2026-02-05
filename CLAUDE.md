@@ -185,6 +185,7 @@ Parsers check ALL detection strings to handle various detection scenarios.
 15. **Designing Before Understanding Use Case**: Ask "what will this be used for?" before architecture design - specific use cases beat generic abstractions
 16. **TODO.md Unauthorized Modification**: NEVER modify TODO.md without explicit user approval - when asked to "check" or "verify", report findings and ASK what to do next
 17. **Planning without checking git status**: Always run `git status` and `git diff` before writing plans - implementation may already exist
+18. **Assuming Features Need Implementation**: Always explore existing codebase BEFORE writing implementation plans - TODO items may already be partially or fully implemented (e.g., Command Palette shell mode `!command` was already complete)
 
 ## Development Workflow
 
@@ -242,6 +243,13 @@ All skills are in `.claude/skills/`:
 - **Run diagnostic commands FIRST**: Before analyzing code, gather real data (e.g., `tmux list-panes -a` when debugging detection)
 - **Check upstream problems**: Feature failures often indicate missing input data, not broken feature logic
 - **Integrate related problems**: Multiple related issues → ONE cohesive plan, not separate fixes or replacements
+- **Explore existing functionality FIRST**: Before assuming TODO items need implementation, grep for related keywords - features may already exist
+
+### Task Type Awareness
+
+- **Research tasks** (code review, TODO analysis, codebase exploration): Use Explore agent, produce summary document, DO NOT use ExitPlanMode
+- **Implementation tasks** (feature development, bug fixes): Use planning workflow, ExitPlanMode when plan ready
+- **Hybrid tasks**: Explore first → summarize findings → user decides what to implement → then plan
 
 ### Plan Review and Correction Cycles
 

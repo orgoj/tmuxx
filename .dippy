@@ -1,5 +1,8 @@
 allow-edit ./**
 
+allow ./scripts/check-all.sh *
+allow .git/hooks/pre-commit *
+
 allow-read  ~/.config/tmuxx/config.toml
 ask-edit  ~/.config/tmuxx/config.toml
 
