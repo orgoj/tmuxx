@@ -246,63 +246,34 @@ pub struct ThemeConfig {
     pub bg: String,
 }
 
-fn default_idle_color() -> String {
-    "green".to_string()
+// Theme color defaults - consolidated using a macro to reduce boilerplate
+macro_rules! color_default {
+    ($name:ident, $color:literal) => {
+        fn $name() -> String {
+            $color.to_string()
+        }
+    };
 }
-fn default_processing_color() -> String {
-    "yellow".to_string()
-}
-fn default_approval_color() -> String {
-    "red".to_string()
-}
-fn default_error_color() -> String {
-    "red".to_string()
-}
-fn default_unknown_color() -> String {
-    "darkgray".to_string()
-}
-fn default_header_color() -> String {
-    "cyan".to_string()
-}
-fn default_selected_fg() -> String {
-    "black".to_string()
-}
-fn default_selected_bg() -> String {
-    "cyan".to_string()
-}
-fn default_normal_color() -> String {
-    "white".to_string()
-}
-fn default_dimmed_color() -> String {
-    "darkgray".to_string()
-}
-fn default_highlight_color() -> String {
-    "yellow".to_string()
-}
-fn default_border_color() -> String {
-    "gray".to_string()
-}
-fn default_border_focused_color() -> String {
-    "cyan".to_string()
-}
-fn default_subagent_running_color() -> String {
-    "cyan".to_string()
-}
-fn default_subagent_completed_color() -> String {
-    "green".to_string()
-}
-fn default_subagent_failed_color() -> String {
-    "red".to_string()
-}
-fn default_footer_key_color() -> String {
-    "yellow".to_string()
-}
-fn default_footer_text_color() -> String {
-    "white".to_string()
-}
-fn default_bg_color() -> String {
-    "none".to_string()
-}
+
+color_default!(default_idle_color, "green");
+color_default!(default_processing_color, "yellow");
+color_default!(default_approval_color, "red");
+color_default!(default_error_color, "red");
+color_default!(default_unknown_color, "darkgray");
+color_default!(default_header_color, "cyan");
+color_default!(default_selected_fg, "black");
+color_default!(default_selected_bg, "cyan");
+color_default!(default_normal_color, "white");
+color_default!(default_dimmed_color, "darkgray");
+color_default!(default_highlight_color, "yellow");
+color_default!(default_border_color, "gray");
+color_default!(default_border_focused_color, "cyan");
+color_default!(default_subagent_running_color, "cyan");
+color_default!(default_subagent_completed_color, "green");
+color_default!(default_subagent_failed_color, "red");
+color_default!(default_footer_key_color, "yellow");
+color_default!(default_footer_text_color, "white");
+color_default!(default_bg_color, "none");
 
 impl Default for ThemeConfig {
     fn default() -> Self {
@@ -1667,5 +1638,101 @@ mod tests {
         // Claude should have custom number keys (no Enter)
         assert_eq!(claude.keys.number, vec!["{n}"]);
         assert_eq!(claude.keys.approve, vec!["y", "Enter"]);
+    }
+
+    #[test]
+    fn test_theme_config_default() {
+        let theme = ThemeConfig::default();
+        assert_eq!(theme.idle, "green");
+        assert_eq!(theme.processing, "yellow");
+        assert_eq!(theme.approval, "red");
+        assert_eq!(theme.error, "red");
+        assert_eq!(theme.unknown, "darkgray");
+        assert_eq!(theme.header, "cyan");
+        assert_eq!(theme.selected_fg, "black");
+        assert_eq!(theme.selected_bg, "cyan");
+        assert_eq!(theme.normal, "white");
+        assert_eq!(theme.dimmed, "darkgray");
+        assert_eq!(theme.bg, "none");
+    }
+
+    #[test]
+    fn test_theme_config_partial_deserialization() {
+        // Test that partial theme config uses defaults for missing fields
+        let toml_str = r#"
+            idle = "blue"
+            processing = "magenta"
+        "#;
+        let theme: ThemeConfig = toml::from_str(toml_str).unwrap();
+        assert_eq!(theme.idle, "blue");
+        assert_eq!(theme.processing, "magenta");
+        // Remaining fields should use defaults
+        assert_eq!(theme.approval, "red");
+        assert_eq!(theme.error, "red");
+        assert_eq!(theme.header, "cyan");
+    }
+
+    #[test]
+    fn test_sidebar_width_parsing() {
+        // Test Fixed variant (integer value)
+        let toml_str = r#"sidebar_width = 30"#;
+        #[derive(Deserialize)]
+        struct Wrapper {
+            sidebar_width: SidebarWidth,
+        }
+        let parsed: Wrapper = toml::from_str(toml_str).unwrap();
+        assert!(matches!(parsed.sidebar_width, SidebarWidth::Fixed(30)));
+
+        // Test Percent variant (string value like "30%")
+        let toml_str = r#"sidebar_width = "30%""#;
+        let parsed: Wrapper = toml::from_str(toml_str).unwrap();
+        assert!(matches!(parsed.sidebar_width, SidebarWidth::Percent(_)));
+    }
+
+    #[test]
+    fn test_notification_mode_parsing() {
+        // Test First mode (default)
+        let toml_str = r#"notification_mode = "first""#;
+        #[derive(Deserialize)]
+        struct Wrapper {
+            notification_mode: NotificationMode,
+        }
+        let parsed: Wrapper = toml::from_str(toml_str).unwrap();
+        assert_eq!(parsed.notification_mode, NotificationMode::First);
+
+        // Test Each mode
+        let toml_str = r#"notification_mode = "each""#;
+        let parsed: Wrapper = toml::from_str(toml_str).unwrap();
+        assert_eq!(parsed.notification_mode, NotificationMode::Each);
+    }
+
+    #[test]
+    fn test_kill_method_parsing() {
+        use crate::app::KillMethod;
+
+        let toml_str = r#"kill_method = "sigterm""#;
+        #[derive(Deserialize)]
+        struct Wrapper {
+            kill_method: KillMethod,
+        }
+        let parsed: Wrapper = toml::from_str(toml_str).unwrap();
+        assert!(matches!(parsed.kill_method, KillMethod::Sigterm));
+
+        let toml_str = r#"kill_method = "ctrl_c_ctrl_d""#;
+        let parsed: Wrapper = toml::from_str(toml_str).unwrap();
+        assert!(matches!(parsed.kill_method, KillMethod::CtrlCCtrlD));
+
+        let toml_str = r#"kill_method = "respawn""#;
+        let parsed: Wrapper = toml::from_str(toml_str).unwrap();
+        assert!(matches!(parsed.kill_method, KillMethod::Respawn));
+    }
+
+    #[test]
+    fn test_load_defaults_has_agents() {
+        let config = Config::load_defaults();
+        // Should have at least the built-in agents
+        assert!(!config.agents.is_empty());
+        // Should have Claude agent
+        assert!(config.agents.iter().any(|a| a.id == "claude"));
     }
 }

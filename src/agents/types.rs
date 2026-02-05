@@ -323,7 +323,12 @@ impl MonitoredAgent {
             .map(|s| s.chars().next().unwrap_or('?').to_string())
             .collect();
 
-        format!("/{}/{}", abbreviated.join("/"), parts.last().unwrap())
+        // Safety: parts.len() >= 2 guaranteed by earlier checks, but use unwrap_or for defense
+        format!(
+            "/{}/{}",
+            abbreviated.join("/"),
+            parts.last().unwrap_or(&"root")
+        )
     }
 
     /// Returns the number of active subagents

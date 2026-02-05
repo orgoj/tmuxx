@@ -12,9 +12,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Send Ctrl-C/Ctrl-D as a single tmux command to improve kill sequence reliability.
 - Cache process indicator regexes to avoid repeated compilation during polling.
 - Added a configurable timeout for external TODO commands.
+- **Decoupled TmuxClient from Config**: `TmuxClient` now accepts specific parameters via `with_options()` instead of the entire Config struct, improving layer separation.
+- **Consolidated color defaults**: Replaced 19 separate `default_*_color()` functions with a `color_default!` macro, reducing boilerplate.
 
 ### Fixed
 - Added warnings when the process cache refresh fails to aid debugging.
+- **Defensive unwrap in abbreviated_path**: Changed `parts.last().unwrap()` to `unwrap_or("root")` for safer path handling.
+
+### Added
+- **Unit tests**: Added 17 new unit tests covering config parsing (6), parser functions (6), and state transitions (5). Total test count increased from ~62 to 79.
 
 ## [0.7.0] - 2026-02-02
 

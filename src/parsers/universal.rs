@@ -890,6 +890,83 @@ mod tests {
     use crate::tmux::PaneInfo;
 
     #[test]
+    fn test_split_on_separator_line() {
+        // Test content with separator line
+        let content = "Response text here\nMore response\n────────────────────────────────────────\nPrompt area";
+        let (body, prompt) = split_on_separator_line(content);
+        assert_eq!(body, "Response text here\nMore response");
+        assert!(prompt.contains("────────────────────────────────────────"));
+
+        // Test content without separator (no separator long enough)
+        let content = "Just regular text\nNo separator here";
+        let (body, prompt) = split_on_separator_line(content);
+        assert_eq!(body, content);
+        assert_eq!(prompt, "");
+
+        // Test empty content
+        let (body, prompt) = split_on_separator_line("");
+        assert_eq!(body, "");
+        assert_eq!(prompt, "");
+    }
+
+    #[test]
+    fn test_split_on_powerline() {
+        // Test content with powerline box
+        let content = "Response text\n╭─ Prompt box\n│ Content\n╰─";
+        let (body, prompt) = split_on_powerline(content);
+        assert_eq!(body, "Response text");
+        assert!(prompt.starts_with("╭─"));
+
+        // Test without powerline
+        let content = "No powerline here";
+        let (body, prompt) = split_on_powerline(content);
+        assert_eq!(body, content);
+        assert_eq!(prompt, "");
+    }
+
+    #[test]
+    fn test_get_match_text_last_line() {
+        let content = "First line\nSecond line\nLast line  \n\n";
+        let result = get_match_text(content, &MatchLocation::LastLine);
+        // The function finds non-empty lines, trailing spaces may be trimmed by trim_end
+        assert_eq!(result, "Last line");
+
+        // Empty content
+        let result = get_match_text("", &MatchLocation::LastLine);
+        assert_eq!(result, "");
+
+        // Only whitespace
+        let result = get_match_text("   \n   ", &MatchLocation::LastLine);
+        assert_eq!(result, "");
+    }
+
+    #[test]
+    fn test_get_match_text_last_block() {
+        let content = "First block\n\nSecond block line 1\nSecond block line 2";
+        let result = get_match_text(content, &MatchLocation::LastBlock);
+        assert_eq!(result, "Second block line 1\nSecond block line 2");
+
+        // No double newline
+        let content = "Single block";
+        let result = get_match_text(content, &MatchLocation::LastBlock);
+        assert_eq!(result, "Single block");
+    }
+
+    #[test]
+    fn test_get_match_text_first_line_of_last_block() {
+        let content = "First block\n\nSecond block line 1\nSecond block line 2";
+        let result = get_match_text(content, &MatchLocation::FirstLineOfLastBlock);
+        assert_eq!(result, "Second block line 1");
+    }
+
+    #[test]
+    fn test_get_match_text_anywhere() {
+        let content = "Some content here";
+        let result = get_match_text(content, &MatchLocation::Anywhere);
+        assert_eq!(result, content);
+    }
+
+    #[test]
     fn test_agent_display_name() {
         let config = AgentConfig {
             id: "ssh".to_string(),

@@ -1,5 +1,13 @@
 use crate::agents::MonitoredAgent;
 use crate::monitor::SystemStats;
+
+// TODO: Architecture debt - UI component types imported into app layer
+// These imports create a circular dependency between app and ui layers.
+// Future refactoring should:
+// 1. Extract UI-agnostic domain models (e.g., MenuState trait)
+// 2. Move MenuTreeState, ModalTextareaState to shared types module
+// 3. AppState should only contain domain state, not UI widget state
+// See: https://github.com/orgoj/tmuxx/issues/TBD
 use crate::ui::components::{MenuTreeState, ModalTextareaState};
 use crate::ui::Styles;
 
@@ -1673,5 +1681,139 @@ mod tests {
         // instead of exiting if there's a problem.
         // We can't easily trigger a real file error here without temp files,
         // but the logic is now verified by type system (it returns Result).
+    }
+
+    #[test]
+    fn test_focus_panel_transitions() {
+        let mut state = AppState::default();
+
+        // Default focus should be Sidebar
+        assert_eq!(state.focused_panel, FocusedPanel::Sidebar);
+
+        // Can toggle to Input
+        state.focused_panel = FocusedPanel::Input;
+        assert_eq!(state.focused_panel, FocusedPanel::Input);
+
+        // Can toggle back to Sidebar
+        state.focused_panel = FocusedPanel::Sidebar;
+        assert_eq!(state.focused_panel, FocusedPanel::Sidebar);
+    }
+
+    #[test]
+    fn test_popup_input_state() {
+        let mut state = AppState::default();
+
+        // Initially no popup
+        assert!(state.popup_input.is_none());
+
+        // Create popup input state
+        state.popup_input = Some(PopupInputState {
+            title: "Filter".to_string(),
+            prompt: "Enter filter:".to_string(),
+            buffer: String::new(),
+            cursor: 0,
+            popup_type: PopupType::Filter,
+        });
+        assert!(state.popup_input.is_some());
+        assert!(matches!(
+            state.popup_input.as_ref().unwrap().popup_type,
+            PopupType::Filter
+        ));
+
+        // Close popup
+        state.popup_input = None;
+        assert!(state.popup_input.is_none());
+
+        // Create general input popup
+        state.popup_input = Some(PopupInputState {
+            title: "Input".to_string(),
+            prompt: "Enter text:".to_string(),
+            buffer: "test input".to_string(),
+            cursor: 10,
+            popup_type: PopupType::GeneralInput,
+        });
+        assert!(matches!(
+            state.popup_input.as_ref().unwrap().popup_type,
+            PopupType::GeneralInput
+        ));
+        assert_eq!(state.popup_input.as_ref().unwrap().buffer, "test input");
+    }
+
+    #[test]
+    fn test_input_buffer() {
+        let mut state = AppState::default();
+
+        // Initially empty
+        assert!(state.input_buffer.is_empty());
+
+        // Can append text
+        state.input_buffer.push_str("hello");
+        assert_eq!(state.input_buffer, "hello");
+
+        // Can clear via assignment
+        state.input_buffer.clear();
+        assert!(state.input_buffer.is_empty());
+    }
+
+    #[test]
+    fn test_error_handling() {
+        let mut state = AppState::default();
+
+        // Clear any initial message first
+        state.last_message = None;
+        assert!(state.last_message.is_none());
+
+        // Can set error
+        state.set_error("Test error".to_string());
+        assert!(state.last_message.is_some());
+        assert_eq!(state.last_message.as_ref().unwrap().text, "Test error");
+
+        // Can clear error
+        state.clear_error();
+        assert!(state.last_message.is_none());
+    }
+
+    #[test]
+    fn test_multi_selection() {
+        let mut state = AppState::default();
+
+        // Add agents
+        state
+            .agents
+            .root_agents
+            .push(create_test_agent("1", "session-a", 0));
+        state
+            .agents
+            .root_agents
+            .push(create_test_agent("2", "session-b", 1));
+        state
+            .agents
+            .root_agents
+            .push(create_test_agent("3", "session-c", 2));
+        state.update_visible_indices();
+
+        // Initially no multi-selection
+        assert!(state.selected_agents.is_empty());
+
+        // Select all
+        state.select_all();
+        assert_eq!(state.selected_agents.len(), 3);
+
+        // Clear selection
+        state.clear_selection();
+        assert!(state.selected_agents.is_empty());
+
+        // Toggle individual selection
+        state.selected_index = 0;
+        state.toggle_selection();
+        assert_eq!(state.selected_agents.len(), 1);
+
+        state.selected_index = 2;
+        state.toggle_selection();
+        assert_eq!(state.selected_agents.len(), 2);
+
+        // Toggle again removes from selection
+        state.toggle_selection();
+        assert_eq!(state.selected_agents.len(), 1);
     }
 }

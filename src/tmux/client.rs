@@ -2,7 +2,7 @@ use anyhow::{Context, Result};
 use std::process::Command;
 
 use super::pane::PaneInfo;
-use crate::app::{Config, KillMethod};
+use crate::app::KillMethod;
 
 /// Client for interacting with tmux
 pub struct TmuxClient {
@@ -13,11 +13,14 @@ pub struct TmuxClient {
 }
 
 impl TmuxClient {
-    /// Creates a new TmuxClient from a Config
-    pub fn from_config(config: &Config) -> Self {
+    /// Creates a new TmuxClient with specific parameters
+    ///
+    /// This is the preferred constructor - accepts only the parameters needed,
+    /// avoiding coupling to the full Config struct.
+    pub fn with_options(capture_lines: u32, show_detached_sessions: bool) -> Self {
         Self {
-            capture_lines: config.capture_lines,
-            show_detached_sessions: config.show_detached_sessions,
+            capture_lines,
+            show_detached_sessions,
         }
     }
 
