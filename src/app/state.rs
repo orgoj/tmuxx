@@ -24,7 +24,9 @@ use super::Config;
 /// Static default keys for agents without explicit config
 static DEFAULT_KEYS: OnceLock<AgentKeys> = OnceLock::new();
 
-/// Which panel is currently focused
+/// Which panel is currently focused.
+///
+/// Used to track keyboard focus between the agent tree sidebar and the input area.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 pub enum FocusedPanel {
     /// Agent list sidebar is focused
@@ -34,7 +36,9 @@ pub enum FocusedPanel {
     Input,
 }
 
-/// Type of popup dialog
+/// Type of popup dialog.
+///
+/// Determines the behavior and appearance of popup input dialogs.
 #[derive(Debug, Clone, PartialEq, Eq, Default)]
 pub enum PopupType {
     /// Filter agents/sessions
@@ -70,7 +74,9 @@ pub enum PopupType {
     },
 }
 
-/// State for popup input dialog
+/// State for popup input dialog.
+///
+/// Contains the title, prompt, input buffer and cursor position for modal dialogs.
 #[derive(Debug, Clone)]
 pub struct PopupInputState {
     /// Dialog title
@@ -85,7 +91,15 @@ pub struct PopupInputState {
     pub popup_type: PopupType,
 }
 
-/// Tree structure containing all monitored agents
+/// Hierarchical container for all monitored agents.
+///
+/// `AgentTree` organizes monitored agents in a flat list (root agents), where each
+/// agent may have nested subagents. This structure supports the tree-based UI display
+/// and provides aggregate statistics for the header.
+///
+/// # Note
+/// Despite the name, the current implementation uses a flat vector rather than a
+/// true tree structure. Subagents are stored within each `MonitoredAgent`.
 #[derive(Debug, Clone, Default)]
 pub struct AgentTree {
     /// Root agents (directly in tmux panes)
@@ -153,7 +167,9 @@ impl AgentTree {
     }
 }
 
-/// Type of status message
+/// Type of status message for UI display.
+///
+/// Determines the color and styling of status bar messages.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum MessageKind {
     /// Normal information (Gray)
@@ -166,7 +182,9 @@ pub enum MessageKind {
     Welcome,
 }
 
-/// State for command palette dialog
+/// State for command palette dialog.
+///
+/// Manages filter input, available commands, selection state, and history.
 #[derive(Debug, Clone)]
 pub struct CommandPaletteState {
     /// Current filter/input text
@@ -258,14 +276,30 @@ impl CommandPaletteState {
     }
 }
 
-/// Status message with its kind
+/// Status message with its kind for display in the status bar.
 #[derive(Debug, Clone)]
 pub struct StatusMessage {
     pub text: String,
     pub kind: MessageKind,
 }
 
-/// Main application state
+/// Main application state for the tmuxx TUI.
+///
+/// `AppState` is the central state container that holds all runtime data for the application,
+/// including the list of monitored agents, selection state, UI focus, input buffers, and
+/// display settings. It is shared between the main event loop and the background monitor task
+/// via `Arc<Mutex<AppState>>`.
+///
+/// # Key Responsibilities
+/// - Agent management: tracking all monitored tmux panes and their status
+/// - Selection state: single cursor and multi-selection across agents
+/// - UI state: focus panel, popup dialogs, help display, menus
+/// - Input handling: input buffer with cursor position
+/// - Filter state: text patterns and boolean filters (active/selected)
+///
+/// # Thread Safety
+/// AppState is designed to be wrapped in `Arc<Mutex<_>>` for safe concurrent access
+/// between the UI thread and background monitoring tasks.
 #[derive(Debug)]
 pub struct AppState {
     /// Application configuration

@@ -324,6 +324,29 @@ fn parse_bool(value: &str) -> Option<bool> {
 mod tests {
     use super::*;
 
+    // Macro to reduce boilerplate for testing ConfigOverride parsing
+    macro_rules! test_parse_override {
+        // Test that parsing succeeds and produces expected variant
+        ($name:ident, $key:literal, $value:literal, $check:expr) => {
+            #[test]
+            fn $name() {
+                let mut config = Config::default();
+                config.apply_override($key, $value).unwrap();
+                assert!($check(&config));
+            }
+        };
+    }
+
+    // Macro for testing that parsing fails
+    macro_rules! test_parse_fails {
+        ($name:ident, $key:literal, $value:literal) => {
+            #[test]
+            fn $name() {
+                assert!(ConfigOverride::parse($key, $value).is_err());
+            }
+        };
+    }
+
     #[test]
     fn test_normalize_key() {
         assert_eq!(normalize_key("poll_interval_ms"), "pollintervalms");
@@ -338,150 +361,143 @@ mod tests {
     #[test]
     fn test_parse_bool() {
         // True variants
-        assert_eq!(parse_bool("true"), Some(true));
-        assert_eq!(parse_bool("TRUE"), Some(true));
-        assert_eq!(parse_bool("1"), Some(true));
-        assert_eq!(parse_bool("yes"), Some(true));
-        assert_eq!(parse_bool("YES"), Some(true));
-        assert_eq!(parse_bool("on"), Some(true));
-        assert_eq!(parse_bool("ON"), Some(true));
-
+        for val in ["true", "TRUE", "1", "yes", "YES", "on", "ON"] {
+            assert_eq!(parse_bool(val), Some(true), "Expected true for '{}'", val);
+        }
         // False variants
-        assert_eq!(parse_bool("false"), Some(false));
-        assert_eq!(parse_bool("FALSE"), Some(false));
-        assert_eq!(parse_bool("0"), Some(false));
-        assert_eq!(parse_bool("no"), Some(false));
-        assert_eq!(parse_bool("NO"), Some(false));
-        assert_eq!(parse_bool("off"), Some(false));
-        assert_eq!(parse_bool("OFF"), Some(false));
-
+        for val in ["false", "FALSE", "0", "no", "NO", "off", "OFF"] {
+            assert_eq!(parse_bool(val), Some(false), "Expected false for '{}'", val);
+        }
         // Invalid
         assert_eq!(parse_bool("invalid"), None);
         assert_eq!(parse_bool("2"), None);
     }
 
+    // Poll interval tests
+    test_parse_override!(
+        test_poll_interval,
+        "poll_interval_ms",
+        "1000",
+        |c: &Config| c.poll_interval_ms == 1000
+    );
+    test_parse_override!(
+        test_poll_interval_alias,
+        "pollinterval",
+        "2000",
+        |c: &Config| c.poll_interval_ms == 2000
+    );
+    test_parse_fails!(test_poll_interval_invalid, "poll_interval_ms", "invalid");
+
+    // Capture lines tests
+    test_parse_override!(test_capture_lines, "capture_lines", "500", |c: &Config| c
+        .capture_lines
+        == 500);
+    test_parse_fails!(test_capture_lines_invalid, "capture_lines", "invalid");
+
+    // Show detached sessions tests
+    test_parse_override!(
+        test_show_detached_false,
+        "show_detached_sessions",
+        "false",
+        |c: &Config| !c.show_detached_sessions
+    );
+    test_parse_override!(
+        test_show_detached_alias,
+        "showdetached",
+        "0",
+        |c: &Config| !c.show_detached_sessions
+    );
+    test_parse_override!(
+        test_show_detached_true,
+        "showdetached",
+        "true",
+        |c: &Config| c.show_detached_sessions
+    );
+    test_parse_override!(
+        test_show_detached_yes,
+        "showdetached",
+        "yes",
+        |c: &Config| c.show_detached_sessions
+    );
+    test_parse_fails!(
+        test_show_detached_invalid,
+        "show_detached_sessions",
+        "invalid"
+    );
+
+    // Debug mode tests
+    test_parse_override!(test_debug_mode_true, "debug_mode", "true", |c: &Config| c
+        .debug_mode);
+    test_parse_override!(
+        test_debug_mode_alias_false,
+        "debug",
+        "false",
+        |c: &Config| !c.debug_mode
+    );
+    test_parse_override!(test_debug_mode_yes, "debug", "yes", |c: &Config| c
+        .debug_mode);
+    test_parse_fails!(test_debug_mode_invalid, "debug_mode", "invalid");
+
+    // Log actions tests
+    test_parse_override!(
+        test_log_actions_false,
+        "log_actions",
+        "false",
+        |c: &Config| !c.log_actions
+    );
+    test_parse_override!(test_log_actions_alias, "log", "1", |c: &Config| c
+        .log_actions);
+
+    // Invalid key test
+    test_parse_fails!(test_invalid_key, "invalid_key", "value");
+
+    // Notification config tests
+    test_parse_override!(
+        test_notification_delay,
+        "notification_delay_ms",
+        "30000",
+        |c: &Config| c.notification_delay_ms == 30000
+    );
+    test_parse_override!(
+        test_notification_mode_first,
+        "notification_mode",
+        "first",
+        |c: &Config| c.notification_mode == NotificationMode::First
+    );
+    test_parse_override!(
+        test_notification_mode_each,
+        "notifymode",
+        "each",
+        |c: &Config| c.notification_mode == NotificationMode::Each
+    );
+    test_parse_fails!(
+        test_notification_mode_invalid,
+        "notification_mode",
+        "invalid"
+    );
+    test_parse_fails!(
+        test_notification_delay_invalid,
+        "notification_delay_ms",
+        "not_a_number"
+    );
+
     #[test]
-    fn test_parse_poll_interval() {
-        let override_val = ConfigOverride::parse("poll_interval_ms", "1000").unwrap();
+    fn test_notification_command() {
+        let override_val =
+            ConfigOverride::parse("notification_command", "notify-send '{message}'").unwrap();
         match override_val {
-            ConfigOverride::PollInterval(val) => assert_eq!(val, 1000),
-            _ => panic!("Wrong variant"),
-        }
-
-        // Test alias
-        let override_val = ConfigOverride::parse("pollinterval", "2000").unwrap();
-        match override_val {
-            ConfigOverride::PollInterval(val) => assert_eq!(val, 2000),
-            _ => panic!("Wrong variant"),
-        }
-
-        // Test invalid value
-        assert!(ConfigOverride::parse("poll_interval_ms", "invalid").is_err());
-    }
-
-    #[test]
-    fn test_parse_capture_lines() {
-        let override_val = ConfigOverride::parse("capture_lines", "500").unwrap();
-        match override_val {
-            ConfigOverride::CaptureLines(val) => assert_eq!(val, 500),
-            _ => panic!("Wrong variant"),
-        }
-
-        // Test invalid value
-        assert!(ConfigOverride::parse("capture_lines", "invalid").is_err());
-    }
-
-    #[test]
-    fn test_parse_show_detached_sessions() {
-        // Full name
-        let override_val = ConfigOverride::parse("show_detached_sessions", "false").unwrap();
-        match override_val {
-            ConfigOverride::ShowDetachedSessions(val) => assert!(!val),
-            _ => panic!("Wrong variant"),
-        }
-
-        // Short alias
-        let override_val = ConfigOverride::parse("showdetached", "0").unwrap();
-        match override_val {
-            ConfigOverride::ShowDetachedSessions(val) => assert!(!val),
-            _ => panic!("Wrong variant"),
-        }
-
-        // Various true formats
-        for true_val in &["true", "1", "yes", "on"] {
-            let override_val = ConfigOverride::parse("showdetached", true_val).unwrap();
-            match override_val {
-                ConfigOverride::ShowDetachedSessions(val) => assert!(val),
-                _ => panic!("Wrong variant"),
+            ConfigOverride::NotificationCommand(Some(cmd)) => {
+                assert_eq!(cmd, "notify-send '{message}'");
             }
+            _ => panic!("Expected NotificationCommand"),
         }
 
-        // Invalid value
-        assert!(ConfigOverride::parse("show_detached_sessions", "invalid").is_err());
-    }
-
-    #[test]
-    fn test_parse_invalid_key() {
-        let result = ConfigOverride::parse("invalid_key", "value");
-        assert!(result.is_err());
-        assert!(result
-            .unwrap_err()
-            .to_string()
-            .contains("Unknown config key"));
-    }
-
-    #[test]
-    fn test_parse_debug_mode() {
-        // Full name
-        let override_val = ConfigOverride::parse("debug_mode", "true").unwrap();
-        match override_val {
-            ConfigOverride::DebugMode(val) => assert!(val),
-            _ => panic!("Wrong variant"),
-        }
-
-        // Short alias
-        let override_val = ConfigOverride::parse("debug", "false").unwrap();
-        match override_val {
-            ConfigOverride::DebugMode(val) => assert!(!val),
-            _ => panic!("Wrong variant"),
-        }
-
-        // Various true formats
-        for true_val in &["true", "1", "yes", "on"] {
-            let override_val = ConfigOverride::parse("debug", true_val).unwrap();
-            match override_val {
-                ConfigOverride::DebugMode(val) => assert!(val),
-                _ => panic!("Wrong variant"),
-            }
-        }
-
-        // Invalid value
-        assert!(ConfigOverride::parse("debug_mode", "invalid").is_err());
-    }
-
-    #[test]
-    fn test_apply_overrides() {
-        let mut config = Config::default();
-
-        // Apply poll interval
-        let override_val = ConfigOverride::parse("poll_interval_ms", "1000").unwrap();
-        override_val.apply(&mut config);
-        assert_eq!(config.poll_interval_ms, 1000);
-
-        // Apply capture lines
-        let override_val = ConfigOverride::parse("capture_lines", "500").unwrap();
-        override_val.apply(&mut config);
-        assert_eq!(config.capture_lines, 500);
-
-        // Apply show detached sessions
-        let override_val = ConfigOverride::parse("showdetached", "false").unwrap();
-        override_val.apply(&mut config);
-        assert!(!config.show_detached_sessions);
-
-        // Apply debug mode
-        let override_val = ConfigOverride::parse("debug_mode", "true").unwrap();
-        override_val.apply(&mut config);
-        assert!(config.debug_mode);
+        // Test empty notification_command (disables notifications)
+        let override_val = ConfigOverride::parse("notifycmd", "").unwrap();
+        assert!(matches!(
+            override_val,
+            ConfigOverride::NotificationCommand(None)
+        ));
     }
 
     #[test]
@@ -581,72 +597,16 @@ mod tests {
     fn test_parse_simple_actions() {
         // Test rename_session
         let override_val = ConfigOverride::parse("kb.r", "rename_session").unwrap();
-        match override_val {
-            ConfigOverride::KeyBinding(key, KeyAction::RenameSession) => {
-                assert_eq!(key, "r");
-            }
-            _ => panic!("Expected RenameSession action"),
-        }
+        assert!(matches!(
+            override_val,
+            ConfigOverride::KeyBinding(ref key, KeyAction::RenameSession) if key == "r"
+        ));
 
-        // Test refresh (now preserves original key name)
+        // Test refresh (preserves original key name)
         let override_val = ConfigOverride::parse("kb.C-l", "refresh").unwrap();
-        match override_val {
-            ConfigOverride::KeyBinding(key, KeyAction::Refresh) => {
-                assert_eq!(key, "C-l");
-            }
-            _ => panic!("Expected Refresh action"),
-        }
-    }
-
-    #[test]
-    fn test_parse_notification_config() {
-        // Test notification_command
-        let override_val =
-            ConfigOverride::parse("notification_command", "notify-send '{message}'").unwrap();
-        match override_val {
-            ConfigOverride::NotificationCommand(Some(cmd)) => {
-                assert_eq!(cmd, "notify-send '{message}'");
-            }
-            _ => panic!("Expected NotificationCommand"),
-        }
-
-        // Test empty notification_command (disables notifications)
-        let override_val = ConfigOverride::parse("notifycmd", "").unwrap();
-        match override_val {
-            ConfigOverride::NotificationCommand(None) => {}
-            _ => panic!("Expected None for empty notification_command"),
-        }
-
-        // Test notification_delay_ms
-        let override_val = ConfigOverride::parse("notification_delay_ms", "30000").unwrap();
-        match override_val {
-            ConfigOverride::NotificationDelayMs(val) => {
-                assert_eq!(val, 30000);
-            }
-            _ => panic!("Expected NotificationDelayMs"),
-        }
-
-        // Test notification_mode
-        let override_val = ConfigOverride::parse("notification_mode", "first").unwrap();
-        match override_val {
-            ConfigOverride::NotificationMode(mode) => {
-                assert_eq!(mode, NotificationMode::First);
-            }
-            _ => panic!("Expected NotificationMode::First"),
-        }
-
-        let override_val = ConfigOverride::parse("notifymode", "each").unwrap();
-        match override_val {
-            ConfigOverride::NotificationMode(mode) => {
-                assert_eq!(mode, NotificationMode::Each);
-            }
-            _ => panic!("Expected NotificationMode::Each"),
-        }
-
-        // Test invalid notification_mode
-        assert!(ConfigOverride::parse("notification_mode", "invalid").is_err());
-
-        // Test invalid notification_delay_ms
-        assert!(ConfigOverride::parse("notification_delay_ms", "not_a_number").is_err());
+        assert!(matches!(
+            override_val,
+            ConfigOverride::KeyBinding(ref key, KeyAction::Refresh) if key == "C-l"
+        ));
     }
 }

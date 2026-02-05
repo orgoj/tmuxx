@@ -19,7 +19,31 @@ pub enum NotificationMode {
     Each,
 }
 
-/// Application configuration
+/// Main application configuration for tmuxx.
+///
+/// This struct holds all configurable options for the application, including:
+/// - Polling and capture settings
+/// - UI appearance (colors, themes, sidebar width)
+/// - Key bindings and input handling
+/// - Agent detection patterns and state rules
+/// - Notification settings
+///
+/// Configuration is loaded from multiple sources in order of precedence:
+/// 1. CLI arguments (highest priority)
+/// 2. User config file (`~/.config/tmuxx/config.toml`)
+/// 3. Embedded defaults (`src/config/defaults.toml`)
+///
+/// # Example
+/// ```no_run
+/// use tmuxx::app::Config;
+///
+/// // Load merged configuration
+/// let config = Config::load_merged();
+///
+/// // Apply runtime overrides
+/// let mut config = config;
+/// config.apply_override("debug_mode", "true").unwrap();
+/// ```
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct Config {

@@ -110,7 +110,19 @@ impl fmt::Display for ApprovalType {
     }
 }
 
-/// Status of an AI agent
+/// Current operational status of a monitored agent.
+///
+/// The status is determined by parsing the captured pane content using agent-specific
+/// rules defined in `defaults.toml`. Status determines both the visual indicator in the
+/// UI and whether the agent needs user attention.
+///
+/// # Status Hierarchy
+/// Priority for user attention (highest to lowest):
+/// 1. `AwaitingApproval` - requires immediate user action
+/// 2. `Error` - indicates a problem that may need attention
+/// 3. `Processing` - agent is actively working
+/// 4. `Idle` - agent is ready for input
+/// 5. `Unknown` - status could not be determined
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum AgentStatus {
     /// Agent is idle and ready for input
@@ -163,7 +175,22 @@ impl fmt::Display for AgentStatus {
     }
 }
 
-/// Represents a monitored AI agent in a tmux pane
+/// Represents a monitored process in a tmux pane.
+///
+/// A `MonitoredAgent` tracks a single process running in a tmux pane, capturing its
+/// identity, location, status, and content. While named "Agent" for historical reasons,
+/// this can represent any monitored process (AI coding assistants, shells, etc.).
+///
+/// # Identification
+/// Each agent has multiple identifiers for robust tracking across renames and restarts:
+/// - `id`: Composite key (session:window.pane-pid) for quick lookup
+/// - `pid`: Process ID for tracking across session renames
+/// - `target`: Tmux target string for tracking across process restarts
+///
+/// # Content and Status
+/// The agent's status is derived from `last_content` by the associated parser.
+/// Content is captured from the tmux pane at each poll interval and limited by
+/// `capture_lines` and `capture_buffer_size` configuration options.
 #[derive(Debug, Clone)]
 pub struct MonitoredAgent {
     /// Unique identifier for this agent instance (session:window.pane-pid)

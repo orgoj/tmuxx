@@ -23,5 +23,5 @@ pub use pane_preview::PanePreviewWidget;
 pub use popup_input::PopupInputWidget;
 pub use subagent_log::SubagentLogWidget;
 
-// Re-export CommandPaletteState from app::state
+// Re-export CommandPaletteState from app::state for convenience
 pub use crate::app::CommandPaletteState;

@@ -11,5 +11,6 @@ pub use config::Config;
 pub use key_binding::{KeyAction, KeyBindings, KillMethod, NavAction};
 pub use session_pattern::SessionPattern;
 pub use state::{
-    AgentTree, AppState, CommandPaletteState, FocusedPanel, MessageKind, PopupInputState, PopupType,
+    AgentTree, AppState, CommandPaletteState, FocusedPanel, MessageKind, PopupInputState,
+    PopupType, StatusMessage,
 };

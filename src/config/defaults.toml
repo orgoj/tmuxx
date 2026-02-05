@@ -366,8 +366,10 @@ priority = 96
   type = "error"
 
   # --- Error (Generic) ---
+  # Note: Must use last_block to avoid matching historical errors in terminal history
   [[agents.state_rules.refinements]]
   group = "body"
+  location = "last_block"
   pattern = '''(?m)^\s*Error: (?P<msg>.*)'''
   status = "Error: {msg}"
   type = "error"
@@ -438,8 +440,10 @@ priority = 95
   type = "error"
 
   # --- Error (Generic) ---
+  # Note: Must use last_block to avoid matching historical errors in terminal history
   [[agents.state_rules.refinements]]
   group = "body"
+  location = "last_block"
   pattern = '''(?m)^\s*Error: (?P<msg>.*)'''
   status = "Error: {msg}"
   type = "error"

@@ -31,7 +31,21 @@ pub struct AgentSummary {
     pub tools: Vec<String>,
 }
 
-/// Trait for parsing agent output
+/// Trait for parsing agent output and determining status.
+///
+/// `AgentParser` defines the interface for matching tmux panes to agent types and
+/// extracting status information from their content. Implementations are typically
+/// generated from TOML configuration (`defaults.toml`) via `UniversalParser`.
+///
+/// # Implementation Notes
+/// - Parsers must be `Send + Sync` for use in async contexts
+/// - `match_strength` determines parser priority when multiple parsers could match
+/// - `parse_status` is called on every poll cycle, so regex patterns should be efficient
+///
+/// # Matching Process
+/// 1. `ParserRegistry` calls `match_strength` with pane detection strings
+/// 2. The parser with highest `MatchStrength` (and priority) wins
+/// 3. `parse_status` extracts the current status from pane content
 pub trait AgentParser: Send + Sync {
     /// Returns the name of the agent
     fn agent_name(&self) -> &str;
