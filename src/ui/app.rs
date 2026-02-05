@@ -1701,12 +1701,19 @@ async fn run_loop(
                                     if let Some(stripped) = filter.strip_prefix('!') {
                                         let shell_cmd = stripped.trim().to_string();
                                         if !shell_cmd.is_empty() {
-                                            // Store in history
+                                            // Store in history and persist to disk
                                             if let Some(ref mut cp) = state.command_palette {
-                                                if cp.history.len() >= 20 {
-                                                    cp.history.pop();
-                                                }
-                                                cp.history.insert(0, format!("!{}", shell_cmd));
+                                                crate::app::history::add_to_history(
+                                                    &mut cp.history,
+                                                    format!("!{}", shell_cmd),
+                                                    100,
+                                                );
+                                                // Persist to disk (ignore errors)
+                                                let _ = crate::app::history::save_history(
+                                                    "command_palette",
+                                                    &cp.history,
+                                                    100,
+                                                );
                                             }
 
                                             // Execute shell command in selected agent's directory

@@ -7,14 +7,6 @@
   - udelat promenne pro vse co jde jednoduse a rychle z git zjistit
   - musi to mi cachovane hodnoty - aktualizace asi jen kdyz se prepnu do session, at to neni casto
 
-- [ ] run command in windows dir
-  - zepta se na command - input line dialog
-  - default binding r (nebo ctrl-r)
-
-- [ ]  input line dialog history
-  - oddelena pro kazde pouziti (prompt/command)
-  - persistentni ukladani do souboru vedle user config asi pro kazde pouziti jen txt, co command to radek
-
 ## 🔮 Nápady a Roadmap (Ideas)
 
 ### AI Integrace

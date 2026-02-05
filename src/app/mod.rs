@@ -1,6 +1,7 @@
 mod actions;
 pub mod config;
 mod config_override;
+pub mod history;
 pub mod key_binding;
 pub mod menu_config;
 mod session_pattern;

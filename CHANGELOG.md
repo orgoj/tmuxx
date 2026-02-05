@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- **Persistent Command Palette History**: Shell commands executed via Command Palette (`!command`) are now saved to `~/.config/tmuxx/history/command_palette.txt` and restored on startup. History supports deduplication and is capped at 100 entries.
+
 ### Changed
 - Reduced allocations when recalculating visible agent indices.
 - Send Ctrl-C/Ctrl-D as a single tmux command to improve kill sequence reliability.

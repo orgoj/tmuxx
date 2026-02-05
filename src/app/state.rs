@@ -206,12 +206,17 @@ impl Default for CommandPaletteState {
 }
 
 impl CommandPaletteState {
+    /// History use-case identifier for persistent storage
+    const HISTORY_USE_CASE: &'static str = "command_palette";
+    /// Maximum number of history items to keep
+    const MAX_HISTORY: usize = 100;
+
     pub fn new() -> Self {
         Self {
             filter: String::new(),
             items: Vec::new(),
             list_state: ratatui::widgets::ListState::default().with_selected(Some(0)),
-            history: Vec::new(),
+            history: super::history::load_history(Self::HISTORY_USE_CASE, Self::MAX_HISTORY),
             history_index: None,
         }
     }
